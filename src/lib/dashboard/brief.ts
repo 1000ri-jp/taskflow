@@ -15,6 +15,8 @@ export type DashboardBriefTone = 'red' | 'blue' | 'green' | 'amber';
 
 export interface DashboardTask extends Task {
   projectName: string;
+  projectIcon?: string;
+  projectIconUrl?: string;
 }
 
 export interface DashboardBriefItem {

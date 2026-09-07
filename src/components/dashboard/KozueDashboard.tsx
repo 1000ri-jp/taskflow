@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import {
@@ -202,7 +203,7 @@ function DashboardRow({ label, icon, tone, children, labelActions }: {
   );
 }
 
-function DashboardItem({ source, title, meta, badges, urgent, actions, singleLine = false, preserveMeta = false, messageHref, unavailableReason }: {
+function DashboardItem({ source, title, meta, badges, urgent, actions, singleLine = false, preserveMeta = false, messageHref, unavailableReason, projectIcon, projectIconUrl }: {
   source: DashboardBriefSource;
   title: string;
   meta?: string;
@@ -213,6 +214,8 @@ function DashboardItem({ source, title, meta, badges, urgent, actions, singleLin
   preserveMeta?: boolean;
   messageHref?: string;
   unavailableReason?: string;
+  projectIcon?: string;
+  projectIconUrl?: string;
 }) {
   const separatedMeta = singleLine && preserveMeta && Boolean(meta);
   const content = <>
@@ -224,7 +227,7 @@ function DashboardItem({ source, title, meta, badges, urgent, actions, singleLin
   const tooltip = unavailableReason ?? (singleLine ? [title, meta].filter(Boolean).join('・') : undefined);
   return (
     <div className={cn('grid gap-2 text-sm', singleLine ? 'grid-cols-[auto_minmax(0,1fr)] items-center' : 'sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center')}>
-      <SourceBadge source={source} />
+      <SourceBadge source={source} projectIcon={projectIcon} projectIconUrl={projectIconUrl} />
       {messageHref
         ? <Link href={messageHref} title={tooltip} className={cn(messageClassName, 'rounded-sm hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600')}>{content}</Link>
         : <div className={messageClassName} title={tooltip} aria-disabled={unavailableReason ? true : undefined}>{content}</div>}
@@ -233,10 +236,10 @@ function DashboardItem({ source, title, meta, badges, urgent, actions, singleLin
   );
 }
 
-function SourceBadge({ source }: { source: DashboardBriefItem['source'] }) {
+function SourceBadge({ source, projectIcon, projectIconUrl }: { source: DashboardBriefItem['source']; projectIcon?: string; projectIconUrl?: string }) {
   return (
-    <span className={cn('inline-flex w-fit shrink-0 items-center justify-self-start justify-center', compactBadgeClassName, sourceStyles[source])}>
-      {source}
+    <span className={cn('inline-flex w-fit shrink-0 items-center justify-self-start justify-center overflow-hidden', compactBadgeClassName, !projectIconUrl && sourceStyles[source])}>
+      {source === 'TF' && projectIconUrl ? <Image src={projectIconUrl} alt="" width={20} height={20} unoptimized className="h-5 w-5 object-cover" /> : source === 'TF' && projectIcon ? projectIcon : source}
     </span>
   );
 }
@@ -616,7 +619,7 @@ function InboxSection({ settings, comments, isSample }: { settings: InboxDisplay
                 {comments.items.map(({ key, comment, authorName, listName, task }) => (
                   <DashboardItem key={key} source="TF" title={commentPreview(comment)} singleLine preserveMeta
                     meta={formatInboxCommentMeta({ comment, authorName, listName, task })}
-                    messageHref={sourceCommentHref(task.projectId, task.id, comment.id)} />
+                    messageHref={sourceCommentHref(task.projectId, task.id, comment.id)} projectIcon={task.projectIcon} projectIconUrl={task.projectIconUrl} />
                 ))}
               </>}
           </DashboardRow>
