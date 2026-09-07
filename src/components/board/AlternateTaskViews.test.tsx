@@ -129,4 +129,25 @@ describe('calendar view', () => {
     expect(more.closest('details')).toHaveAttribute('open');
     expect(within(day).getAllByRole('button')).toHaveLength(5);
   });
+  it('moves the dragged date marker to a calendar day and keeps its date kind', () => {
+    const onDateChange = vi.fn();
+    const task = viewTask({ title: '日付を動かす', startDate: new Date(2026, 8, 3), dueDate: new Date(2026, 8, 13) });
+    render(<TaskCalendarView tasks={[task]} lists={[viewList()]} onTaskClick={vi.fn()} onDateChange={onDateChange} />);
+    const entry = within(screen.getByRole('region', { name: '2026年9月3日' })).getByRole('button', { name: /開始\s*日付を動かす/ });
+    fireEvent.dragStart(entry, { dataTransfer: { setData: vi.fn(), effectAllowed: 'move' } });
+    const target = screen.getByRole('region', { name: '2026年9月8日' });
+    fireEvent.drop(target, { dataTransfer: { getData: (type: string) => type === 'application/x-taskflow-calendar' ? JSON.stringify({ taskId: task.id, kind: '開始' }) : '' } });
+    expect(onDateChange).toHaveBeenCalledWith(task, '開始', new Date(2026, 8, 8));
+  });
+  it('suppresses the synthetic click after dragging but keeps normal clicks', () => {
+    const open = vi.fn();
+    const task = viewTask({ title: 'クリック確認', dueDate: new Date(2026, 8, 3) });
+    render(<TaskCalendarView tasks={[task]} lists={[viewList()]} onTaskClick={open} onDateChange={vi.fn()} />);
+    const entry = within(screen.getByRole('region', { name: '2026年9月3日' })).getByRole('button', { name: /期限\s*クリック確認/ });
+    fireEvent.dragStart(entry, { dataTransfer: { setData: vi.fn(), effectAllowed: 'move' } });
+    fireEvent.click(entry);
+    expect(open).not.toHaveBeenCalled();
+    fireEvent.click(entry);
+    expect(open).toHaveBeenCalledWith(task.id);
+  });
 });

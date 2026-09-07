@@ -13,7 +13,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { AlternateTaskViews } from '@/components/board/AlternateTaskViews';
 import { taskMatchesBoardFilters } from '@/lib/board/filters';
 import { useProjectTaskViewNavigation } from '@/hooks/useProjectTaskViewNavigation';
-import type { ProjectUrl } from '@/types';
+import type { ProjectUrl, Task } from '@/types';
+import { recalculateDates } from '@/lib/utils/task';
 
 export default function BoardPage() {
   const params = useParams();
@@ -82,6 +83,17 @@ export default function BoardPage() {
     },
     [selectedTaskId, editTask]
   );
+
+  const handleCalendarDateChange = useCallback(async (task: Task, kind: '開始' | '期限' | '開始・期限', date: Date) => {
+    const changes = kind === '開始' ? { startDate: date } : kind === '期限' ? { dueDate: date } : { startDate: date, dueDate: date };
+    const recalculated = recalculateDates(task, changes);
+    await editTask(task.id, {
+      startDate: recalculated.startDate,
+      dueDate: recalculated.dueDate,
+      durationDays: recalculated.durationDays,
+      isDueDateFixed: recalculated.isDueDateFixed,
+    });
+  }, [editTask]);
 
   const handleDeleteTask = useCallback(() => {
     if (selectedTaskId) {
@@ -153,7 +165,7 @@ export default function BoardPage() {
         />
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
-        {!viewSettingsHydrated ? <p role="status" className="p-4 text-sm text-muted-foreground">表示設定を読み込み中…</p> : view === 'board' ? <BoardView projectId={projectId} onTaskClick={handleTaskClick} filters={filters} /> : error ? <p role="alert" className="p-4 text-sm text-destructive">タスクを取得できませんでした。接続・権限を確認し、ページを再読み込みしてください。</p> : isLoading ? <p role="status" className="p-4 text-sm text-muted-foreground">タスクを読み込み中…</p> : <AlternateTaskViews key={`${projectId}:${view}`} view={view} projectId={projectId} viewerId={user?.id ?? ''} projectMemberIds={project?.memberIds ?? []} tasks={visibleTasks} lists={lists} onTaskClick={handleTaskClick} />}
+        {!viewSettingsHydrated ? <p role="status" className="p-4 text-sm text-muted-foreground">表示設定を読み込み中…</p> : view === 'board' ? <BoardView projectId={projectId} onTaskClick={handleTaskClick} filters={filters} /> : error ? <p role="alert" className="p-4 text-sm text-destructive">タスクを取得できませんでした。接続・権限を確認し、ページを再読み込みしてください。</p> : isLoading ? <p role="status" className="p-4 text-sm text-muted-foreground">タスクを読み込み中…</p> : <AlternateTaskViews key={`${projectId}:${view}`} view={view} projectId={projectId} viewerId={user?.id ?? ''} projectMemberIds={project?.memberIds ?? []} tasks={visibleTasks} lists={lists} onTaskClick={handleTaskClick} onDateChange={handleCalendarDateChange} />}
       </div>
       <TaskDetailModal
         highlightCommentId={searchParams.get('comment')}
