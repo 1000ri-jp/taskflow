@@ -4,18 +4,11 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { AlertTriangle, Calendar, Bell, CheckCircle2, Clock, Link2, MoveRight } from 'lucide-react';
+import { AlertTriangle, Calendar, CheckCircle2, Clock, Link2, MoveRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import {
   Tooltip,
   TooltipContent,
@@ -31,10 +24,12 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { cn } from '@/lib/utils';
-import { getUsersByIds, getTaskAttachments, getProject } from '@/lib/firebase/firestore';
-import { useNotifications } from '@/hooks/useNotifications';
+import { getUsersByIds, getTaskAttachments } from '@/lib/firebase/firestore';
 import type { Task, Label, Tag, User as UserType, Attachment, List } from '@/types';
 import { isTaskOverdue, getEffectiveDates } from '@/lib/utils/task';
+import { taskReviewState } from '@/lib/board/taskViews';
+import { TaskFlowStateBadge } from './TaskViewFields';
+import { useBoardDisplayStore } from '@/stores/boardDisplayStore';
 
 interface TaskCardProps {
   projectId: string;
@@ -48,16 +43,13 @@ interface TaskCardProps {
   lists?: List[];
   onMove?: (listId: string) => void;
   isDragging?: boolean;
+  disableDragging?: boolean;
 }
 
-export function TaskCard({ projectId, task, listName, listColor, labels, tags, allTasks, onClick, lists = [], onMove, isDragging }: TaskCardProps) {
+export function TaskCard({ projectId, task, listName, listColor, labels, tags, allTasks, onClick, lists = [], onMove, isDragging, disableDragging = false }: TaskCardProps) {
+  const display = useBoardDisplayStore((state) => state.settings);
   const [assignees, setAssignees] = useState<UserType[]>([]);
   const [imageAttachments, setImageAttachments] = useState<Attachment[]>([]);
-  const [bellMessage, setBellMessage] = useState('');
-  const [isBellOpen, setIsBellOpen] = useState(false);
-  const [isSendingBell, setIsSendingBell] = useState(false);
-  const [projectName, setProjectName] = useState('');
-  const { sendBellNotification } = useNotifications();
 
   const {
     attributes,
@@ -66,7 +58,7 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
     transform,
     transition,
     isDragging: isSortableDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({ id: task.id, disabled: disableDragging });
 
   // Fetch assignees
   useEffect(() => {
@@ -96,37 +88,6 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
     }
   }, [projectId, task.id]);
 
-  // Fetch project name for notifications
-  useEffect(() => {
-    if (projectId) {
-      getProject(projectId).then((project) => {
-        if (project) setProjectName(project.name);
-      });
-    }
-  }, [projectId]);
-
-  const handleSendBellNotification = async () => {
-    if (!projectId || !task.id) return;
-
-    setIsSendingBell(true);
-    try {
-      await sendBellNotification(
-        projectId,
-        projectName,
-        task.id,
-        task.title,
-        bellMessage,
-        task.assigneeIds
-      );
-      setBellMessage('');
-      setIsBellOpen(false);
-    } catch (error) {
-      console.error('Failed to send notification:', error);
-    } finally {
-      setIsSendingBell(false);
-    }
-  };
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -134,7 +95,11 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
 
   const taskLabels = labels.filter((label) => task.labelIds.includes(label.id));
   const taskTags = tags.filter((tag) => task.tagIds?.includes(tag.id));
-  const isOverdue = isTaskOverdue(task);
+  const today = startOfDay(new Date());
+  const isOverdue = isTaskOverdue(task, today);
+  const isStarted = !task.isCompleted && !isOverdue && Boolean(
+    task.startDate && startOfDay(task.startDate).getTime() <= today.getTime()
+  );
 
   // Calculate dependency info
   const dependentTasks = allTasks
@@ -150,6 +115,7 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
     : null;
   const isDeadlineOverdue = effectiveDates?.isDeadlineOverdue ?? false;
   const hasDependencies = dependentTasks.length > 0;
+  const reviewState = allTasks ? taskReviewState(task, allTasks) : null;
 
   const getInitials = (name: string) => {
     return name
@@ -162,6 +128,10 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
 
   const moveTargets = lists.filter((list) => list.id !== task.listId);
   const hasDateRail = Boolean(task.startDate || task.dueDate);
+  const hasVisibleMetadata = task.isCompleted || display.showListName ||
+    (display.showAssignees && assignees.length > 0) ||
+    (display.showTags && taskTags.length > 0) ||
+    (display.showPriority && Boolean(task.priority));
   const hasHoverDetails = Boolean(
     task.description ||
     taskLabels.length > 0 ||
@@ -174,15 +144,16 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
     predictedDates
   );
 
-  const renderRailDate = (date: Date) => {
+  const renderRailDate = (date: Date, isDueDate = false) => {
     const text = format(date, 'M/d', { locale: ja });
 
     return (
       <time
         dateTime={format(date, 'yyyy-MM-dd')}
+        aria-label={`${isDueDate ? '期限' : '開始日'}：${format(date, 'yyyy年M月d日')}${isDueDate && isOverdue ? '（期限切れ）' : ''}`}
         className={cn(
-          'whitespace-nowrap font-bold leading-none tracking-[-0.04em]',
-          text.length >= 5 ? 'text-[17px]' : 'text-[20px]'
+          'whitespace-nowrap text-[15px] leading-none tabular-nums',
+          isOverdue || isStarted ? 'font-bold' : 'font-normal'
         )}
       >
         {text}
@@ -190,18 +161,49 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
     );
   };
 
+  const completionBadge = task.isCompleted && (
+    <Badge
+      data-testid="task-card-completion"
+      title={task.completedAt ? `完了日：${format(task.completedAt, 'yyyy年M月d日', { locale: ja })}` : '完了日未記録'}
+      className="h-5 shrink-0 gap-1 bg-emerald-100 px-1.5 text-[10px] text-emerald-800 hover:bg-emerald-100"
+    >
+      <CheckCircle2 className="h-3 w-3" />
+      {task.completedAt ? (
+        <>
+          <time dateTime={format(task.completedAt, 'yyyy-MM-dd')}>
+            {format(task.completedAt, 'M/d', { locale: ja })}
+          </time>
+          完了
+        </>
+      ) : '完了日未記録'}
+    </Badge>
+  );
+
   const card = (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
+      aria-disabled={undefined}
+      aria-roledescription={disableDragging ? undefined : attributes['aria-roledescription']}
+      aria-describedby={disableDragging ? undefined : attributes['aria-describedby']}
+      onKeyDown={(event) => {
+        if (disableDragging && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          onClick();
+        } else {
+          listeners?.onKeyDown?.(event);
+        }
+      }}
       onClick={onClick}
       data-testid="task-card"
+      data-completed={task.isCompleted ? 'true' : 'false'}
       className={cn(
         'group cursor-pointer overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md',
         (isDragging || isSortableDragging) && 'opacity-50 shadow-lg',
-        isDeadlineOverdue && 'border-red-500 border-2 bg-red-50'
+        isDeadlineOverdue && 'border-red-500 border-2 bg-red-50',
+        task.isCompleted && 'border-neutral-300 bg-emerald-50/50'
       )}
     >
       {/* Image Attachments - displayed at top like Jooto */}
@@ -248,114 +250,103 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
         {hasDateRail && (
           <aside
             data-testid="task-card-date-rail"
+            data-date-status={isOverdue ? 'overdue' : isStarted ? 'started' : 'neutral'}
+            title={isOverdue ? '期限切れ' : isStarted ? '開始期間内' : undefined}
             className={cn(
-              'flex w-14 shrink-0 flex-col items-center justify-center gap-2 border-r border-blue-200 bg-blue-50 px-1.5 py-3 text-slate-950',
-              isOverdue && 'border-red-200 bg-red-50 text-red-700'
+              'flex w-14 shrink-0 flex-col items-center justify-center gap-1.5 border-r px-1 py-2',
+              isOverdue ? 'border-red-200 bg-red-50 text-red-700'
+                : isStarted ? 'border-yellow-200 bg-yellow-50 text-yellow-800'
+                  : 'border-blue-200 bg-blue-50 text-slate-600'
             )}
           >
             {task.startDate && renderRailDate(task.startDate)}
             {task.startDate && task.dueDate && (
-              <span className="text-[20px] font-bold leading-none tracking-[-0.04em]" aria-hidden="true">
+              <span className="text-sm font-normal leading-none opacity-60" aria-hidden="true">
                 〜
               </span>
             )}
-            {task.dueDate && renderRailDate(task.dueDate)}
+            {task.dueDate && renderRailDate(task.dueDate, true)}
           </aside>
         )}
 
         <div className="min-w-0 flex-1 p-3">
           <div className="flex items-start gap-2">
-            <p className="line-clamp-2 min-w-0 flex-1 text-sm font-semibold leading-5 text-slate-950">
+            <p
+              className={cn(
+                'line-clamp-2 min-w-0 flex-1 text-sm font-semibold leading-5 text-slate-950',
+                task.isCompleted && 'text-slate-500 line-through'
+              )}
+            >
               {task.title}
             </p>
-            <Popover open={isBellOpen} onOpenChange={setIsBellOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="メンバーに通知"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsBellOpen(true);
-                  }}
-                  className="mt-0.5 shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100 focus:opacity-100"
-                >
-                  <Bell className="h-3.5 w-3.5" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="z-50 w-64 border bg-background shadow-lg"
-                align="end"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">メンバーに通知</p>
-                  <Input
-                    value={bellMessage}
-                    onChange={(e) => setBellMessage(e.target.value)}
-                    placeholder="メッセージ（任意）"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                        handleSendBellNotification();
-                      }
-                    }}
-                  />
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={handleSendBellNotification}
-                    disabled={isSendingBell}
+            {reviewState && <TaskFlowStateBadge label={reviewState.label} completed={reviewState.completed} />}
+          </div>
+          {task.parentTaskId && <p className="mt-1 truncate text-[10px] text-blue-700">子タスク · {allTasks?.find(parent => parent.id === task.parentTaskId)?.title ?? '親タスクあり'}</p>}
+
+          {hasVisibleMetadata && (
+            <div data-testid="task-card-metadata" className="mt-2 flex min-h-6 flex-wrap items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                {display.showAssignees && assignees.length > 0 && (
+                  <div data-testid="task-card-assignees" className="flex -space-x-1.5">
+                    {assignees.slice(0, 4).map((assignee) => (
+                      <Avatar key={assignee.id} className="h-6 w-6 border-2 border-white">
+                        <AvatarImage src={assignee.photoURL || ''} alt={assignee.displayName} />
+                        <AvatarFallback className="text-[9px]">
+                          {getInitials(assignee.displayName)}
+                        </AvatarFallback>
+                      </Avatar>
+                    ))}
+                    {assignees.length > 4 && (
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-muted text-[9px] font-medium">
+                        +{assignees.length - 4}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {completionBadge}
+                {display.showTags && taskTags.map((tag) => (
+                  <Badge
+                    key={tag.id}
+                    data-testid="task-card-tag"
+                    title={tag.name}
+                    className="h-5 max-w-full min-w-0 px-1.5 text-[10px] text-white"
+                    style={{ backgroundColor: tag.color }}
                   >
-                    {isSendingBell ? '送信中...' : '通知を送信'}
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+                    <span className="truncate">{tag.name}</span>
+                  </Badge>
+                ))}
+              </div>
 
-          <div className="mt-2 flex min-h-6 items-center justify-between gap-2">
-            <div className="flex -space-x-1.5">
-              {assignees.slice(0, 4).map((assignee) => (
-                <Avatar key={assignee.id} className="h-6 w-6 border-2 border-white">
-                  <AvatarImage src={assignee.photoURL || ''} alt={assignee.displayName} />
-                  <AvatarFallback className="text-[9px]">
-                    {getInitials(assignee.displayName)}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              {assignees.length > 4 && (
-                <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-muted text-[9px] font-medium">
-                  +{assignees.length - 4}
-                </div>
-              )}
+              <div className="flex min-w-0 items-center justify-end gap-1">
+                {display.showPriority && task.priority && (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      'h-5 shrink-0 px-1.5 text-[10px]',
+                      task.priority === 'high' && 'border-red-300 bg-red-50 text-red-700',
+                      task.priority === 'medium' && 'border-yellow-300 bg-yellow-50 text-yellow-700',
+                      task.priority === 'low' && 'border-gray-300 bg-gray-50 text-gray-700'
+                    )}
+                  >
+                    {task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低'}
+                  </Badge>
+                )}
+                {display.showListName && (
+                  <Badge
+                    variant="outline"
+                    className="h-5 max-w-[92px] shrink px-1.5 text-[9px] font-semibold"
+                    style={{
+                      borderColor: listColor,
+                      color: listColor,
+                      backgroundColor: `${listColor}18`,
+                    }}
+                  >
+                    <span className="truncate">{listName}</span>
+                  </Badge>
+                )}
+              </div>
             </div>
-
-            <div className="flex min-w-0 items-center justify-end gap-1">
-              {task.priority && (
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'h-5 shrink-0 px-1.5 text-[10px]',
-                    task.priority === 'high' && 'border-red-300 bg-red-50 text-red-700',
-                    task.priority === 'medium' && 'border-yellow-300 bg-yellow-50 text-yellow-700',
-                    task.priority === 'low' && 'border-gray-300 bg-gray-50 text-gray-700'
-                  )}
-                >
-                  {task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低'}
-                </Badge>
-              )}
-              <Badge
-                variant="outline"
-                className="h-5 max-w-[92px] shrink px-1.5 text-[9px] font-semibold"
-                style={{
-                  borderColor: listColor,
-                  color: listColor,
-                  backgroundColor: `${listColor}18`,
-                }}
-              >
-                <span className="truncate">{listName}</span>
-              </Badge>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

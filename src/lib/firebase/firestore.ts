@@ -553,7 +553,8 @@ export async function getProjectTasks(projectId: string): Promise<Task[]> {
 
 export function subscribeToProjectTasks(
   projectId: string,
-  callback: (tasks: Task[]) => void
+  callback: (tasks: Task[]) => void,
+  onError?: (error: Error) => void
 ): () => void {
   const db = getFirebaseDb();
 
@@ -571,7 +572,8 @@ export function subscribeToProjectTasks(
         })
         .filter((task) => !task.isArchived); // Filter out archived tasks
       callback(tasks);
-    }
+    },
+    onError
   );
 }
 
@@ -803,6 +805,17 @@ export async function getTaskComments(
   );
 
   const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => convertDoc<Comment>(doc.data(), doc.id));
+}
+
+// Read-only dashboard preview. Fetching N per task is enough to find the
+// newest N comments across projects without downloading entire histories.
+export async function getRecentTaskComments(projectId: string, taskId: string, count = 10): Promise<Comment[]> {
+  const snapshot = await getDocs(query(
+    collection(getFirebaseDb(), 'projects', projectId, 'tasks', taskId, 'comments'),
+    orderBy('createdAt', 'desc'),
+    firestoreLimit(count)
+  ));
   return snapshot.docs.map((doc) => convertDoc<Comment>(doc.data(), doc.id));
 }
 

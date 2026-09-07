@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { BoardView } from '@/components/board/BoardView';
 import { BoardFilterBar, type BoardFilters } from '@/components/board/BoardFilterBar';
 import { ProjectUrlsBar } from '@/components/board/ProjectUrlsBar';
@@ -9,14 +10,23 @@ import { TaskDetailModal } from '@/components/task/TaskDetailModal';
 import { useBoard } from '@/hooks/useBoard';
 import { useProject } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/authStore';
+import { AlternateTaskViews } from '@/components/board/AlternateTaskViews';
+import { taskMatchesBoardFilters } from '@/lib/board/filters';
+import { useProjectTaskViewNavigation } from '@/hooks/useProjectTaskViewNavigation';
 import type { ProjectUrl } from '@/types';
 
 export default function BoardPage() {
   const params = useParams();
   const projectId = params.projectId as string;
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const taskIdFromUrl = searchParams.get('task');
   const { user } = useAuthStore();
-  const { lists, tasks, labels, editTask, removeTask, duplicateTask } = useBoard(projectId);
+  const queryClient = useQueryClient();
+  const { lists, tasks, labels, isLoading, error, editTask, removeTask, duplicateTask } = useBoard(projectId);
   const { project, update: updateProject } = useProject(projectId);
+  const { view, canSave: viewSettingsHydrated } = useProjectTaskViewNavigation(projectId);
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [filters, setFilters] = useState<BoardFilters>({
@@ -29,14 +39,40 @@ export default function BoardPage() {
   const selectedTask = selectedTaskId
     ? tasks.find((t) => t.id === selectedTaskId) || null
     : null;
+  const visibleTasks = tasks.filter(task => task.projectId === projectId && !task.isArchived && taskMatchesBoardFilters(task, filters));
+
+  useEffect(() => {
+    setSelectedTaskId(taskIdFromUrl);
+  }, [taskIdFromUrl]);
+
+  const updateTaskUrl = useCallback(
+    (taskId: string | null) => {
+      const nextSearchParams = new URLSearchParams(searchParams.toString());
+      nextSearchParams.delete('comment');
+      if (taskId) {
+        nextSearchParams.set('task', taskId);
+      } else {
+        nextSearchParams.delete('task');
+      }
+
+      const query = nextSearchParams.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
 
   const handleTaskClick = useCallback((taskId: string) => {
     setSelectedTaskId(taskId);
-  }, []);
+    updateTaskUrl(taskId);
+  }, [updateTaskUrl]);
 
   const handleCloseModal = useCallback(() => {
+    if (selectedTaskId) {
+      void queryClient.invalidateQueries({ queryKey: ['outline-checklists', user?.id ?? '', projectId, selectedTaskId] });
+    }
     setSelectedTaskId(null);
-  }, []);
+    updateTaskUrl(null);
+  }, [updateTaskUrl, queryClient, selectedTaskId, user?.id, projectId]);
 
   const handleUpdateTask = useCallback(
     (data: Parameters<typeof editTask>[1]) => {
@@ -51,17 +87,19 @@ export default function BoardPage() {
     if (selectedTaskId) {
       removeTask(selectedTaskId);
       setSelectedTaskId(null);
+      updateTaskUrl(null);
     }
-  }, [selectedTaskId, removeTask]);
+  }, [selectedTaskId, removeTask, updateTaskUrl]);
 
   const handleDuplicateTask = useCallback(async () => {
     if (selectedTaskId && user) {
       const newTaskId = await duplicateTask(selectedTaskId, user.id);
       if (newTaskId) {
         setSelectedTaskId(newTaskId); // Open the new task
+        updateTaskUrl(newTaskId);
       }
     }
-  }, [selectedTaskId, user, duplicateTask]);
+  }, [selectedTaskId, user, duplicateTask, updateTaskUrl]);
 
   // URL handlers
   const handleAddUrl = useCallback(
@@ -104,15 +142,21 @@ export default function BoardPage() {
       </div>
       <div className="flex-shrink-0">
         <BoardFilterBar
+          projectId={projectId}
           filters={filters}
           labels={labels}
+          tasks={tasks}
+          lists={lists}
           onFiltersChange={setFilters}
+          onTaskClick={handleTaskClick}
+          showCardSettings={view === 'board'}
         />
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
-        <BoardView projectId={projectId} onTaskClick={handleTaskClick} filters={filters} />
+        {!viewSettingsHydrated ? <p role="status" className="p-4 text-sm text-muted-foreground">表示設定を読み込み中…</p> : view === 'board' ? <BoardView projectId={projectId} onTaskClick={handleTaskClick} filters={filters} /> : error ? <p role="alert" className="p-4 text-sm text-destructive">タスクを取得できませんでした。接続・権限を確認し、ページを再読み込みしてください。</p> : isLoading ? <p role="status" className="p-4 text-sm text-muted-foreground">タスクを読み込み中…</p> : <AlternateTaskViews key={`${projectId}:${view}`} view={view} projectId={projectId} viewerId={user?.id ?? ''} projectMemberIds={project?.memberIds ?? []} tasks={visibleTasks} lists={lists} onTaskClick={handleTaskClick} />}
       </div>
       <TaskDetailModal
+        highlightCommentId={searchParams.get('comment')}
         task={selectedTask}
         projectId={projectId}
         lists={lists}

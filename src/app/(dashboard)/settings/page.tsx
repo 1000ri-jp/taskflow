@@ -16,6 +16,21 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">アプリケーションの設定を管理します</p>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>ブラウザ保存データ</CardTitle>
+          <CardDescription>このブラウザだけに保存した表示設定や下書きを、一覧・JSONに書き出します。</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/settings/browser-backup">
+            <Button variant="outline" className="w-full justify-between">
+              保存内容を確認・書き出し
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
       {/* AI Settings */}
       <Card>
         <CardHeader>

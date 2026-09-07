@@ -7,6 +7,7 @@ import { subscribeToProjectTasks } from '@/lib/firebase/firestore';
 import type { Task, Project } from '@/types';
 
 export interface MyTask extends Task {
+  parentTitle?: string;
   projectName: string;
   projectColor: string;
   projectIcon: string;
@@ -15,49 +16,51 @@ export interface MyTask extends Task {
 
 export function useMyTasks() {
   const { user } = useAuthStore();
-  const { projects, isLoading: projectsLoading } = useProjects();
-  const [tasksByProject, setTasksByProject] = useState<Map<string, Task[]>>(new Map());
-  const [isLoading, setIsLoading] = useState(true);
+  const userId = user?.id;
+  const { projects, isLoading: projectsLoading, error: projectsError } = useProjects();
+  const scopeKey = JSON.stringify([userId, projects.map((project) => project.id).sort()]);
+  const [snapshot, setSnapshot] = useState<{
+    scopeKey: string;
+    tasks: Map<string, Task[]>;
+    settled: Set<string>;
+    errors: Map<string, Error>;
+  }>({ scopeKey: '', tasks: new Map(), settled: new Set(), errors: new Map() });
+  const tasksByProject = useMemo(() => snapshot.scopeKey === scopeKey ? snapshot.tasks : new Map<string, Task[]>(), [snapshot, scopeKey]);
 
   // Subscribe to tasks for each project
   useEffect(() => {
-    if (projectsLoading || !user?.id) {
+    if (projectsLoading || projectsError || !userId) {
       return;
     }
-
-    if (projects.length === 0) {
-      setTasksByProject(new Map());
-      setIsLoading(false);
-      return;
-    }
-
+    let active = true;
     const unsubscribes: (() => void)[] = [];
-    let loadedCount = 0;
-
-    projects.forEach((project) => {
-      const unsubscribe = subscribeToProjectTasks(project.id, (tasks) => {
-        setTasksByProject((prev) => {
-          const newMap = new Map(prev);
-          newMap.set(project.id, tasks);
-          return newMap;
-        });
-
-        loadedCount++;
-        if (loadedCount >= projects.length) {
-          setIsLoading(false);
-        }
+    const update = (projectId: string, tasks: Task[], error?: Error) => {
+      if (!active) return;
+      setSnapshot((previous) => {
+        const current = previous.scopeKey === scopeKey ? previous : { tasks: new Map(), settled: new Set<string>(), errors: new Map<string, Error>() };
+        const nextTasks = new Map(current.tasks).set(projectId, tasks);
+        const errors = new Map(current.errors);
+        if (error) errors.set(projectId, error);
+        else errors.delete(projectId);
+        return { scopeKey, tasks: nextTasks, settled: new Set(current.settled).add(projectId), errors };
       });
+    };
+    const [, projectIds] = JSON.parse(scopeKey) as [string, string[]];
+    projectIds.forEach((projectId) => {
+      const unsubscribe = subscribeToProjectTasks(projectId,
+        (tasks) => update(projectId, tasks),
+        (error) => update(projectId, [], error));
       unsubscribes.push(unsubscribe);
     });
 
     return () => {
+      active = false;
       unsubscribes.forEach((unsub) => unsub());
     };
-  }, [projects, projectsLoading, user?.id]);
+  }, [scopeKey, projectsLoading, projectsError, userId]);
 
-  // Filter and sort tasks
-  const myTasks = useMemo(() => {
-    if (!user?.id) return [];
+  const allProjectTasks = useMemo(() => {
+    if (!userId) return [];
 
     const projectMap = new Map<string, Project>();
     projects.forEach((p) => projectMap.set(p.id, p));
@@ -69,21 +72,30 @@ export function useMyTasks() {
       if (!project) return;
 
       tasks.forEach((task) => {
-        // Filter: assigned to me AND not completed
-        if (task.assigneeIds.includes(user.id) && !task.isCompleted) {
-          allTasks.push({
-            ...task,
-            projectName: project.name,
-            projectColor: project.color,
-            projectIcon: project.icon,
-            projectIconUrl: project.iconUrl,
-          });
-        }
+        allTasks.push({
+          ...task,
+          parentTitle: tasks.find(parent => parent.id === task.parentTaskId)?.title,
+          // The subscribed collection is authoritative, including legacy or moved tasks.
+          projectId,
+          projectName: project.name,
+          projectColor: project.color,
+          projectIcon: project.icon,
+          projectIconUrl: project.iconUrl,
+        });
       });
     });
 
+    return allTasks;
+  }, [tasksByProject, projects, userId]);
+
+  // Filter and sort tasks assigned to the current user.
+  const myTasks = useMemo(() => {
+    if (!userId) return [];
+
     // Sort by due date (overdue first, then upcoming, then no date)
-    return allTasks.sort((a, b) => {
+    return allProjectTasks
+      .filter((task) => task.assigneeIds.includes(userId) && !task.isCompleted && !task.isArchived && !task.isAbandoned)
+      .sort((a, b) => {
       // Both have no due date
       if (!a.dueDate && !b.dueDate) return 0;
       // a has no due date, put at end
@@ -93,11 +105,13 @@ export function useMyTasks() {
       // Sort by date
       return a.dueDate.getTime() - b.dueDate.getTime();
     });
-  }, [tasksByProject, projects, user?.id]);
+  }, [allProjectTasks, userId]);
 
   return {
     tasks: myTasks,
-    isLoading: isLoading || projectsLoading,
+    allProjectTasks,
+    isLoading: Boolean(userId) && !projectsError && (projectsLoading || (projects.length > 0 && (snapshot.scopeKey !== scopeKey || snapshot.settled.size < projects.length))),
+    error: projectsError ?? (snapshot.scopeKey === scopeKey ? snapshot.errors.values().next().value ?? null : null),
     taskCount: myTasks.length,
   };
 }

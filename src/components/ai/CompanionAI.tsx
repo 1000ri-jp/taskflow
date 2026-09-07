@@ -28,6 +28,7 @@ import { useCompanionState } from '@/hooks/useCompanionState';
 import { useUnifiedConversations } from '@/hooks/useUnifiedConversations';
 import { getAuthHeaders } from '@/lib/firebase/authToken';
 import { filterProjectsForAI, isAIProjectAllowed } from '@/lib/ai/projectAccess';
+import { fitPanelBounds, resizePanelBounds, type PanelBounds, type PanelResizeCorner } from '@/lib/ai/panelResize';
 import { ChatInput } from './ChatInput';
 import { ChatMessage } from './ChatMessage';
 import { ToolConfirmDialog } from './ToolConfirmDialog';
@@ -92,6 +93,23 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
       return null;
     }
   });
+  const [panelSize, setPanelSize] = useState<{ width: number; height: number }>(() => {
+    if (typeof window === 'undefined') return { width: 420, height: 600 };
+    try {
+      const stored = localStorage.getItem('companionAIPanelSize');
+      if (!stored) return { width: 420, height: 600 };
+      const parsed = JSON.parse(stored) as { width?: unknown; height?: unknown };
+      if (typeof parsed.width === 'number' && typeof parsed.height === 'number') {
+        return {
+          width: Math.min(Math.max(320, parsed.width), Math.max(320, window.innerWidth - 36)),
+          height: Math.min(Math.max(360, parsed.height), Math.max(360, window.innerHeight - 108)),
+        };
+      }
+    } catch {
+      // Ignore malformed or unavailable local storage.
+    }
+    return { width: 420, height: 600 };
+  });
 
   const panelRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -103,6 +121,13 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
     startPosY: number;
   } | null>(null);
   const latestPositionRef = useRef<{ x: number; y: number } | null>(panelPosition);
+  const latestSizeRef = useRef(panelSize);
+  const resizeStateRef = useRef<{
+    startClientX: number;
+    startClientY: number;
+    start: PanelBounds;
+    corner: PanelResizeCorner;
+  } | null>(null);
 
   const handlePanelDragStart = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('button, input, textarea, a')) return;
@@ -116,6 +141,26 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
     };
     document.body.style.userSelect = 'none';
     e.preventDefault();
+  }, []);
+
+  const handlePanelResizeStart = useCallback((e: React.MouseEvent<HTMLDivElement>, corner: PanelResizeCorner) => {
+    if (e.button !== 0 || !panelRef.current) return;
+    const rect = panelRef.current.getBoundingClientRect();
+    resizeStateRef.current = {
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      start: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
+      corner,
+    };
+    // Pin the current rectangle, including panels initially anchored bottom/right.
+    const position = { x: rect.left, y: rect.top };
+    latestPositionRef.current = position;
+    latestSizeRef.current = { width: rect.width, height: rect.height };
+    setPanelPosition(position);
+    dragStateRef.current = null;
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+    e.stopPropagation();
   }, []);
 
   useEffect(() => {
@@ -166,24 +211,72 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
   }, []);
 
   useEffect(() => {
-    const onResize = () => {
-      setPanelPosition((prev) => {
-        if (!prev) return prev;
-        const w = panelRef.current?.offsetWidth ?? 420;
-        const h = panelRef.current?.offsetHeight ?? 600;
-        const maxX = Math.max(0, window.innerWidth - w);
-        const maxY = Math.max(0, window.innerHeight - h);
-        const x = Math.min(Math.max(0, prev.x), maxX);
-        const y = Math.min(Math.max(0, prev.y), maxY);
-        if (x === prev.x && y === prev.y) return prev;
-        const next = { x, y };
-        latestPositionRef.current = next;
-        return next;
-      });
+    const onMouseMove = (event: MouseEvent) => {
+      if (!resizeStateRef.current) return;
+      const { startClientX, startClientY, start, corner } = resizeStateRef.current;
+      const next = resizePanelBounds(
+        start,
+        corner,
+        { x: event.clientX - startClientX, y: event.clientY - startClientY },
+        { width: window.innerWidth, height: window.innerHeight }
+      );
+      const position = { x: next.x, y: next.y };
+      const size = { width: next.width, height: next.height };
+      latestPositionRef.current = position;
+      latestSizeRef.current = size;
+      setPanelPosition(position);
+      setPanelSize(size);
     };
+
+    const finishResize = () => {
+      if (!resizeStateRef.current) return;
+      resizeStateRef.current = null;
+      document.body.style.userSelect = '';
+      try {
+        localStorage.setItem('companionAIPanelSize', JSON.stringify(latestSizeRef.current));
+        localStorage.setItem('companionAIPanelPosition', JSON.stringify(latestPositionRef.current));
+      } catch {
+        // localStorage may be unavailable (private mode, quota); ignore
+      }
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', finishResize);
+    window.addEventListener('blur', finishResize);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', finishResize);
+      window.removeEventListener('blur', finishResize);
+      if (resizeStateRef.current) {
+        resizeStateRef.current = null;
+        document.body.style.userSelect = '';
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => {
+      const position = latestPositionRef.current;
+      const next = fitPanelBounds(
+        { x: position?.x ?? 0, y: position?.y ?? 0, ...latestSizeRef.current },
+        {
+          width: window.innerWidth - (position ? 0 : 24),
+          height: window.innerHeight - (position ? 0 : 96),
+        }
+      );
+      const size = { width: next.width, height: next.height };
+      latestSizeRef.current = size;
+      setPanelSize(size);
+      if (position) {
+        const nextPosition = { x: next.x, y: next.y };
+        latestPositionRef.current = nextPosition;
+        setPanelPosition(nextPosition);
+      }
+    };
+    if (isOpen) onResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, []);
+  }, [isOpen]);
 
   useEffect(() => {
     projectAccessRequestedRef.current = false;
@@ -603,7 +696,7 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
         data-testid="companion-ai-toggle"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all hover:scale-105',
+          'fixed bottom-24 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all hover:scale-105',
           isOpen
             ? 'bg-muted text-muted-foreground'
             : projectId
@@ -632,19 +725,22 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
       {isOpen && (
         <div
           ref={panelRef}
+          data-testid="companion-ai-panel"
           className={cn(
-            'fixed z-50 flex h-[600px] w-[420px] flex-col overflow-hidden rounded-lg border bg-background shadow-xl',
+            'fixed z-50 flex flex-col overflow-hidden rounded-lg border bg-background shadow-xl',
             !panelPosition && 'bottom-24 right-6'
           )}
-          style={
-            panelPosition
+          style={{
+            width: panelSize.width,
+            height: panelSize.height,
+            ...(panelPosition
               ? { left: panelPosition.x, top: panelPosition.y }
-              : undefined
-          }
+              : {}),
+          }}
         >
           {/* Header (drag handle) */}
           <div
-            className="flex cursor-move select-none items-center justify-between border-b px-4 py-3"
+            className="flex cursor-move select-none items-center justify-between border-b py-3 pl-8 pr-4"
             onMouseDown={handlePanelDragStart}
           >
             <div className="flex items-center gap-2 min-w-0">
@@ -897,6 +993,26 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
               </div>
             </div>
           )}
+          <div
+            role="separator"
+            aria-label="AIパネルのサイズを左上から変更"
+            aria-orientation="horizontal"
+            title="左上をドラッグしてサイズ変更"
+            className="absolute left-0 top-0 z-10 flex h-6 w-6 cursor-nwse-resize select-none items-start justify-start p-1 text-xs text-muted-foreground hover:text-foreground"
+            onMouseDown={(event) => handlePanelResizeStart(event, 'nw')}
+          >
+            <span aria-hidden="true">↖</span>
+          </div>
+          <div
+            role="separator"
+            aria-label="AIパネルのサイズを変更"
+            aria-orientation="horizontal"
+            title="右下をドラッグしてサイズ変更"
+            className="absolute bottom-0 right-0 z-10 flex h-6 w-6 cursor-se-resize select-none items-end justify-end p-1 text-xs text-muted-foreground hover:text-foreground"
+            onMouseDown={(event) => handlePanelResizeStart(event, 'se')}
+          >
+            <span aria-hidden="true">↘</span>
+          </div>
         </div>
       )}
 

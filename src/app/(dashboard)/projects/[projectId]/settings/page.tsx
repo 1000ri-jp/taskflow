@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useProject } from '@/hooks/useProjects';
+import { AutoArchivePreviewSettings } from '@/components/board/AutoArchivePreviewSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -864,6 +865,8 @@ export default function ProjectSettingsPage() {
           </CardContent>
         </Card>
 
+        <AutoArchivePreviewSettings key={projectId} projectId={projectId} />
+
         {/* Archived Tasks */}
         <Card>
           <CardHeader>
@@ -872,7 +875,7 @@ export default function ProjectSettingsPage() {
               アーカイブ済みタスク
             </CardTitle>
             <CardDescription>
-              削除されたタスクはここに保存されます（{archivedTasks.length}件）
+              アーカイブしたタスクをここから復元できます（{archivedTasks.length}件）
             </CardDescription>
           </CardHeader>
           <CardContent>

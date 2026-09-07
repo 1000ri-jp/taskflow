@@ -7,6 +7,8 @@ import type { Project } from '@/types';
 vi.mock('next/navigation', () => ({
   useParams: () => ({ projectId: 'project-1' }),
   usePathname: () => '/projects/project-1/board',
+  useRouter: () => ({ replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock('next/link', () => ({
@@ -30,6 +32,10 @@ vi.mock('next/image', () => ({
 
 vi.mock('@/hooks/useProjects', () => ({
   useProject: vi.fn(),
+}));
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({ user: { id: 'user-1' } }),
 }));
 
 const mockedUseProject = vi.mocked(useProject);
@@ -63,9 +69,9 @@ describe('ProjectLayout', () => {
       </ProjectLayout>
     );
 
-    expect(screen.getByTestId('project-header-banner')).toHaveClass('aspect-[5/1]');
-    expect(screen.getByTestId('project-header-banner')).toHaveClass('max-h-[240px]');
-    expect(screen.getByTestId('project-header-banner')).toHaveClass('sm:max-h-[260px]');
+    expect(screen.getByTestId('project-header-banner')).toHaveClass('aspect-[10/1]');
+    expect(screen.getByTestId('project-header-banner')).toHaveClass('max-h-[120px]');
+    expect(screen.getByTestId('project-header-banner')).toHaveClass('sm:max-h-[130px]');
     expect(screen.getByAltText('TaskFlow header')).toBeInTheDocument();
   });
 
@@ -84,9 +90,25 @@ describe('ProjectLayout', () => {
       </ProjectLayout>
     );
 
-    expect(screen.getByTestId('project-header-banner')).toHaveClass('aspect-[5/1]');
-    expect(screen.getByTestId('project-header-banner')).toHaveClass('max-h-[240px]');
-    expect(screen.getByTestId('project-header-banner')).toHaveClass('sm:max-h-[260px]');
+    expect(screen.getByTestId('project-header-banner')).toHaveClass('aspect-[10/1]');
+    expect(screen.getByTestId('project-header-banner')).toHaveClass('max-h-[120px]');
+    expect(screen.getByTestId('project-header-banner')).toHaveClass('sm:max-h-[130px]');
     expect(screen.queryByAltText('TaskFlow header')).not.toBeInTheDocument();
+  });
+
+  it('places the task view dropdown inside the active board tab', () => {
+    mockedUseProject.mockReturnValue({
+      project,
+      isLoading: false,
+    } as ReturnType<typeof useProject>);
+
+    render(
+      <ProjectLayout>
+        <div>content</div>
+      </ProjectLayout>
+    );
+
+    expect(screen.getByRole('link', { name: /ボード/ })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'タスクの表示切り替え' })).toHaveValue('board');
   });
 });

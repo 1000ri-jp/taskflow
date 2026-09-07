@@ -5,11 +5,17 @@ const {
   collectionMock,
   serverTimestampMock,
   getFirebaseDbMock,
+  getDocsMock,
+  orderByMock,
+  limitMock,
 } = vi.hoisted(() => ({
   addDocMock: vi.fn(),
   collectionMock: vi.fn(),
   serverTimestampMock: vi.fn(() => 'SERVER_TIMESTAMP'),
   getFirebaseDbMock: vi.fn(() => 'DB'),
+  getDocsMock: vi.fn(),
+  orderByMock: vi.fn(),
+  limitMock: vi.fn(),
 }));
 
 vi.mock('firebase/firestore', () => ({
@@ -19,24 +25,24 @@ vi.mock('firebase/firestore', () => ({
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
   getDoc: vi.fn(),
-  getDocs: vi.fn(),
+  getDocs: getDocsMock,
   setDoc: vi.fn(),
   query: vi.fn(),
   where: vi.fn(),
-  orderBy: vi.fn(),
+  orderBy: orderByMock,
   onSnapshot: vi.fn(),
   serverTimestamp: serverTimestampMock,
   writeBatch: vi.fn(),
   Timestamp: class Timestamp {},
   documentId: vi.fn(),
-  limit: vi.fn(),
+  limit: limitMock,
 }));
 
 vi.mock('./config', () => ({
   getFirebaseDb: getFirebaseDbMock,
 }));
 
-import { createComment } from './firestore';
+import { createComment, getRecentTaskComments } from './firestore';
 
 describe('createComment', () => {
   beforeEach(() => {
@@ -95,5 +101,15 @@ describe('createComment', () => {
       createdAt: 'SERVER_TIMESTAMP',
       updatedAt: 'SERVER_TIMESTAMP',
     });
+  });
+
+  it('reads the newest bounded comment preview without creating a comment', async () => {
+    getDocsMock.mockResolvedValue({ docs: [{ id: 'comment-1', data: () => ({ content: '実コメント', createdAt: { toDate: () => new Date(2026, 8, 3) } }) }] });
+    const comments = await getRecentTaskComments('project-1', 'task-1', 10);
+    expect(collectionMock).toHaveBeenCalledWith('DB', 'projects', 'project-1', 'tasks', 'task-1', 'comments');
+    expect(orderByMock).toHaveBeenCalledWith('createdAt', 'desc');
+    expect(limitMock).toHaveBeenCalledWith(10);
+    expect(comments[0]).toMatchObject({ id: 'comment-1', content: '実コメント', createdAt: new Date(2026, 8, 3) });
+    expect(addDocMock).not.toHaveBeenCalled();
   });
 });

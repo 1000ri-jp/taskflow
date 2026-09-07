@@ -32,6 +32,8 @@ import { TaskCard } from './TaskCard';
 import { cn } from '@/lib/utils';
 import type { List, Task, Label, Tag } from '@/types';
 import { LIST_COLORS } from '@/types';
+import { useBoardSortStore } from '@/stores/boardSortStore';
+import { sortBoardTasks } from '@/lib/board/sort';
 
 interface BoardListProps {
   projectId: string;
@@ -66,6 +68,10 @@ export function BoardList({
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(list.name);
+
+  // Presentation only: retain saved order within each group without mutating tasks.
+  const sortMode = useBoardSortStore(state => state.byProject[projectId] ?? 'manual');
+  const displayTasks = sortBoardTasks(tasks, sortMode);
 
   // Sortable for list reordering
   const {
@@ -288,10 +294,10 @@ export function BoardList({
             className="min-h-[40px] flex-1 space-y-2 px-3 pb-3"
           >
             <SortableContext
-              items={tasks.map((t) => t.id)}
+              items={displayTasks.map((t) => t.id)}
               strategy={verticalListSortingStrategy}
             >
-              {tasks.map((task) => (
+              {displayTasks.map((task) => (
                 <TaskCard
                   key={task.id}
                   projectId={projectId}
@@ -304,6 +310,7 @@ export function BoardList({
                   onClick={() => onTaskClick(task.id)}
                   lists={allLists}
                   onMove={(targetListId) => onTaskMove(task.id, targetListId)}
+                  disableDragging={sortMode !== 'manual'}
                 />
               ))}
             </SortableContext>

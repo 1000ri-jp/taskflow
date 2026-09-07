@@ -17,6 +17,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
+import { notificationTaskHref } from '@/lib/task/commentSubmission';
 
 export function NotificationDropdown() {
   const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead } =
@@ -83,11 +84,7 @@ export function NotificationDropdown() {
                 asChild
               >
                 <Link
-                  href={
-                    notification.taskId
-                      ? `/projects/${notification.projectId}/board`
-                      : `/projects/${notification.projectId}`
-                  }
+                  href={notificationTaskHref(notification)}
                 >
                   <div className="flex w-full items-start justify-between">
                     <div className="flex-1 overflow-hidden">

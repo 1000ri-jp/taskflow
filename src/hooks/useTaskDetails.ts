@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { reorderChecklistItem } from '@/lib/firebase/checklist-order';
 import {
   getTask,
   getTaskChecklists,
@@ -25,14 +26,17 @@ export function useTaskDetails(projectId: string | null, taskId: string | null) 
   const [comments, setComments] = useState<Comment[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const scopeVersion = useRef(0);
 
   // Fetch task details
   useEffect(() => {
+    const version = ++scopeVersion.current;
     if (!projectId || !taskId) {
       setTask(null);
       setChecklists([]);
       setComments([]);
       setAttachments([]);
+      setIsLoading(false);
       return;
     }
 
@@ -44,11 +48,12 @@ export function useTaskDetails(projectId: string | null, taskId: string | null) 
           getTaskChecklists(projectId, taskId),
           getTaskAttachments(projectId, taskId),
         ]);
+        if (version !== scopeVersion.current) return;
         setTask(taskData);
         setChecklists(checklistsData);
         setAttachments(attachmentsData);
       } finally {
-        setIsLoading(false);
+        if (version === scopeVersion.current) setIsLoading(false);
       }
     };
 
@@ -65,9 +70,19 @@ export function useTaskDetails(projectId: string | null, taskId: string | null) 
     });
 
     return () => {
+      scopeVersion.current = version + 1;
       unsubscribeComments();
       unsubscribeAttachments();
     };
+  }, [projectId, taskId]);
+
+  const moveChecklistItem = useCallback(async (checklistId: string, itemId: string, targetId: string) => {
+    if (!projectId || !taskId) throw new Error('タスクを開き直してください。');
+    const version = scopeVersion.current;
+    const items = await reorderChecklistItem(projectId, taskId, checklistId, itemId, targetId);
+    if (version === scopeVersion.current) {
+      setChecklists(previous => previous.map(checklist => checklist.id === checklistId ? { ...checklist, items } : checklist));
+    }
   }, [projectId, taskId]);
 
   // Add checklist
@@ -289,6 +304,7 @@ export function useTaskDetails(projectId: string | null, taskId: string | null) 
     addChecklistItem,
     toggleChecklistItem,
     removeChecklistItem,
+    moveChecklistItem,
     addComment,
     removeComment,
     editComment,

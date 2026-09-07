@@ -60,7 +60,9 @@ export function useBoard(projectId: string | null) {
     });
 
     const unsubscribeTasks = subscribeToProjectTasks(projectId, (tasks) => {
-      setState((prev) => ({ ...prev, tasks, isLoading: false }));
+      setState((prev) => ({ ...prev, tasks, isLoading: false, error: null }));
+    }, (error) => {
+      setState((prev) => ({ ...prev, tasks: [], isLoading: false, error }));
     });
 
     const unsubscribeLabels = subscribeToProjectLabels(projectId, (labels) => {

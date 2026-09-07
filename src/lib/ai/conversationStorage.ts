@@ -15,14 +15,17 @@ import {
 import { getFirebaseDb } from '@/lib/firebase/config';
 import { AIConversation, AIMessage, AIScope } from '@/types/ai';
 
-const db = getFirebaseDb();
+// Resolve Firebase lazily. This module is imported by the dashboard's always
+// mounted AI panel, including local mock-auth runs where Firebase credentials
+// are intentionally absent.
+const getDb = () => getFirebaseDb();
 
 // Collection paths
 const getConversationsCollection = (userId: string) =>
-  collection(db, 'users', userId, 'conversations');
+  collection(getDb(), 'users', userId, 'conversations');
 
 const getMessagesCollection = (userId: string, conversationId: string) =>
-  collection(db, 'users', userId, 'conversations', conversationId, 'messages');
+  collection(getDb(), 'users', userId, 'conversations', conversationId, 'messages');
 
 // Convert Firestore timestamp to Date
 const toDate = (timestamp: Timestamp | null | undefined): Date =>
@@ -155,7 +158,7 @@ export async function addUnifiedMessage(
   const docRef = await addDoc(messagesRef, messageData);
 
   // Update conversation's updatedAt
-  const conversationRef = doc(db, 'users', userId, 'conversations', conversationId);
+  const conversationRef = doc(getDb(), 'users', userId, 'conversations', conversationId);
   await updateDoc(conversationRef, {
     updatedAt: serverTimestamp(),
   });
@@ -208,7 +211,7 @@ export async function updateUnifiedConversationTitle(
   conversationId: string,
   title: string
 ): Promise<void> {
-  const docRef = doc(db, 'users', userId, 'conversations', conversationId);
+  const docRef = doc(getDb(), 'users', userId, 'conversations', conversationId);
   await updateDoc(docRef, {
     title,
     updatedAt: serverTimestamp(),
@@ -228,6 +231,6 @@ export async function deleteUnifiedConversation(
   const deletePromises = messagesSnapshot.docs.map((doc) => deleteDoc(doc.ref));
   await Promise.all(deletePromises);
 
-  const conversationRef = doc(db, 'users', userId, 'conversations', conversationId);
+  const conversationRef = doc(getDb(), 'users', userId, 'conversations', conversationId);
   await deleteDoc(conversationRef);
 }

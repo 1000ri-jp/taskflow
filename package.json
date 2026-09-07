@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "NEXT_PUBLIC_E2E_MOCK_AUTH=true next dev -p 3002",
     "build": "node ./scripts/run-next-build.mjs",
     "start": "next start",
     "audit": "npm audit --omit=optional --audit-level=high",

@@ -46,8 +46,8 @@ import { useAuthStore } from '@/stores/authStore';
 import type { Task, List } from '@/types';
 import { LIST_COLORS } from '@/types';
 import { cn } from '@/lib/utils';
-import type { BoardFilters } from './BoardFilterBar';
-import { startOfDay, endOfDay, endOfWeek, isBefore, isWithinInterval } from 'date-fns';
+import { taskMatchesBoardFilters, type BoardFilters } from '@/lib/board/filters';
+import { BOARD_SORT_STORAGE_KEY, useBoardSortStore } from '@/stores/boardSortStore';
 
 interface BoardViewProps {
   projectId: string;
@@ -56,6 +56,14 @@ interface BoardViewProps {
 }
 
 export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
+  const sortMode = useBoardSortStore(state => state.byProject[projectId] ?? 'manual');
+  const hydrateSort = useBoardSortStore(state => state.hydrate);
+  useEffect(() => {
+    hydrateSort();
+    const sync = (event: StorageEvent) => { if (event.key === BOARD_SORT_STORAGE_KEY || event.key === null) hydrateSort(); };
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, [hydrateSort]);
   const { firebaseUser } = useAuthStore();
   const {
     lists,
@@ -76,59 +84,7 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
   // Filter tasks based on filter criteria
   const filterTask = useCallback((task: Task): boolean => {
     if (!filters) return true;
-
-    // Keyword filter
-    if (filters.keyword) {
-      const keyword = filters.keyword.toLowerCase();
-      if (!task.title.toLowerCase().includes(keyword) &&
-          !task.description?.toLowerCase().includes(keyword)) {
-        return false;
-      }
-    }
-
-    // Completed filter
-    if (!filters.showCompleted && task.isCompleted) {
-      return false;
-    }
-
-    // Label filter
-    if (filters.labelIds.size > 0) {
-      const hasMatchingLabel = task.labelIds.some(id => filters.labelIds.has(id));
-      if (!hasMatchingLabel) return false;
-    }
-
-    // Due date filter
-    if (filters.dueFilter !== 'all') {
-      const now = new Date();
-      const today = startOfDay(now);
-      const todayEnd = endOfDay(now);
-      const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-
-      switch (filters.dueFilter) {
-        case 'today':
-          if (!task.dueDate || !isWithinInterval(task.dueDate, { start: today, end: todayEnd })) {
-            return false;
-          }
-          break;
-        case 'week':
-          if (!task.dueDate || !isWithinInterval(task.dueDate, { start: today, end: weekEnd })) {
-            return false;
-          }
-          break;
-        case 'overdue':
-          if (!task.dueDate || !isBefore(task.dueDate, today) || task.isCompleted) {
-            return false;
-          }
-          break;
-        case 'none':
-          if (task.dueDate) {
-            return false;
-          }
-          break;
-      }
-    }
-
-    return true;
+    return taskMatchesBoardFilters(task, filters);
   }, [filters]);
 
   // Get filtered tasks for a specific list
@@ -216,6 +172,7 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
         setActiveList(activeData.list);
         setActiveTask(null);
       } else {
+        if (sortMode !== 'manual') return;
         const task = tasks.find((t) => t.id === active.id);
         if (task) {
           setActiveTask(task);
@@ -223,7 +180,7 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
         }
       }
     },
-    [tasks]
+    [tasks, sortMode]
   );
 
   const handleDragOver = useCallback(
@@ -234,6 +191,7 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
       // Skip if dragging a list
       const activeData = active.data.current;
       if (activeData?.type === 'list') return;
+      if (sortMode !== 'manual') return;
 
       const activeId = active.id as string;
       const overId = over.id as string;
@@ -276,7 +234,7 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
         moveTask(activeId, overTask.listId, overIndex);
       }
     },
-    [tasks, displayLists, getTasksByListId, moveTask]
+    [tasks, displayLists, getTasksByListId, moveTask, sortMode]
   );
 
   const handleDragEnd = useCallback(
@@ -316,6 +274,7 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
       }
 
       // Handle task reordering
+      if (sortMode !== 'manual') return;
       const activeTaskItem = tasks.find((t) => t.id === activeId);
       const overTask = tasks.find((t) => t.id === overId);
 
@@ -352,7 +311,7 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
         }
       }
     },
-    [tasks, displayLists, getTasksByListId, reorderTasks, reorderLists, moveTask]
+    [tasks, displayLists, getTasksByListId, reorderTasks, reorderLists, moveTask, sortMode]
   );
 
   const handleAddList = () => {
