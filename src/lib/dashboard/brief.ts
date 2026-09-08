@@ -15,6 +15,7 @@ export type DashboardBriefTone = 'red' | 'blue' | 'green' | 'amber';
 
 export interface DashboardTask extends Task {
   projectName: string;
+  projectColor?: string;
   projectIcon?: string;
   projectIconUrl?: string;
 }
@@ -29,6 +30,9 @@ export interface DashboardBriefItem {
   action?: string;
   href?: string;
   urgent?: boolean;
+  projectColor?: string;
+  projectIcon?: string;
+  projectIconUrl?: string;
 }
 
 export interface DashboardBriefRow {
@@ -98,6 +102,10 @@ function taskInfoBadges(task: DashboardTask): string[] {
     task.assigneeIds.length === 0 ? '担当未定' : null,
     !task.dueDate ? '期限未設定' : null,
   ].filter((badge): badge is string => badge !== null);
+}
+
+function projectDisplay(task: DashboardTask | undefined) {
+  return { projectColor: task?.projectColor, projectIcon: task?.projectIcon, projectIconUrl: task?.projectIconUrl };
 }
 
 function staleMeta(task: DashboardTask, now: Date): string {
@@ -196,6 +204,7 @@ export function buildTaskFlowBrief(
       sourceCommentId: task.sourceCommentId,
       title: task.title,
       meta: task.projectName,
+      ...projectDisplay(task),
       action: '確認する',
       href: taskHref(task),
     })),
@@ -220,6 +229,7 @@ export function buildTaskFlowBrief(
     .filter((notification) => notification.type !== 'review_requested')
     .map((notification) => ({
     source: 'TF' as const,
+    ...projectDisplay(notification.taskId ? notificationByTaskId.get(notification.taskId) : undefined),
     title: notification.taskName || notification.title,
     meta: `${notification.senderName || notification.projectName || 'TaskFlow'}・${relativeAge(notification.createdAt, now)}`,
     action: notificationHref(notification) ? '返信を確認' : undefined,
@@ -229,6 +239,7 @@ export function buildTaskFlowBrief(
 
   const todayItems: DashboardBriefItem[] = dueTasks.map((task) => ({
     source: 'TF',
+    ...projectDisplay(task),
     title: task.title,
     meta: dueMeta(task, now),
     badges: taskInfoBadges(task),
@@ -239,6 +250,7 @@ export function buildTaskFlowBrief(
 
   const staleItems: DashboardBriefItem[] = staleTasks.map((task) => ({
     source: 'TF',
+    ...projectDisplay(task),
     projectId: task.projectId,
     title: task.title,
     meta: staleMeta(task, now),
@@ -249,6 +261,7 @@ export function buildTaskFlowBrief(
 
   const organizeItems: DashboardBriefItem[] = organizeTasks.map((task) => ({
     source: 'TF',
+    ...projectDisplay(task),
     projectId: task.projectId,
     title: task.title,
     meta: `${task.projectName}・${activityAgeLabel(task, now)}`,

@@ -19,7 +19,7 @@ const projectState = vi.hoisted(() => ({
 
 const commentState = vi.hoisted(() => ({
   items: [
-    { key: 'real-comment', taskId: 'task-live', projectId: 'project-a', comment: { id: 'real-comment', content: '実際の確認コメント', createdAt: new Date(2026, 8, 3, 9), attachments: [] }, authorName: '確認担当者', listName: '展示会の準備', task: { id: 'task-live', projectId: 'project-a', projectName: '実プロジェクト', projectIcon: '🧭', title: '実タスク' } },
+    { key: 'real-comment', taskId: 'task-live', projectId: 'project-a', comment: { id: 'real-comment', content: '実際の確認コメント', createdAt: new Date(2026, 8, 3, 9), attachments: [] }, authorName: '確認担当者', listName: '展示会の準備', task: { id: 'task-live', projectId: 'project-a', projectName: '実プロジェクト', projectColor: '#123456', projectIcon: '🧭', title: '実タスク' } },
     { key: 'review-comment', taskId: 'task-source', projectId: 'project-a', comment: { id: 'review-comment', content: '確認依頼の元コメント', createdAt: new Date(2026, 8, 3, 8), attachments: [] }, authorName: '依頼者', listName: '展示会の準備', task: { id: 'task-source', projectId: 'project-a', projectName: '実プロジェクト', title: '元タスク' } },
   ],
   isLoading: false, hasError: false, metadataIncomplete: false, updatedAt: new Date(2026, 8, 3, 10), refresh: vi.fn(),
@@ -454,6 +454,7 @@ describe('KozueDashboard integration', () => {
     expect(within(inbox).queryByText(/「実タスク」/)).not.toBeInTheDocument();
     const message = within(inbox).getByRole('link', { name: /実際の確認コメント/ });
     expect(within(message.parentElement!).getByText('🧭')).toBeInTheDocument();
+    expect(within(message.parentElement!).getByText('🧭')).toHaveStyle({ backgroundColor: '#123456' });
     expect(message).toHaveAttribute('href', '/projects/project-a/board?task=task-live&comment=real-comment');
     expect(message).not.toHaveClass('truncate');
     expect(within(message).getByText('実際の確認コメント')).toHaveClass('min-w-0', 'truncate');

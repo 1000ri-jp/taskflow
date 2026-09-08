@@ -43,7 +43,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const PROJECT_ICONS = ['📁', '🚀', '💼', '🎯', '📊', '🔧', '💡', '🎨', '📱', '🌐'];
+const PROJECT_ICONS = ['📁', '🦙', '🚀', '💼', '🎯', '📊', '🔧', '💡', '🎨', '📱', '🌐'];
 
 export default function ProjectSettingsPage() {
   const params = useParams();
@@ -490,9 +490,8 @@ export default function ProjectSettingsPage() {
                 />
               </div>
 
-              {/* Emoji Icons (only show when no custom image) */}
-              {!iconUrl && (
-                <>
+              {/* Emoji Icons remain selectable even when an image icon exists. */}
+              <>
                   <div className="text-sm text-muted-foreground">または絵文字を選択</div>
                   <div className="flex flex-wrap gap-2">
                     {PROJECT_ICONS.map((emoji) => (
@@ -511,13 +510,11 @@ export default function ProjectSettingsPage() {
                       </button>
                     ))}
                   </div>
-                </>
-              )}
+              </>
             </div>
 
-            {/* Color Selection (only show when no custom iconUrl) */}
-            {!iconUrl && (
-              <div className="space-y-2">
+            {/* Color Selection */}
+            <div className="space-y-2">
                 <Label>カラー</Label>
                 <div className="flex flex-wrap gap-2">
                   {LIST_COLORS.map((c) => (
@@ -535,8 +532,7 @@ export default function ProjectSettingsPage() {
                     />
                   ))}
                 </div>
-              </div>
-            )}
+            </div>
 
             {/* Name */}
             <div className="space-y-2">

@@ -20,6 +20,7 @@ import { checklistDestination, checklistItems, MEETING_PARENT_HINTS } from '@/li
 import { MEETING_CHECKLIST_STORAGE_KEY, useMeetingChecklistStore } from '@/stores/meetingChecklistStore';
 import { MeetingChecklistPlacement } from './MeetingChecklistPlacement';
 import { MeetingChecklistItems } from './MeetingChecklistItems';
+import { ProjectIconBadge } from './ProjectIconBadge';
 
 const compact = 'h-5 min-w-10 rounded px-1.5 text-[10px] font-bold leading-none';
 const statusLabels: Record<ReviewStatus, string> = { pending: '未確認', adopted: '採用済（未反映）', held: '保留中', dismissed: '不要' };
@@ -148,11 +149,12 @@ export function MeetingProposals({ tasks, tasksLoading, tasksError, isSample = f
             const expanded = expandedBundles.includes(bundle.id);
             const checked = bundle.children.filter(p => reviews[p.id] && reviews[p.id].status !== 'pending').length;
             const candidates = [...new Set(bundle.children.flatMap(p => match(p).candidates.map(t => safeMeetingText(t.title))))];
+            const candidateProjects = !destination.task ? [...new Map((parent?.projects ?? []).flatMap(name => projects.filter(project => !project.isArchived && project.name.normalize('NFKC').trim().toLocaleLowerCase() === name.normalize('NFKC').trim().toLocaleLowerCase())).map(project => [project.id, project])).values()] : [];
             return <section key={bundle.id} aria-label={bundle.title} className="border-b last:border-b-0">
               <div className="grid gap-3 px-4 py-3 lg:grid-cols-[220px_minmax(0,1fr)] lg:px-5">
                 <div className="min-w-0 space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">{safeMeetingText(destinationTitle)}</p>
-                  <p className="break-words text-[11px] text-muted-foreground">{destination.task ? 'プロジェクト：' + safeMeetingText(destination.task.projectName) : MEETING_PARENT_HINTS[bundle.id] ? 'プロジェクト：未照合' : 'プロジェクト候補：' + (parent?.projects.map(safeMeetingText).join(' / ') ?? '未指定')}</p>
+                  <p className="flex items-center gap-1.5 break-words text-[11px] text-muted-foreground">{destination.task && (destination.task.projectIcon || destination.task.projectIconUrl) && <ProjectIconBadge icon={destination.task.projectIcon} iconUrl={destination.task.projectIconUrl} color={destination.task.projectColor} />}{candidateProjects.map(project => <ProjectIconBadge key={project.id} icon={project.icon} iconUrl={project.iconUrl} color={project.color} />)}{destination.task ? 'プロジェクト：' + safeMeetingText(destination.task.projectName) : MEETING_PARENT_HINTS[bundle.id] ? 'プロジェクト：未照合' : 'プロジェクト候補：' + (parent?.projects.map(safeMeetingText).join(' / ') ?? '未指定')}</p>
                   <p className="text-[11px] text-muted-foreground">{destination.state === 'selected' ? '追加先を指定済み（未反映）' : destination.state === 'candidate' ? '追加先の大タスク候補' : destination.state === 'loading' ? '大タスクを照合中' : destination.state === 'ambiguous' ? '同名の大タスクあり・要選択' : destination.state === 'missing' ? '追加先が見つかりません・要選択' : '追加先の大タスクは未指定'}</p>
                   <MeetingChecklistPlacement bundleId={bundle.id} title={bundle.title} tasks={tasks} projects={projects} ready={ready}/>
                 </div>

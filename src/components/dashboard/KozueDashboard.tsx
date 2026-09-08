@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import {
@@ -54,6 +53,7 @@ import { UPCOMING_RANGES } from '@/lib/dashboard/upcoming-range';
 import { useUpcomingRangeStore } from '@/stores/upcomingRangeStore';
 import { MeetingProposals } from './MeetingProposals';
 import { sourceCommentHref } from '@/lib/task/commentSubmission';
+import { ProjectIconBadge, PROJECT_BADGE_CLASS_NAME } from './ProjectIconBadge';
 
 const sourceStyles: Record<DashboardBriefSource, string> = {
   MAIL: 'bg-rose-50 text-rose-700',
@@ -63,7 +63,7 @@ const sourceStyles: Record<DashboardBriefSource, string> = {
   CK: 'bg-yellow-200 text-yellow-900',
 };
 
-const compactBadgeClassName = 'h-5 min-w-10 rounded px-1.5 text-[10px] font-bold leading-none';
+const compactBadgeClassName = PROJECT_BADGE_CLASS_NAME;
 
 const briefRows: DashboardBriefRow[] = [
   {
@@ -203,7 +203,7 @@ function DashboardRow({ label, icon, tone, children, labelActions }: {
   );
 }
 
-function DashboardItem({ source, title, meta, badges, urgent, actions, singleLine = false, preserveMeta = false, messageHref, unavailableReason, projectIcon, projectIconUrl }: {
+function DashboardItem({ source, title, meta, badges, urgent, actions, singleLine = false, preserveMeta = false, messageHref, unavailableReason, projectIcon, projectIconUrl, projectColor }: {
   source: DashboardBriefSource;
   title: string;
   meta?: string;
@@ -216,6 +216,7 @@ function DashboardItem({ source, title, meta, badges, urgent, actions, singleLin
   unavailableReason?: string;
   projectIcon?: string;
   projectIconUrl?: string;
+  projectColor?: string;
 }) {
   const separatedMeta = singleLine && preserveMeta && Boolean(meta);
   const content = <>
@@ -227,7 +228,7 @@ function DashboardItem({ source, title, meta, badges, urgent, actions, singleLin
   const tooltip = unavailableReason ?? (singleLine ? [title, meta].filter(Boolean).join('・') : undefined);
   return (
     <div className={cn('grid gap-2 text-sm', singleLine ? 'grid-cols-[auto_minmax(0,1fr)] items-center' : 'sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center')}>
-      <SourceBadge source={source} projectIcon={projectIcon} projectIconUrl={projectIconUrl} />
+      <SourceBadge source={source} projectIcon={projectIcon} projectIconUrl={projectIconUrl} projectColor={projectColor} />
       {messageHref
         ? <Link href={messageHref} title={tooltip} className={cn(messageClassName, 'rounded-sm hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600')}>{content}</Link>
         : <div className={messageClassName} title={tooltip} aria-disabled={unavailableReason ? true : undefined}>{content}</div>}
@@ -236,10 +237,11 @@ function DashboardItem({ source, title, meta, badges, urgent, actions, singleLin
   );
 }
 
-function SourceBadge({ source, projectIcon, projectIconUrl }: { source: DashboardBriefItem['source']; projectIcon?: string; projectIconUrl?: string }) {
+function SourceBadge({ source, projectIcon, projectIconUrl, projectColor }: { source: DashboardBriefItem['source']; projectIcon?: string; projectIconUrl?: string; projectColor?: string }) {
+  if (source === 'TF' && (projectIcon || projectIconUrl)) return <ProjectIconBadge icon={projectIcon} iconUrl={projectIconUrl} color={projectColor} />;
   return (
-    <span className={cn('inline-flex w-fit shrink-0 items-center justify-self-start justify-center overflow-hidden', compactBadgeClassName, !projectIconUrl && sourceStyles[source])}>
-      {source === 'TF' && projectIconUrl ? <Image src={projectIconUrl} alt="" width={20} height={20} unoptimized className="h-5 w-5 object-cover" /> : source === 'TF' && projectIcon ? projectIcon : source}
+    <span className={cn('inline-flex w-fit shrink-0 items-center justify-self-start justify-center', compactBadgeClassName, sourceStyles[source])}>
+      {source}
     </span>
   );
 }
@@ -619,7 +621,7 @@ function InboxSection({ settings, comments, isSample }: { settings: InboxDisplay
                 {comments.items.map(({ key, comment, authorName, listName, task }) => (
                   <DashboardItem key={key} source="TF" title={commentPreview(comment)} singleLine preserveMeta
                     meta={formatInboxCommentMeta({ comment, authorName, listName, task })}
-                    messageHref={sourceCommentHref(task.projectId, task.id, comment.id)} projectIcon={task.projectIcon} projectIconUrl={task.projectIconUrl} />
+                    messageHref={sourceCommentHref(task.projectId, task.id, comment.id)} projectIcon={task.projectIcon} projectIconUrl={task.projectIconUrl} projectColor={task.projectColor} />
                 ))}
               </>}
           </DashboardRow>

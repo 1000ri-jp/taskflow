@@ -5,7 +5,7 @@ import { MEETING_CHECKLIST_STORAGE_KEY, useMeetingChecklistStore } from '@/store
 import type { DashboardTask } from '@/lib/dashboard/brief';
 import { MeetingProposals } from './MeetingProposals';
 
-const projectState = vi.hoisted(() => ({ projects: [{ id: 'p', name: '展示会出展', memberIds: ['nao', 'ko', 'ka'] }, { id: 'r', name: 'ウリャマ' }], isLoading: false, error: null }));
+const projectState = vi.hoisted(() => ({ projects: [{ id: 'p', name: '展示会出展', memberIds: ['nao', 'ko', 'ka'], icon: '🎮', color: '#123456' }, { id: 'r', name: 'ウリャマ', icon: '🦙', color: '#654321' }], isLoading: false, error: null }));
 vi.mock('@/hooks/useProjects', () => ({ useProjects: () => projectState }));
 vi.mock('@/hooks/useMeetingMembers', () => ({ useMeetingMembers: () => ({ users: [{id:'nao', displayName:'Naofumi'}, {id:'ko', displayName:'Kozue'}, {id:'ka', displayName:'Kaori'}], isLoading:false, hasError:false, refresh:vi.fn() }) }));
 const expand = (title = '出展情報の準備・提出') => fireEvent.click(screen.getByRole('button', { name: title + 'の子タスクを表示' }));
@@ -55,10 +55,13 @@ describe('MeetingProposals review UI', () => {
     ];
     for (const [bundleTitle, parentTitle, projectLabel] of cases) {
       const bundle = within(screen.getByRole('region', { name: bundleTitle }));
-      expect(bundle.getByText(parentTitle).nextElementSibling).toBe(bundle.getByText(projectLabel));
-      expect(bundle.getByText(projectLabel)).toBeVisible();
+      const projectLine = bundle.getByText(projectLabel, { exact: false });
+      expect(bundle.getByText(parentTitle).nextElementSibling).toBe(projectLine);
+      expect(projectLine).toBeVisible();
       expect(bundle.getByText(parentTitle).parentElement?.parentElement).toHaveClass('lg:grid-cols-[220px_minmax(0,1fr)]');
     }
+    const llamaLine = within(screen.getByRole('region', { name: 'モニター募集の条件・告知準備' })).getByText('プロジェクト候補：ウリャマ', { exact: false });
+    expect(within(llamaLine).getByText('🦙')).toHaveStyle({ backgroundColor: '#654321' });
   });
   it('shows mixed existing/new counts and saves a human-confirmed correspondence', () => {
     render(<MeetingProposals {...props} tasks={[existing]} />);
