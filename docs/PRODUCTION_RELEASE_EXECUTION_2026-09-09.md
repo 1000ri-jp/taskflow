@@ -108,3 +108,25 @@ gcloudの短期アクセストークンを環境変数経由でFirebase CLIへ�
 `taskflow` バックエンドを既存Web Appに関連付け、Node.js 22で作成を試行したが、実行用 `firebase-app-hosting-compute@projectmanager-e3308.iam.gserviceaccount.com` 不存在により400で失敗。続くgcloudのアカウント作成も `iam.serviceAccounts.create` 不足で失敗。バックエンドは未作成、アプリ・ルールは未配備。
 
 現在の配備者 `kozue@1000ri.jp` のIAM検査では `serviceusage.services.enable` と `resourcemanager.projects.setIamPolicy` は許可され、`iam.serviceAccounts.create/get/actAs/setIamPolicy` は許可されていない。実行アカウント作成と利用の権限追加が次の阻害要因。配備者自身への権限追加は実施していない。
+
+## 追記：Firebase App Hosting初回公開完了
+
+サービスアカウント作成者・ユーザー権限の追加後、バックエンド作成が成功。`firebase-app-hosting-compute@projectmanager-e3308.iam.gserviceaccount.com` に標準のSDK Admin Service Agent・computeRunner等のロールが付与されたことを確認。
+
+1. FirestoreルールのみをCLIで配備。コンパイル成功後、APIから有効ルールを再取得してmainのファイルと完全一致を確認。
+   - 新ruleset：`6097dec5-80cf-4407-854b-10124919737c`
+   - SHA-256：`5b82da97a1b864b8d57fbd7ebc1df78f54599f23e5b3b3a728f708d136f93979`
+   - 変更はマイルストーンmatch追加のみ。データ移行・既存ドキュメント更新なし。
+2. 設定と依存更新をmainにローカルコミット `f0613d9`。pushなし。
+3. App Hostingのみを配備。ソース：`gs://firebaseapphosting-sources-681619367832-asia-east1/taskflow--39939-tX71ftr2KCLI-.zip`。
+   - ZIP SHA-256：`bb813155d91f57fbd69c860e867d6675b89fc2baab7b720395f04cb1b14bd9f4`
+   - 381エントリ。`.env.local`・`.env`・`.git`・node_modules等は含まず。Git管理済み `.env.local.example` は.gitignore例外により含まれる。主要設定・lockfileが配備コミットと一致すると確認。
+4. Cloud Build `84e18b4a-3f0a-4e6e-b503-c68285a68fd7` SUCCESS、App Hosting `build-2026-09-09-001` のbuild READY / rollout SUCCEEDED。16:25 JST頃完了。
+5. 公開URL：`https://taskflow--projectmanager-e3308.asia-east1.hosted.app`。Authの許可ドメインへ追加し、既存ドメインの保持を確認。変更前の一覧は `config/taskflow-release-config-20260909/auth-domains-before-apphosting.json` に保全済み。
+6. ログインページ200、未認証API2経路401、テスト認証無効、直近Cloud Run ERRORなしを確認。Codex内ブラウザのGoogleログインが通信エラーとなり、通常ブラウザでユーザー確認を依頼。
+
+公開処理は完了したが、ログイン後の実業務・DB操作スモークと復元検証は未完了。旧Vercelサイト・DNSは変更していない。
+
+### ユーザー確認
+
+公開後、ユーザーから「ログインできています」と回答を受領。通常ブラウザでのGoogleログイン成功を確認済みとして記録する。App Hostingへの公開とログイン確認は完了。共有DBへのテスト書き込み、全業務操作の回帰、隔離復元は実施していない。

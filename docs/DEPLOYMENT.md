@@ -1,6 +1,6 @@
 # Deployment
 
-The production target is Firebase App Hosting, following the user decision on 2026-09-09. Configuration is prepared; initial cloud deployment is still pending.
+The production target is Firebase App Hosting, following the user decision on 2026-09-09. Initial cloud deployment succeeded at <https://taskflow--projectmanager-e3308.asia-east1.hosted.app>. The user confirmed successful Google login in their regular browser; see the release record for the exact validation scope.
 
 Follow [Firebase App Hosting release steps](FIREBASE_APP_HOSTING_RELEASE.md) and the [DB release runbook](PRODUCTION_RELEASE_RUNBOOK_2026-09-07.md). Deploy Firestore milestone rules separately before the application. Neither a static export nor a bare `firebase deploy` is appropriate.
 
