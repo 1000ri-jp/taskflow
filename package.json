@@ -83,7 +83,7 @@
   },
   "overrides": {
     "@tootallnate/once": "3.0.1",
-    "postcss": "8.5.14",
+    "postcss": "8.5.28",
     "websocket-driver": "0.7.5"
   }
 }

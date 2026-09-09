@@ -1,38 +1,24 @@
 # Deployment
 
-This repository deploys the production app after a merge to `main`.
-The default production target in this repository is Vercel because no alternative app-hosting pipeline is versioned here today.
+The production target is Firebase App Hosting, following the user decision on 2026-09-09. Configuration is prepared; initial cloud deployment is still pending.
+
+Follow [Firebase App Hosting release steps](FIREBASE_APP_HOSTING_RELEASE.md) and the [DB release runbook](PRODUCTION_RELEASE_RUNBOOK_2026-09-07.md). Deploy Firestore milestone rules separately before the application. Neither a static export nor a bare `firebase deploy` is appropriate.
+
+The former Vercel Actions deploy workflow has been removed. No replacement automatic deployment workflow is configured yet. The current Vercel website and its independent Git integration have not been changed.
 
 ## Production Path
 
-1. A change lands through a pull request.
-2. `taskflow-ci` passes on the merged `main` commit.
-3. `taskflow-deploy` runs from that successful `main` CI result.
-4. The workflow builds and deploys the app to Vercel production.
+1. Complete audit, lint, tests, build, E2E, and the DB checks.
+2. Confirm the Firebase backend, runtime identity, public web config, and authorized login domains.
+3. Deploy the reviewed Firestore rules and verify the active ruleset.
+4. Run `firebase deploy --only apphosting:taskflow --project=projectmanager-e3308`.
+5. Verify the Cloud Build, rollout, generated URL, login, API, and existing data before directing users to the new site.
 
-The deploy workflow is intentionally post-merge. It is not a branch protection gate.
+Use `apphosting.yaml` for runtime configuration. Keep credentials and local `.env` files out of source uploads. The server uses its Google Cloud runtime identity for Firebase Admin access.
 
-## Required Repository Configuration
+## GitHub Project Configuration
 
-Configure these repository secrets and variables before relying on production deploys.
-
-Required secrets:
-
-- `VERCEL_TOKEN`: token used by GitHub Actions to deploy the app
-- `PROJECTV2_TOKEN`: token that can update the GitHub Project v2 item status
-
-Required repository variables:
-
-- `VERCEL_ORG_ID`: Vercel team or personal account id
-- `VERCEL_PROJECT_ID`: Vercel project id for this app
-- `GH_PROJECTV2_NUMBER`: the Project v2 number used for Issue tracking
-
-Optional repository variable:
-
-- `GH_PROJECTV2_OWNER`: the Project v2 owner login when the project does not live under the current repository owner
-
-If the Vercel values are missing, `taskflow-deploy` exits without deploying.
-If the Project v2 values are missing, `taskflow-project-automation` exits without changing issue status.
+Issue automation still uses the `PROJECTV2_TOKEN` secret, `GH_PROJECTV2_NUMBER` variable, and optional `GH_PROJECTV2_OWNER` variable. Missing values cause that automation to skip its updates.
 
 ## GitHub Project Automation
 
@@ -58,4 +44,4 @@ Keep these repository settings aligned with the automation:
 - enable squash merge
 - delete branch on merge
 
-The deploy workflow assumes merges reach `main` only after CI has already passed on the PR.
+Production deployment requires the reviewed revision and successful validation.
