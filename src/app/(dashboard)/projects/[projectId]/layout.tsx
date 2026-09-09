@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, LayoutGrid, GanttChart, Settings, History } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, GanttChart, Settings, History, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProject } from '@/hooks/useProjects';
 import { useProjectTaskViewNavigation } from '@/hooks/useProjectTaskViewNavigation';
@@ -15,6 +15,7 @@ const tabs = [
   { name: 'ボード', href: 'board', icon: LayoutGrid },
   { name: 'ガントチャート', href: 'gantt', icon: GanttChart },
   { name: 'アクティビティ', href: 'activity', icon: History },
+  { name: 'マイルストーン', href: 'milestones', icon: Flag },
   { name: '設定', href: 'settings', icon: Settings },
 ];
 

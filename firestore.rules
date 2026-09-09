@@ -112,6 +112,10 @@ service cloud.firestore {
         allow read, write: if canAccessProject(projectId);
       }
 
+      match /milestones/{milestoneId} {
+        allow read, write: if canAccessProject(projectId);
+      }
+
       // アクティビティログ
       match /activityLogs/{logId} {
         allow read, write: if canAccessProject(projectId);

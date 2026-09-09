@@ -42,8 +42,8 @@ vi.mock('@/hooks/useTaskFlowBrief', () => ({
       }, {
         label: '今日やる',
         tone: 'green',
-        total: 4,
-        items: Array.from({ length: 4 }, (_, index) => ({
+        total: 11,
+        items: Array.from({ length: 11 }, (_, index) => ({
           source: 'TF',
           title: `確認タスク${index + 1}`,
           meta: `表示するプロジェクトA・期限超過 ${index + 1}日`,
@@ -207,7 +207,7 @@ describe('KozueDashboard integration', () => {
     expect(screen.getByRole('link', { name: /明日の確認タスク/ })).toHaveAttribute(
       'href', '/projects/test-project/board?task=upcoming-task'
     );
-    expect(screen.getByRole('link', { name: /確認タスク1/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '確認タスク1・表示するプロジェクトA・期限超過 1日' })).toHaveAttribute(
       'href', '/projects/test-project/board?task=task-1'
     );
   });
@@ -218,14 +218,14 @@ describe('KozueDashboard integration', () => {
     const staleRow = screen.getByText('3日動いていない').parentElement!.parentElement!;
     for (const row of [dueRow, staleRow]) {
       const links = within(row).getAllByRole('link');
-      expect(links).toHaveLength(3);
+      expect(links).toHaveLength(row === dueRow ? 10 : 3);
       for (const link of links) {
         expect(link.parentElement).toHaveClass('grid-cols-[auto_minmax(0,1fr)]');
       }
       expect(within(row).queryByText('開く')).not.toBeInTheDocument();
       expect(within(row).queryByText('続ける／やめる')).not.toBeInTheDocument();
     }
-    const dueLink = within(dueRow).getByRole('link', { name: /確認タスク1/ });
+    const dueLink = within(dueRow).getByRole('link', { name: '確認タスク1・表示するプロジェクトA・期限超過 1日' });
     expect(dueLink).not.toHaveClass('truncate');
     expect(within(dueLink).getByText('確認タスク1')).toHaveClass('min-w-0', 'truncate');
     const dueMeta = within(dueLink).getByText(/表示するプロジェクトA・期限超過 1日/);
@@ -233,8 +233,8 @@ describe('KozueDashboard integration', () => {
     expect(dueMeta).not.toHaveClass('truncate');
     for (const link of within(staleRow).getAllByRole('link')) expect(link).toHaveClass('truncate');
     expect(within(staleRow).getByRole('link', { name: '停止タスク1' })).toHaveAttribute('href', '/projects/project-a/board?task=stale-0');
-    fireEvent.click(within(dueRow).getByRole('button', { name: 'すべて表示（4件）' }));
-    expect(within(within(dueRow).getByRole('link', { name: /確認タスク4/ })).getByText('確認タスク4')).toHaveClass('truncate');
+    fireEvent.click(within(dueRow).getByRole('button', { name: 'すべて表示（11件）' }));
+    expect(within(within(dueRow).getByRole('link', { name: /確認タスク11/ })).getByText('確認タスク11')).toHaveClass('truncate');
     expect(within(staleRow).getByRole('button', { name: '3日動いていないの表示設定' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Meetリンク1の設定' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Meetリンク2の設定' })).toBeInTheDocument();
@@ -356,11 +356,11 @@ describe('KozueDashboard integration', () => {
   it('expands and collapses the brief without changing task data', () => {
     render(<KozueDashboard displayName="Kozue" />);
 
-    expect(screen.queryByText('確認タスク4')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'すべて表示（4件）' }));
-    expect(screen.getByText('確認タスク4')).toBeInTheDocument();
+    expect(screen.queryByText('確認タスク11')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'すべて表示（11件）' }));
+    expect(screen.getByText('確認タスク11')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '表示を戻す' }));
-    expect(screen.queryByText('確認タスク4')).not.toBeInTheDocument();
+    expect(screen.queryByText('確認タスク11')).not.toBeInTheDocument();
   });
 
   it('stacks inbox and meeting full-width and shares the brief row layout', () => {
@@ -454,7 +454,7 @@ describe('KozueDashboard integration', () => {
     expect(within(inbox).queryByText(/「実タスク」/)).not.toBeInTheDocument();
     const message = within(inbox).getByRole('link', { name: /実際の確認コメント/ });
     expect(within(message.parentElement!).getByText('🧭')).toBeInTheDocument();
-    expect(within(message.parentElement!).getByText('🧭')).toHaveStyle({ backgroundColor: '#123456' });
+    expect(within(message.parentElement!).getByText('🧭')).toHaveClass('bg-neutral-900', 'text-white');
     expect(message).toHaveAttribute('href', '/projects/project-a/board?task=task-live&comment=real-comment');
     expect(message).not.toHaveClass('truncate');
     expect(within(message).getByText('実際の確認コメント')).toHaveClass('min-w-0', 'truncate');

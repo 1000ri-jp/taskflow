@@ -201,7 +201,7 @@ export function useBoard(projectId: string | null) {
 
   // Create task
   const addTask = useCallback(
-    async (listId: string, title: string, createdBy: string, position: 'top' | 'bottom' = 'bottom') => {
+    async (listId: string, title: string, createdBy: string, position: 'top' | 'bottom' = 'bottom', options?: { startDate?: Date | null; dueDate?: Date | null }) => {
       if (!projectId) return;
       const tasksInList = state.tasks.filter((t) => t.listId === listId);
       const orders = tasksInList.map((t) => t.order);
@@ -223,8 +223,8 @@ export function useBoard(projectId: string | null) {
         tagIds: [],
         dependsOnTaskIds: [],
         priority: null,
-        startDate: shouldSetStartDate ? new Date() : null,
-        dueDate: null,
+        startDate: options?.startDate !== undefined ? options.startDate : shouldSetStartDate ? new Date() : null,
+        dueDate: options?.dueDate !== undefined ? options.dueDate : null,
         durationDays: null,
         isDueDateFixed: false,
         isCompleted: shouldAutoComplete,

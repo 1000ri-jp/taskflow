@@ -61,7 +61,7 @@ describe('MeetingProposals review UI', () => {
       expect(bundle.getByText(parentTitle).parentElement?.parentElement).toHaveClass('lg:grid-cols-[220px_minmax(0,1fr)]');
     }
     const llamaLine = within(screen.getByRole('region', { name: 'モニター募集の条件・告知準備' })).getByText('プロジェクト候補：ウリャマ', { exact: false });
-    expect(within(llamaLine).getByText('🦙')).toHaveStyle({ backgroundColor: '#654321' });
+    expect(within(llamaLine).getByText('🦙')).toHaveClass('bg-neutral-900', 'text-white');
   });
   it('shows mixed existing/new counts and saves a human-confirmed correspondence', () => {
     render(<MeetingProposals {...props} tasks={[existing]} />);

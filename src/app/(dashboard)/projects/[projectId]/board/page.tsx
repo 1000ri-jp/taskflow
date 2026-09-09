@@ -25,7 +25,7 @@ export default function BoardPage() {
   const taskIdFromUrl = searchParams.get('task');
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
-  const { lists, tasks, labels, isLoading, error, editTask, removeTask, duplicateTask } = useBoard(projectId);
+  const { lists, tasks, labels, isLoading, error, editTask, removeTask, duplicateTask, addTask } = useBoard(projectId);
   const { project, update: updateProject } = useProject(projectId);
   const { view, canSave: viewSettingsHydrated } = useProjectTaskViewNavigation(projectId);
 
@@ -103,6 +103,11 @@ export default function BoardPage() {
     }
   }, [selectedTaskId, removeTask, updateTaskUrl]);
 
+  const handleCalendarAddTask = useCallback(async (listId: string, title: string, dueDate: Date) => {
+    if (!user?.id) return;
+    await addTask(listId, title, user.id, 'bottom', { dueDate });
+  }, [addTask, user?.id]);
+
   const handleDuplicateTask = useCallback(async () => {
     if (selectedTaskId && user) {
       const newTaskId = await duplicateTask(selectedTaskId, user.id);
@@ -165,7 +170,7 @@ export default function BoardPage() {
         />
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
-        {!viewSettingsHydrated ? <p role="status" className="p-4 text-sm text-muted-foreground">表示設定を読み込み中…</p> : view === 'board' ? <BoardView projectId={projectId} onTaskClick={handleTaskClick} filters={filters} /> : error ? <p role="alert" className="p-4 text-sm text-destructive">タスクを取得できませんでした。接続・権限を確認し、ページを再読み込みしてください。</p> : isLoading ? <p role="status" className="p-4 text-sm text-muted-foreground">タスクを読み込み中…</p> : <AlternateTaskViews key={`${projectId}:${view}`} view={view} projectId={projectId} viewerId={user?.id ?? ''} projectMemberIds={project?.memberIds ?? []} tasks={visibleTasks} lists={lists} onTaskClick={handleTaskClick} onDateChange={handleCalendarDateChange} />}
+        {!viewSettingsHydrated ? <p role="status" className="p-4 text-sm text-muted-foreground">表示設定を読み込み中…</p> : view === 'board' ? <BoardView projectId={projectId} onTaskClick={handleTaskClick} filters={filters} /> : error ? <p role="alert" className="p-4 text-sm text-destructive">タスクを取得できませんでした。接続・権限を確認し、ページを再読み込みしてください。</p> : isLoading ? <p role="status" className="p-4 text-sm text-muted-foreground">タスクを読み込み中…</p> : <AlternateTaskViews key={`${projectId}:${view}`} view={view} projectId={projectId} viewerId={user?.id ?? ''} projectMemberIds={project?.memberIds ?? []} tasks={visibleTasks} lists={lists} onTaskClick={handleTaskClick} onDateChange={handleCalendarDateChange} onAddTask={handleCalendarAddTask} />}
       </div>
       <TaskDetailModal
         highlightCommentId={searchParams.get('comment')}

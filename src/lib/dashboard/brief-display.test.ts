@@ -33,7 +33,7 @@ describe('filterStaleProjects', () => {
       ...viewTask({ id: 'task', projectId: 'real-project', title: '作業', updatedAt: new Date(2026, 7, 1) }),
       projectName: '改名できる名前',
     };
-    const row = buildTaskFlowBrief([], [task], [], new Date(2026, 8, 3)).rows.find((row) => row.label === '3日動いていない')!;
+    const row = buildTaskFlowBrief([], [task], [], new Date(2026, 8, 3), 'all').rows.find((row) => row.label === '3日動いていない')!;
     expect(row.items[0].projectId).toBe('real-project');
     expect(filterStaleProjects(row, ['real-project']).total).toBe(0);
   });

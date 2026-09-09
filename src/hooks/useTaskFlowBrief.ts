@@ -6,13 +6,14 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import { buildTaskFlowBrief, buildTaskFlowUpcoming } from '@/lib/dashboard/brief';
+import type { BriefTaskScope } from '@/stores/briefDisplayStore';
 import { MAX_UPCOMING_DAYS } from '@/lib/dashboard/upcoming-range';
 import {
   buildCalendarBriefRow,
   buildCalendarUpcomingDays,
 } from '@/lib/dashboard/calendar';
 
-export function useTaskFlowBrief() {
+export function useTaskFlowBrief(scope: BriefTaskScope = 'mine') {
   const { tasks, allProjectTasks, isLoading: tasksLoading, error: tasksError } = useMyTasks();
   const { notifications, isLoading: notificationsLoading } = useNotifications();
   const googleCalendar = useGoogleCalendar();
@@ -22,7 +23,7 @@ export function useTaskFlowBrief() {
     () => {
       if (isSample) return null;
 
-      const brief = buildTaskFlowBrief(tasks, allProjectTasks, notifications);
+      const brief = buildTaskFlowBrief(tasks, allProjectTasks, notifications, new Date(), scope);
       if (googleCalendar.status === 'connected') {
         brief.rows[1] = buildCalendarBriefRow(googleCalendar.events);
       }
@@ -35,6 +36,7 @@ export function useTaskFlowBrief() {
       isSample,
       notifications,
       tasks,
+      scope,
     ]
   );
   const upcomingDays = useMemo(

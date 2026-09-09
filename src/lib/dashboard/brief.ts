@@ -6,9 +6,10 @@ import {
   isSameDay,
   startOfDay,
 } from 'date-fns';
-import type { Notification, Task } from '@/types';
+import type { Notification, Priority, Task } from '@/types';
 import { notificationTaskHref } from '@/lib/task/commentSubmission';
 import type { UpcomingRange } from './upcoming-range';
+import type { BriefTaskScope } from '@/stores/briefDisplayStore';
 
 export type DashboardBriefSource = 'MAIL' | 'CAL' | 'ToDo' | 'TF' | 'CK';
 export type DashboardBriefTone = 'red' | 'blue' | 'green' | 'amber';
@@ -33,6 +34,7 @@ export interface DashboardBriefItem {
   projectColor?: string;
   projectIcon?: string;
   projectIconUrl?: string;
+  priority?: Priority | null;
 }
 
 export interface DashboardBriefRow {
@@ -53,6 +55,10 @@ export interface DashboardUpcomingTask {
   projectName: string;
   href: string;
   dueDate: Date;
+  projectIcon?: string;
+  projectIconUrl?: string;
+  projectColor?: string;
+  priority?: Priority | null;
 }
 
 export interface DashboardUpcomingDay {
@@ -105,7 +111,7 @@ function taskInfoBadges(task: DashboardTask): string[] {
 }
 
 function projectDisplay(task: DashboardTask | undefined) {
-  return { projectColor: task?.projectColor, projectIcon: task?.projectIcon, projectIconUrl: task?.projectIconUrl };
+  return { projectColor: task?.projectColor, projectIcon: task?.projectIcon, projectIconUrl: task?.projectIconUrl, priority: task?.priority };
 }
 
 function staleMeta(task: DashboardTask, now: Date): string {
@@ -142,6 +148,10 @@ export function buildTaskFlowUpcoming(
         projectName: task.projectName,
         href: taskHref(task),
         dueDate: task.dueDate,
+        projectIcon: task.projectIcon,
+        projectIconUrl: task.projectIconUrl,
+        projectColor: task.projectColor,
+        priority: task.priority,
       }));
 
     return {
@@ -157,19 +167,19 @@ export function buildTaskFlowBrief(
   assignedTasks: DashboardTask[],
   allProjectTasks: DashboardTask[],
   notifications: Notification[],
-  now: Date = new Date()
+  now: Date = new Date(),
+  scope: BriefTaskScope = 'mine'
 ): DashboardBriefData {
   const todayEnd = endOfDay(now);
   const taskPool = Array.from(new Map([...allProjectTasks, ...assignedTasks].map((task) => [task.id, task])).values());
-  const activeTasks = taskPool.filter((task) => !task.isCompleted && !task.isAbandoned && !task.isArchived);
-  const assignedTaskIds = new Set(assignedTasks.map((task) => task.id));
-
+  const scopedTaskIds = scope === 'all' ? null : new Set(assignedTasks.map((task) => task.id));
+  const activeTasks = taskPool.filter((task) => !task.isCompleted && !task.isAbandoned && !task.isArchived && (!scopedTaskIds || scopedTaskIds.has(task.id)));
   const importantNotifications = notifications
     .filter((notification) => !notification.isRead && REPLY_NOTIFICATION_TYPES.has(notification.type))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   const dueTasks = activeTasks
-    .filter((task) => task.taskKind !== 'review_request' && assignedTaskIds.has(task.id) && task.dueDate && task.dueDate <= todayEnd)
+    .filter((task) => task.taskKind !== 'review_request' && task.dueDate && task.dueDate <= todayEnd)
     .sort((a, b) => {
       const dueDiff = (a.dueDate?.getTime() ?? Number.MAX_SAFE_INTEGER) - (b.dueDate?.getTime() ?? Number.MAX_SAFE_INTEGER);
       if (dueDiff !== 0) return dueDiff;
@@ -180,7 +190,7 @@ export function buildTaskFlowBrief(
     .filter((task) => task.dueDate && task.dueDate <= todayEnd)
     .map((task) => task.id));
   const reviewRequestTasks = activeTasks.filter((task) => task.taskKind === 'review_request');
-  const reviewWaitingTasks = reviewRequestTasks.filter((task) => assignedTaskIds.has(task.id));
+  const reviewWaitingTasks = reviewRequestTasks;
   const reviewWaitingIds = new Set(reviewRequestTasks.flatMap((task) => [task.id, ...(task.parentTaskId ? [task.parentTaskId] : [])]));
   const staleTasks = activeTasks
     .filter((task) => {

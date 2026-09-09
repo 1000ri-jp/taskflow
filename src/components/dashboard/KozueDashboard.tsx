@@ -46,6 +46,7 @@ import { RecommendedTargets } from './RecommendedTargets';
 import { TargetGoals } from './TargetGoals';
 import { StaleProjectDisplaySettings } from './StaleProjectDisplaySettings';
 import { useStaleProjectDisplayStore } from '@/stores/staleProjectDisplayStore';
+import { useBriefDisplayStore, type BriefTaskScope } from '@/stores/briefDisplayStore';
 import { filterStaleProjects } from '@/lib/dashboard/brief-display';
 import { MeetLinkSettings } from './MeetLinkSettings';
 import { SharedCountdown } from './SharedCountdown';
@@ -203,7 +204,7 @@ function DashboardRow({ label, icon, tone, children, labelActions }: {
   );
 }
 
-function DashboardItem({ source, title, meta, badges, urgent, actions, singleLine = false, preserveMeta = false, messageHref, unavailableReason, projectIcon, projectIconUrl, projectColor }: {
+function DashboardItem({ source, title, meta, badges, urgent, actions, singleLine = false, preserveMeta = false, messageHref, unavailableReason, projectIcon, projectIconUrl, projectColor, priority }: {
   source: DashboardBriefSource;
   title: string;
   meta?: string;
@@ -217,6 +218,7 @@ function DashboardItem({ source, title, meta, badges, urgent, actions, singleLin
   projectIcon?: string;
   projectIconUrl?: string;
   projectColor?: string;
+  priority?: DashboardBriefItem['priority'];
 }) {
   const separatedMeta = singleLine && preserveMeta && Boolean(meta);
   const content = <>
@@ -228,7 +230,7 @@ function DashboardItem({ source, title, meta, badges, urgent, actions, singleLin
   const tooltip = unavailableReason ?? (singleLine ? [title, meta].filter(Boolean).join('・') : undefined);
   return (
     <div className={cn('grid gap-2 text-sm', singleLine ? 'grid-cols-[auto_minmax(0,1fr)] items-center' : 'sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center')}>
-      <SourceBadge source={source} projectIcon={projectIcon} projectIconUrl={projectIconUrl} projectColor={projectColor} />
+      <SourceBadge source={source} projectIcon={projectIcon} projectIconUrl={projectIconUrl} projectColor={projectColor} priority={priority} />
       {messageHref
         ? <Link href={messageHref} title={tooltip} className={cn(messageClassName, 'rounded-sm hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600')}>{content}</Link>
         : <div className={messageClassName} title={tooltip} aria-disabled={unavailableReason ? true : undefined}>{content}</div>}
@@ -237,8 +239,8 @@ function DashboardItem({ source, title, meta, badges, urgent, actions, singleLin
   );
 }
 
-function SourceBadge({ source, projectIcon, projectIconUrl, projectColor }: { source: DashboardBriefItem['source']; projectIcon?: string; projectIconUrl?: string; projectColor?: string }) {
-  if (source === 'TF' && (projectIcon || projectIconUrl)) return <ProjectIconBadge icon={projectIcon} iconUrl={projectIconUrl} color={projectColor} />;
+function SourceBadge({ source, projectIcon, projectIconUrl, projectColor, priority }: { source: DashboardBriefItem['source']; projectIcon?: string; projectIconUrl?: string; projectColor?: string; priority?: DashboardBriefItem['priority'] }) {
+  if ((source === 'TF' || source === 'CK') && (projectIcon || projectIconUrl)) return <ProjectIconBadge icon={projectIcon} iconUrl={projectIconUrl} color={projectColor} priority={priority} />;
   return (
     <span className={cn('inline-flex w-fit shrink-0 items-center justify-self-start justify-center', compactBadgeClassName, sourceStyles[source])}>
       {source}
@@ -297,6 +299,8 @@ function BriefSection({
   calendarStatus,
   calendarError,
   onConnectCalendar,
+  taskScope,
+  onTaskScopeChange,
 }: {
   rows: DashboardBriefRow[];
   isLoading: boolean;
@@ -304,6 +308,8 @@ function BriefSection({
   calendarStatus: GoogleCalendarConnectionStatus;
   calendarError: string | null;
   onConnectCalendar: () => Promise<void>;
+  taskScope: BriefTaskScope;
+  onTaskScopeChange: (scope: BriefTaskScope) => void;
 }) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const { hiddenProjectIds, hydrate } = useStaleProjectDisplayStore();
@@ -331,7 +337,7 @@ function BriefSection({
         icon={<Sparkles className="h-4 w-4" />}
         title="今日のブリーフ"
         badge={isSample ? '表示サンプル' : 'TaskFlow実データ'}
-        actions={<MeetLinkSettings />}
+        actions={<div className="flex flex-wrap items-center gap-2"><div className="flex items-center gap-1 rounded-md border border-blue-100 bg-blue-50/50 px-1.5 py-1 text-xs"><button type="button" aria-label="担当：自分のみ" aria-pressed={taskScope === 'mine'} className={cn('rounded px-2 py-0.5', taskScope === 'mine' ? 'bg-white font-semibold text-blue-800 shadow-sm' : 'text-blue-700 hover:bg-white/70')} onClick={() => onTaskScopeChange('mine')}>自分のみ</button><button type="button" aria-label="担当：全員" aria-pressed={taskScope === 'all'} className={cn('rounded px-2 py-0.5', taskScope === 'all' ? 'bg-white font-semibold text-blue-800 shadow-sm' : 'text-blue-700 hover:bg-white/70')} onClick={() => onTaskScopeChange('all')}>全員</button></div><MeetLinkSettings /></div>}
       />
       {isLoading && (
         <div className="flex items-center gap-2 border-b px-5 py-3 text-xs text-muted-foreground">
@@ -370,7 +376,8 @@ function BriefSection({
             ? Math.max(0, sourceRow.total - row.total)
             : 0;
           const isExpanded = expandedRows.has(row.label);
-          const visibleItems = isExpanded ? row.items : row.items.slice(0, 3);
+          const initialVisibleCount = row.label === '今日やる' ? 10 : 3;
+          const visibleItems = isExpanded ? row.items : row.items.slice(0, initialVisibleCount);
           const inlineTaskLinks = ['今日やる', '確認待ち', '3日動いていない', '要整理'].includes(row.label);
           const preservesInlineMeta = ['今日やる', '確認待ち'].includes(row.label);
 
@@ -389,7 +396,7 @@ function BriefSection({
                   messageHref={inlineTaskLinks ? item.href : undefined}
                   actions={inlineTaskLinks ? undefined : <BriefAction item={item} />} />
               ))}
-              {row.items.length > 3 && (
+              {row.items.length > initialVisibleCount && (
                 <button
                   type="button"
                   className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -486,7 +493,7 @@ function UpcomingSection({
                   href={task.href}
                   className="grid grid-cols-[auto_1fr] items-start gap-2 rounded-md py-1 text-sm hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <SourceBadge source="TF" />
+                  <SourceBadge source="TF" projectIcon={task.projectIcon} projectIconUrl={task.projectIconUrl} projectColor={task.projectColor} priority={task.priority} />
                   <span className="min-w-0">
                     <span className="block font-medium">{task.title}</span>
                     <span className="block text-xs text-muted-foreground">{task.projectName}</span>
@@ -621,7 +628,7 @@ function InboxSection({ settings, comments, isSample }: { settings: InboxDisplay
                 {comments.items.map(({ key, comment, authorName, listName, task }) => (
                   <DashboardItem key={key} source="TF" title={commentPreview(comment)} singleLine preserveMeta
                     meta={formatInboxCommentMeta({ comment, authorName, listName, task })}
-                    messageHref={sourceCommentHref(task.projectId, task.id, comment.id)} projectIcon={task.projectIcon} projectIconUrl={task.projectIconUrl} projectColor={task.projectColor} />
+                    messageHref={sourceCommentHref(task.projectId, task.id, comment.id)} projectIcon={task.projectIcon} projectIconUrl={task.projectIconUrl} projectColor={task.projectColor} priority={task.priority} />
                 ))}
               </>}
           </DashboardRow>
@@ -654,7 +661,9 @@ export function KozueDashboard({ displayName }: { displayName: string }) {
     calendarError,
     connectCalendar,
     isSample,
-  } = useTaskFlowBrief();
+  } = useTaskFlowBrief(useBriefDisplayStore((state) => state.taskScope));
+  const { taskScope, hydrate: hydrateBriefDisplay, setTaskScope } = useBriefDisplayStore();
+  useEffect(() => { hydrateBriefDisplay(); }, [hydrateBriefDisplay]);
   const { settings: inboxSettings, hydrate: hydrateInbox } = useInboxDisplayStore();
   useEffect(() => { hydrateInbox(); }, [hydrateInbox]);
   const comments = useDashboardComments(allProjectTasks, areTasksLoading, tasksError, inboxSettings.comments && !isSample);
@@ -687,6 +696,8 @@ export function KozueDashboard({ displayName }: { displayName: string }) {
         calendarStatus={calendarStatus}
         calendarError={calendarError}
         onConnectCalendar={connectCalendar}
+        taskScope={taskScope}
+        onTaskScopeChange={setTaskScope}
       />
       <UpcomingSection
         days={upcomingDays}

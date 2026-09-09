@@ -95,7 +95,8 @@ describe('buildTaskFlowBrief', () => {
       [future, dueToday, overdue],
       [future, dueToday, overdue, stopped],
       [createNotification(), createNotification({ id: 'read', isRead: true })],
-      now
+      now,
+      'all'
     );
 
     expect(result.rows[0].total).toBe(1);
@@ -115,7 +116,7 @@ describe('buildTaskFlowBrief', () => {
     });
   });
 
-  it('limits today tasks to the current user assignment while keeping other rows project-wide', () => {
+  it('limits every task row to the current user by default', () => {
     const mine = createTask({ id: 'mine', title: '自分の今日のタスク', dueDate: new Date(2026, 8, 2, 18) });
     const someoneElses = createTask({ id: 'someone-elses', title: '他の人の今日のタスク', dueDate: new Date(2026, 8, 2, 18), assigneeIds: ['user-2'] });
     const unassigned = createTask({ id: 'unassigned', title: '未担当の今日のタスク', dueDate: new Date(2026, 8, 2, 18), assigneeIds: [] });
@@ -125,6 +126,24 @@ describe('buildTaskFlowBrief', () => {
 
     expect(todayRow.total).toBe(1);
     expect(todayRow.items.map((item) => item.title)).toEqual(['自分の今日のタスク']);
+    expect(result.rows.find((row) => row.label === '要整理')?.items.map((item) => item.title)).not.toContain('他の人の今日のタスク');
+  });
+
+  it('shows other assignees in every task row when all scope is selected', () => {
+    const mine = createTask({ id: 'mine', title: '自分の今日のタスク', dueDate: new Date(2026, 8, 2, 18) });
+    const someoneElses = createTask({ id: 'someone-elses', title: '他の人の今日のタスク', dueDate: new Date(2026, 8, 2, 18), assigneeIds: ['user-2'] });
+    const otherReview = createTask({ id: 'other-review', title: '他の人の確認依頼', taskKind: 'review_request', assigneeIds: ['user-2'] });
+    const result = buildTaskFlowBrief([mine], [mine, someoneElses, otherReview], [], now, 'all');
+    expect(result.rows.find((row) => row.label === '今日やる')?.items.map((item) => item.title)).toContain('他の人の今日のタスク');
+    expect(result.rows.find((row) => row.label === '確認待ち')?.items.map((item) => item.title)).toContain('他の人の確認依頼');
+  });
+
+  it('carries task priority through project badges in brief and upcoming data', () => {
+    const task = createTask({ id: 'high-task', title: '優先タスク', priority: 'high', dueDate: new Date(2026, 8, 2, 18) });
+    const brief = buildTaskFlowBrief([task], [task], [], now);
+    expect(brief.rows.find((row) => row.label === '今日やる')?.items[0].priority).toBe('high');
+    const upcoming = { ...task, id: 'upcoming-high-task', dueDate: new Date(2026, 8, 3, 18) };
+    expect(buildTaskFlowUpcoming([upcoming], now, 3)[0].tasks[0].priority).toBe('high');
   });
 
   it('keeps an assigned review request with a due date only in confirmation waiting', () => {
@@ -202,11 +221,10 @@ describe('buildTaskFlowBrief', () => {
       updatedAt: new Date(2026, 7, 20),
     });
 
-    const result = buildTaskFlowBrief([reviewTask], [freshUnassigned, staleUnassigned, dueUnassigned, reviewParent, reviewTask], [], now);
+    const result = buildTaskFlowBrief([reviewTask], [freshUnassigned, staleUnassigned, dueUnassigned, reviewParent, reviewTask], [], now, 'all');
     const row = (label: string) => result.rows.find((item) => item.label === label)!;
 
-    expect(row('今日やる').total).toBe(0);
-    expect(row('今日やる').items[0].title).toBe('今日までのTaskFlowタスクはありません');
+    expect(row('今日やる').items.map((item) => item.title)).toEqual(['今日が期限の未担当タスク']);
     expect(row('3日動いていない').items.map((item) => item.title)).toEqual(['3日前から止まったタスク']);
     expect(row('3日動いていない').items[0].badges).toEqual(['担当未定', '期限未設定']);
     expect(row('3日動いていない').items.map((item) => item.title)).not.toContain('確認を待つ親タスク');
