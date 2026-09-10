@@ -11,6 +11,7 @@ on:
 
 jobs:
   audit:
+    name: taskflow-ci / audit
     runs-on: ubuntu-latest
 
     steps:
@@ -31,6 +32,7 @@ jobs:
         run: npm run audit
 
   lint:
+    name: taskflow-ci / lint
     runs-on: ubuntu-latest
 
     steps:
@@ -51,6 +53,7 @@ jobs:
         run: npm run lint
 
   test:
+    name: taskflow-ci / test
     runs-on: ubuntu-latest
 
     steps:
@@ -71,6 +74,7 @@ jobs:
         run: npm run test:run
 
   build:
+    name: taskflow-ci / build
     runs-on: ubuntu-latest
 
     steps:
@@ -91,6 +95,7 @@ jobs:
         run: npm run build
 
   e2e-smoke:
+    name: taskflow-ci / e2e-smoke
     runs-on: ubuntu-latest
 
     steps:
