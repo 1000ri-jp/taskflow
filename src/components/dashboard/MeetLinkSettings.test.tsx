@@ -1,0 +1,63 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { MeetLinkSettings } from './MeetLinkSettings';
+import { emptyMeetLinks, LEGACY_MEET_LINK_STORAGE_KEY, MEET_LINK_STORAGE_KEY, useMeetLinkStore } from '@/stores/meetLinkStore';
+
+const url = 'https://meet.google.com/lookup/team';
+describe('MeetLinkSettings', () => {
+  beforeEach(() => {
+    localStorage.removeItem(MEET_LINK_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_MEET_LINK_STORAGE_KEY);
+    useMeetLinkStore.setState({ links: emptyMeetLinks(), persistenceFailed: false });
+  });
+  afterEach(cleanup);
+  it('removes the first shortcut and preserves the second name and URL', () => {
+    const links = [{ name: '定例MTG', url: 'https://meet.google.com/abc-defg-hij' }, { name: 'もくもく', url }];
+    localStorage.setItem(MEET_LINK_STORAGE_KEY, JSON.stringify(links));
+    render(<MeetLinkSettings />);
+    expect(screen.queryByRole('button', { name: 'Meetリンク1の設定' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '定例MTG' })).not.toBeInTheDocument();
+    const link = screen.getByRole('link', { name: 'もくもく' });
+    const settings = screen.getByRole('button', { name: 'Meetリンク2の設定' });
+    expect(settings.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(link).toHaveAttribute('href', url);
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(JSON.parse(localStorage.getItem(MEET_LINK_STORAGE_KEY)!)).toEqual(links);
+    fireEvent.click(screen.getByRole('button', { name: 'Meetリンク2の設定' }));
+    expect(screen.getByLabelText('リンク2の名称')).toHaveValue('もくもく');
+    expect(screen.getByLabelText('リンク2のURL')).toHaveValue(url);
+    fireEvent.change(screen.getByLabelText('リンク2の名称'), { target: { value: '作業会' } });
+    fireEvent.change(screen.getByLabelText('リンク2のURL'), { target: { value: 'https://meet.google.com/lookup/work' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    expect(screen.getByRole('link', { name: '作業会' })).toHaveAttribute('href', 'https://meet.google.com/lookup/work');
+    expect(useMeetLinkStore.getState().links[0]).toEqual(links[0]);
+    cleanup();
+    render(<MeetLinkSettings />);
+    expect(screen.getByRole('link', { name: '作業会' })).toHaveAttribute('href', 'https://meet.google.com/lookup/work');
+    fireEvent.click(screen.getByRole('button', { name: 'Meetリンク2の設定' }));
+    fireEvent.click(screen.getByRole('button', { name: 'リンクを外す' }));
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+  it('rejects invalid names and URLs and discards cancelled edits', () => {
+    render(<MeetLinkSettings />);
+    fireEvent.click(screen.getByRole('button', { name: 'Meetリンク2の設定' }));
+    fireEvent.change(screen.getByLabelText('リンク2の名称'), { target: { value: ' ' } });
+    fireEvent.change(screen.getByLabelText('リンク2のURL'), { target: { value: url } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('名称を1〜40文字');
+    fireEvent.change(screen.getByLabelText('リンク2の名称'), { target: { value: '作業会' } });
+    fireEvent.change(screen.getByLabelText('リンク2のURL'), { target: { value: 'https://example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('会議URL');
+    expect(localStorage.getItem(MEET_LINK_STORAGE_KEY)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }));
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Meetリンク2の設定' }));
+    expect(screen.getByLabelText('リンク2の名称')).toHaveValue('Meet 2');
+    expect(screen.getByLabelText('リンク2のURL')).toHaveValue('');
+    fireEvent.change(screen.getByLabelText('リンク2のURL'), { target: { value: url } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    expect(screen.getByRole('link', { name: 'Meet 2' })).toHaveAttribute('href', url);
+  });
+});

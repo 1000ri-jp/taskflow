@@ -9,26 +9,34 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Search, X, Calendar, Tag, Eye, EyeOff } from 'lucide-react';
-import type { Label } from '@/types';
+import { Search, X, Calendar, CalendarCheck2, Tag, Eye, EyeOff } from 'lucide-react';
+import type { Label, List, Task } from '@/types';
+import type { BoardFilters } from '@/lib/board/filters';
+import { CommentedTasksPopover } from './CommentedTasksPopover';
+import { BoardDisplaySettings } from './BoardDisplaySettings';
 
-export interface BoardFilters {
-  keyword: string;
-  labelIds: Set<string>;
-  dueFilter: 'all' | 'today' | 'week' | 'overdue' | 'none';
-  showCompleted: boolean;
-}
+export type { BoardFilters } from '@/lib/board/filters';
 
 interface BoardFilterBarProps {
+  projectId: string;
   filters: BoardFilters;
   labels: Label[];
+  tasks: Task[];
+  lists: List[];
   onFiltersChange: (filters: BoardFilters) => void;
+  onTaskClick: (taskId: string) => void;
+  showCardSettings?: boolean;
 }
 
 export function BoardFilterBar({
+  projectId,
   filters,
   labels,
+  tasks,
+  lists,
   onFiltersChange,
+  onTaskClick,
+  showCardSettings = true,
 }: BoardFilterBarProps) {
   const hasActiveFilter =
     filters.keyword.length > 0 ||
@@ -52,7 +60,7 @@ export function BoardFilterBar({
   };
 
   return (
-    <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
+    <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2">
       {/* Keyword search */}
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -76,11 +84,32 @@ export function BoardFilterBar({
         )}
       </div>
 
+      {/* One-click view of unfinished work due by today */}
+      <Button
+        variant={filters.dueFilter === 'today' ? 'default' : 'outline'}
+        size="sm"
+        className="h-8"
+        aria-pressed={filters.dueFilter === 'today'}
+        onClick={() =>
+          onFiltersChange({
+            ...filters,
+            dueFilter: filters.dueFilter === 'today' ? 'all' : 'today',
+          })
+        }
+      >
+        <CalendarCheck2 className="mr-1.5 h-3.5 w-3.5" />
+        今日やる
+      </Button>
+
       {/* Due date filter */}
       <Popover>
         <PopoverTrigger asChild>
           <Button
-            variant={filters.dueFilter !== 'all' ? 'default' : 'outline'}
+            variant={
+              filters.dueFilter !== 'all' && filters.dueFilter !== 'today'
+                ? 'default'
+                : 'outline'
+            }
             size="sm"
             className="h-8"
           >
@@ -204,6 +233,15 @@ export function BoardFilterBar({
         )}
         完了タスク
       </Button>
+
+      <CommentedTasksPopover
+        projectId={projectId}
+        tasks={tasks}
+        lists={lists}
+        onTaskClick={onTaskClick}
+      />
+
+      {showCardSettings && <BoardDisplaySettings projectId={projectId} />}
 
       {/* Clear all filters */}
       {hasActiveFilter && (

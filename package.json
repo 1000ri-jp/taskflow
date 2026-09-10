@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "NEXT_PUBLIC_E2E_MOCK_AUTH=true next dev -p 3002",
     "build": "node ./scripts/run-next-build.mjs",
     "start": "next start",
     "audit": "npm audit --omit=optional --audit-level=high",
@@ -82,7 +83,7 @@
   },
   "overrides": {
     "@tootallnate/once": "3.0.1",
-    "postcss": "8.5.14",
+    "postcss": "8.5.28",
     "websocket-driver": "0.7.5"
   }
 }

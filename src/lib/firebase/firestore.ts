@@ -32,6 +32,8 @@ import type {
   User,
   Notification,
   ActivityLog,
+  Milestone,
+  MilestoneStatus,
 } from '@/types';
 import { DEFAULT_TAGS } from '@/types';
 
@@ -553,7 +555,8 @@ export async function getProjectTasks(projectId: string): Promise<Task[]> {
 
 export function subscribeToProjectTasks(
   projectId: string,
-  callback: (tasks: Task[]) => void
+  callback: (tasks: Task[]) => void,
+  onError?: (error: Error) => void
 ): () => void {
   const db = getFirebaseDb();
 
@@ -571,8 +574,74 @@ export function subscribeToProjectTasks(
         })
         .filter((task) => !task.isArchived); // Filter out archived tasks
       callback(tasks);
-    }
+    },
+    onError
   );
+}
+
+// ==================== Milestones ====================
+
+export async function createMilestone(
+  projectId: string,
+  data: Omit<Milestone, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>
+): Promise<string> {
+  const db = getFirebaseDb();
+  const milestoneRef = await addDoc(collection(db, 'projects', projectId, 'milestones'), {
+    ...data,
+    projectId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return milestoneRef.id;
+}
+
+export async function updateMilestone(
+  projectId: string,
+  milestoneId: string,
+  data: Partial<Omit<Milestone, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>>
+): Promise<void> {
+  const db = getFirebaseDb();
+  await updateDoc(doc(db, 'projects', projectId, 'milestones', milestoneId), {
+    ...omitUndefinedFields(data as Record<string, unknown>),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteMilestone(projectId: string, milestoneId: string): Promise<void> {
+  const db = getFirebaseDb();
+  await deleteDoc(doc(db, 'projects', projectId, 'milestones', milestoneId));
+}
+
+function convertMilestone(data: DocumentData, id: string): Milestone {
+  const statuses: MilestoneStatus[] = ['planned', 'in_progress', 'achieved', 'cancelled'];
+  const status = statuses.includes(data.status) ? data.status : 'planned';
+  return {
+    ...convertDoc<Milestone>(data, id),
+    description: data.description ?? '',
+    status,
+    order: data.order ?? 0,
+    achievedAt: data.achievedAt ? toDate(data.achievedAt) : null,
+    createdBy: data.createdBy ?? '',
+    dueDate: data.dueDate ? toDate(data.dueDate) : null,
+  };
+}
+
+export async function getProjectMilestones(projectId: string): Promise<Milestone[]> {
+  const db = getFirebaseDb();
+  const snapshot = await getDocs(query(collection(db, 'projects', projectId, 'milestones'), orderBy('order', 'asc')));
+  return snapshot.docs.map((snapshotDoc) => convertMilestone(snapshotDoc.data(), snapshotDoc.id));
+}
+
+export function subscribeToProjectMilestones(
+  projectId: string,
+  callback: (milestones: Milestone[]) => void,
+  onError?: (error: Error) => void
+): () => void {
+  const db = getFirebaseDb();
+  const milestonesQuery = query(collection(db, 'projects', projectId, 'milestones'), orderBy('order', 'asc'));
+  return onSnapshot(milestonesQuery, (snapshot) => {
+    callback(snapshot.docs.map((snapshotDoc) => convertMilestone(snapshotDoc.data(), snapshotDoc.id)));
+  }, onError);
 }
 
 /**
@@ -803,6 +872,17 @@ export async function getTaskComments(
   );
 
   const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => convertDoc<Comment>(doc.data(), doc.id));
+}
+
+// Read-only dashboard preview. Fetching N per task is enough to find the
+// newest N comments across projects without downloading entire histories.
+export async function getRecentTaskComments(projectId: string, taskId: string, count = 10): Promise<Comment[]> {
+  const snapshot = await getDocs(query(
+    collection(getFirebaseDb(), 'projects', projectId, 'tasks', taskId, 'comments'),
+    orderBy('createdAt', 'desc'),
+    firestoreLimit(count)
+  ));
   return snapshot.docs.map((doc) => convertDoc<Comment>(doc.data(), doc.id));
 }
 

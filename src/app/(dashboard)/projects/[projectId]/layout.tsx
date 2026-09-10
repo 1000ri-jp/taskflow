@@ -3,9 +3,11 @@
 import Image from 'next/image';
 import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, LayoutGrid, GanttChart, Settings, History } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, GanttChart, Settings, History, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProject } from '@/hooks/useProjects';
+import { useProjectTaskViewNavigation } from '@/hooks/useProjectTaskViewNavigation';
+import { TaskViewSwitcher } from '@/components/board/TaskViewSwitcher';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
@@ -13,6 +15,7 @@ const tabs = [
   { name: 'ボード', href: 'board', icon: LayoutGrid },
   { name: 'ガントチャート', href: 'gantt', icon: GanttChart },
   { name: 'アクティビティ', href: 'activity', icon: History },
+  { name: 'マイルストーン', href: 'milestones', icon: Flag },
   { name: '設定', href: 'settings', icon: Settings },
 ];
 
@@ -25,6 +28,7 @@ export default function ProjectLayout({
   const pathname = usePathname();
   const projectId = params.projectId as string;
   const { project, isLoading } = useProject(projectId);
+  const { view, primaryView, changeView, setCurrentViewAsDefault, canSave, persistenceFailed } = useProjectTaskViewNavigation(projectId);
 
   if (isLoading) {
     return (
@@ -66,7 +70,7 @@ export default function ProjectLayout({
         {/* Header Image or Colored Banner */}
         <div
           data-testid="project-header-banner"
-          className="relative aspect-[5/1] max-h-[240px] w-full overflow-hidden rounded-lg sm:max-h-[260px]"
+          className="relative aspect-[10/1] max-h-[120px] w-full overflow-hidden rounded-lg sm:max-h-[130px]"
           style={{
             backgroundColor: project.headerImageUrl ? undefined : `${project.color}30`,
           }}
@@ -119,15 +123,36 @@ export default function ProjectLayout({
 
       {/* Tabs */}
       <div className="mb-4 flex-shrink-0 border-b">
-        <nav className="-mb-px flex space-x-4">
+        <nav className="-mb-px flex flex-wrap items-center gap-x-6">
           {tabs.map((tab) => {
             const isActive = currentTab === tab.href;
+            if (tab.href === 'board' && isActive) {
+              return (
+                <div key={tab.name} className="flex items-center gap-2 border-b border-primary">
+                  <Link
+                    href={`/projects/${projectId}/${tab.href}`}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary transition-colors"
+                  >
+                    <tab.icon className="h-4 w-4" />
+                    {tab.name}
+                  </Link>
+                  <TaskViewSwitcher
+                    view={view}
+                    primaryView={primaryView}
+                    onChange={changeView}
+                    onSetDefault={setCurrentViewAsDefault}
+                    canSave={canSave}
+                    persistenceFailed={persistenceFailed}
+                  />
+                </div>
+              );
+            }
             return (
               <Link
                 key={tab.name}
                 href={`/projects/${projectId}/${tab.href}`}
                 className={cn(
-                  'flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                  'flex items-center gap-2 border-b px-3 py-2 text-sm font-medium transition-colors',
                   isActive
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground'

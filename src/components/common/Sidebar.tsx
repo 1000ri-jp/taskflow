@@ -27,6 +27,7 @@ import {
   Settings,
   ChevronLeft,
   GripVertical,
+  Sparkles,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ import type { Project } from '@/types';
 
 const navigation = [
   { name: 'ダッシュボード', href: '/', icon: LayoutDashboard },
+  { name: 'ダッシュボードNeo。', href: '/my-dashboard', icon: Sparkles },
   { name: 'プロジェクト', href: '/projects', icon: FolderKanban },
 ];
 
@@ -99,13 +101,13 @@ function SortableProjectItem({
           <Image
             src={project.iconUrl}
             alt={project.name}
-            width={20}
-            height={20}
-            className="h-5 w-5 shrink-0 rounded object-cover"
+            width={isCollapsed ? 32 : 20}
+            height={isCollapsed ? 32 : 20}
+            className={cn('h-5 w-5 shrink-0 rounded object-cover', isCollapsed && 'h-8 w-8')}
           />
         ) : (
           <div
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs"
+            className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs', isCollapsed && 'h-8 w-8 text-base')}
             style={{ backgroundColor: project.color }}
           >
             {project.icon}
@@ -202,10 +204,10 @@ export function Sidebar() {
                   isActive
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  isSidebarCollapsed && 'justify-center px-2'
+                  isSidebarCollapsed && 'h-12 w-full justify-center px-2 py-0'
                 )}
               >
-                <item.icon className="h-4 w-4 shrink-0" />
+                <item.icon className={cn('h-4 w-4 shrink-0', isSidebarCollapsed && 'h-6 w-6')} />
                 {!isSidebarCollapsed && <span>{item.name}</span>}
               </Link>
             );
@@ -263,10 +265,10 @@ export function Sidebar() {
             href="/settings"
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-              isSidebarCollapsed && 'justify-center px-2'
+              isSidebarCollapsed && 'h-12 w-full justify-center px-2 py-0'
             )}
           >
-            <Settings className="h-4 w-4 shrink-0" />
+            <Settings className={cn('h-4 w-4 shrink-0', isSidebarCollapsed && 'h-6 w-6')} />
             {!isSidebarCollapsed && <span>設定</span>}
           </Link>
         </div>

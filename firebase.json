@@ -5,5 +5,28 @@
   },
   "storage": {
     "rules": "storage.rules"
-  }
+  },
+  "apphosting": [
+    {
+      "backendId": "taskflow",
+      "rootDir": ".",
+      "ignore": [
+        "node_modules",
+        ".git",
+        ".next",
+        ".vercel",
+        ".env",
+        ".env.*",
+        "*.pem",
+        "*service-account*.json",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "test-results",
+        "playwright-report",
+        "coverage",
+        "docs",
+        "e2e"
+      ]
+    }
+  ]
 }

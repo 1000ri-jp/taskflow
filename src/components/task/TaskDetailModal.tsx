@@ -1,12 +1,13 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -15,7 +16,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { Checkbox } from '@/components/ui/checkbox';
+import { SortableChecklistItems } from './SortableChecklistItems';
+import { ChecklistItemAssignees, type ChecklistMemberState } from './ChecklistItemAssignees';
+import { TaskArchiveButton } from './TaskArchiveButton';
+import { CommentComposer } from './CommentComposer';
+import { TaskRelations } from './TaskRelations';
+import Link from 'next/link';
+import { useMeetingMembers } from '@/hooks/useMeetingMembers';
+import { CHECKLIST_ASSIGNEE_STORAGE_KEY, useChecklistAssigneeStore } from '@/stores/checklistAssigneeStore';
 import { Progress } from '@/components/ui/progress';
 import {
   Popover,
@@ -44,11 +52,9 @@ import {
   Plus,
   Check,
   Paperclip,
-  FileIcon,
   CheckCircle2,
   Circle,
   Pencil,
-  Bell,
   Link2,
   AlertCircle,
   Lock,
@@ -66,7 +72,6 @@ import {
   getEffectiveDates,
 } from '@/lib/utils/task';
 import { useTaskDetails } from '@/hooks/useTaskDetails';
-import { useNotifications } from '@/hooks/useNotifications';
 import { useAuthStore } from '@/stores/authStore';
 import { getProject, getProjectTags, createTag, getUsersByIds } from '@/lib/firebase/firestore';
 import { AssigneeSelector } from './AssigneeSelector';
@@ -85,6 +90,7 @@ interface TaskDetailModalProps {
   onUpdate: (data: Partial<Task>) => void;
   onDelete: () => void;
   onDuplicate?: () => void;
+  highlightCommentId?: string | null;
 }
 
 export function TaskDetailModal({
@@ -98,9 +104,9 @@ export function TaskDetailModal({
   onUpdate,
   onDelete,
   onDuplicate,
+  highlightCommentId,
 }: TaskDetailModalProps) {
   const { user } = useAuthStore();
-  const { sendBellNotification } = useNotifications();
   const {
     checklists,
     comments,
@@ -109,7 +115,7 @@ export function TaskDetailModal({
     addChecklistItem,
     toggleChecklistItem,
     removeChecklistItem,
-    addComment,
+    moveChecklistItem,
     removeComment,
     editComment,
     getAllCommentAttachments,
@@ -125,9 +131,6 @@ export function TaskDetailModal({
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [completedAt, setCompletedAt] = useState<Date | undefined>();
-  const [commentText, setCommentText] = useState('');
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [expandedChecklists, setExpandedChecklists] = useState<Set<string>>(new Set());
   const [projectMemberIds, setProjectMemberIds] = useState<string[]>([]);
   const [projectTags, setProjectTags] = useState<TagType[]>([]);
@@ -137,22 +140,40 @@ export function TaskDetailModal({
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState<string>(TAG_COLORS[0].value);
-  const [projectName, setProjectName] = useState('');
-  const [isBellOpen, setIsBellOpen] = useState(false);
-  const [bellMessage, setBellMessage] = useState('');
-  const [isSendingBell, setIsSendingBell] = useState(false);
+  const [memberProject, setMemberProject] = useState({ id: '', error: false });
+  const [memberAttempt, setMemberAttempt] = useState(0);
+  const checklistMembers = useMeetingMembers([{ memberIds: projectMemberIds }], isOpen && memberProject.id === projectId && !memberProject.error);
+  const localMembers: ChecklistMemberState & { refresh: () => void } = { ...checklistMembers, isLoading: memberProject.id !== projectId || checklistMembers.isLoading, hasError: memberProject.error || checklistMembers.hasError,
+    refresh: () => { setMemberProject({ id: '', error: false }); setMemberAttempt(value => value + 1); checklistMembers.refresh(); } };
+  const hydrateAssignees = useChecklistAssigneeStore(state => state.hydrate);
+  useEffect(() => {
+    if (!isOpen || !highlightCommentId || !comments.some(comment => comment.id === highlightCommentId)) return;
+    const frame = requestAnimationFrame(() => document.getElementById(`task-comment-${highlightCommentId}`)?.scrollIntoView({ block: 'center' }));
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, highlightCommentId, comments]);
+  useEffect(() => {
+    hydrateAssignees();
+    const sync = (event: StorageEvent) => { if (event.key === CHECKLIST_ASSIGNEE_STORAGE_KEY || event.key === null) hydrateAssignees(); };
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, [hydrateAssignees]);
 
   // Fetch project members and name
   useEffect(() => {
+    let active = true;
     if (projectId) {
       getProject(projectId).then((project) => {
+        if (!active) return;
         if (project) {
           setProjectMemberIds(project.memberIds);
-          setProjectName(project.name);
         }
+        setMemberProject({ id: projectId, error: !project });
+      }).catch(() => {
+        if (active) setMemberProject({ id: projectId, error: true });
       });
     }
-  }, [projectId]);
+    return () => { active = false; };
+  }, [projectId, memberAttempt]);
 
   // Fetch project tags
   useEffect(() => {
@@ -189,8 +210,6 @@ export function TaskDetailModal({
         setSelectedLabelIds(task.labelIds);
         setIsCompleted(task.isCompleted);
         setCompletedAt(task.completedAt || undefined);
-        setCommentText(''); // Reset comment when task changes
-        setPendingFiles([]);
       });
     }
   }, [task]);
@@ -205,39 +224,11 @@ export function TaskDetailModal({
   }, [checklists]);
 
   const handleSave = () => {
-    onUpdate({
-      title,
-      description,
-      listId,
-      priority,
-      dueDate: dueDate || null,
-      startDate: startDate || null,
-      labelIds: selectedLabelIds,
-      isCompleted,
-      completedAt: completedAt || null,
-    });
-  };
-
-  const handleSendBellNotification = async () => {
-    if (!projectId || !task?.id) return;
-
-    setIsSendingBell(true);
-    try {
-      await sendBellNotification(
-        projectId,
-        projectName,
-        task.id,
-        task.title,
-        bellMessage,
-        task.assigneeIds
-      );
-      setBellMessage('');
-      setIsBellOpen(false);
-    } catch (error) {
-      console.error('Failed to send notification:', error);
-    } finally {
-      setIsSendingBell(false);
-    }
+    // Merely opening local assignee controls must not write unchanged shared data.
+    const changes: Partial<Task> = {};
+    if (task && title !== task.title) changes.title = title;
+    if (task && description !== (task.description || '')) changes.description = description;
+    if (Object.keys(changes).length) onUpdate(changes);
   };
 
   // Toggle completion with automatic completedAt handling
@@ -292,59 +283,6 @@ export function TaskDetailModal({
     }
   };
 
-  const handleAddComment = async () => {
-    if (user && (commentText.trim() || pendingFiles.length > 0)) {
-      setIsSubmittingComment(true);
-      try {
-        await addComment(commentText.trim(), user.id, user.displayName, [], pendingFiles);
-        setCommentText('');
-        setPendingFiles([]);
-      } catch (error) {
-        console.error('Failed to add comment:', error);
-        alert(error instanceof Error ? error.message : 'コメントの投稿に失敗しました');
-      } finally {
-        setIsSubmittingComment(false);
-      }
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      setPendingFiles((prev) => [...prev, ...Array.from(files)]);
-    }
-    e.target.value = '';
-  };
-
-  const removePendingFile = (index: number) => {
-    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-
-    const imageFiles: File[] = [];
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        const file = item.getAsFile();
-        if (file) {
-          // ファイル名を生成（タイムスタンプ付き）
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          const extension = file.type.split('/')[1] || 'png';
-          const namedFile = new File([file], `pasted-image-${timestamp}.${extension}`, {
-            type: file.type,
-          });
-          imageFiles.push(namedFile);
-        }
-      }
-    }
-
-    if (imageFiles.length > 0) {
-      setPendingFiles((prev) => [...prev, ...imageFiles]);
-    }
-  };
-
   // Get all comment attachments for Jooto-style display at task top
   const commentAttachments = getAllCommentAttachments();
 
@@ -372,10 +310,13 @@ export function TaskDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-hidden p-0">
-        <div className="flex h-full max-h-[90vh] flex-col">
+      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col gap-0 overflow-clip p-0">
+        <div className="flex h-[90vh] min-h-0 flex-col">
           {/* Header */}
-          <DialogHeader className="border-b px-6 py-4">
+          <DialogHeader className="shrink-0 border-b px-6 py-4">
+            <DialogDescription className="sr-only">
+              タスクの内容、担当者、日程、チェックリスト、コメントを確認・編集します。
+            </DialogDescription>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 {currentList && (
@@ -387,38 +328,6 @@ export function TaskDetailModal({
                     <span>{currentList.name}</span>
                   </>
                 )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Popover open={isBellOpen} onOpenChange={setIsBellOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Bell className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64 bg-background border shadow-lg" align="end">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">メンバーに通知</p>
-                      <Input
-                        value={bellMessage}
-                        onChange={(e) => setBellMessage(e.target.value)}
-                        placeholder="メッセージ（任意）"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                            handleSendBellNotification();
-                          }
-                        }}
-                      />
-                      <Button
-                        size="sm"
-                        className="w-full"
-                        onClick={handleSendBellNotification}
-                        disabled={isSendingBell}
-                      >
-                        {isSendingBell ? '送信中...' : '通知を送信'}
-                      </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
               </div>
             </div>
             <DialogTitle className="mt-2">
@@ -441,8 +350,9 @@ export function TaskDetailModal({
           </DialogHeader>
 
           {/* Content */}
-          <ScrollArea className="min-h-0 flex-1">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <div className="space-y-1 px-6 py-4">
+              <TaskRelations task={task} tasks={allTasks} names={Object.fromEntries(localMembers.users.map(member => [member.id, member.displayName]))} />
               {/* Comment Attachments (Jooto-style at top) */}
               {commentAttachments.length > 0 && (
                 <div className="mb-4">
@@ -1104,6 +1014,10 @@ export function TaskDetailModal({
                       onAddItem={(text) => addChecklistItem(checklist.id, text)}
                       onToggleItem={(itemId) => toggleChecklistItem(checklist.id, itemId)}
                       onDeleteItem={(itemId) => removeChecklistItem(checklist.id, itemId)}
+                      onMoveItem={(itemId, targetId) => moveChecklistItem(checklist.id, itemId, targetId)}
+                      projectId={projectId}
+                      viewerId={user?.id ?? ''}
+                      members={localMembers}
                       progress={getChecklistProgress(checklist)}
                     />
                   ))}
@@ -1125,7 +1039,7 @@ export function TaskDetailModal({
                       const isEditing = editingCommentId === comment.id;
                       const isEdited = comment.updatedAt && comment.updatedAt.getTime() !== comment.createdAt.getTime();
                       return (
-                        <div key={comment.id} className="group flex gap-3">
+                        <div key={comment.id} id={`task-comment-${comment.id}`} className={cn('group flex gap-3 rounded-lg', highlightCommentId === comment.id && 'bg-blue-50 ring-2 ring-blue-300')}>
                           <div className="h-8 w-8 flex-shrink-0 rounded-full bg-muted flex items-center justify-center text-xs font-medium overflow-hidden">
                             {comment.authorIcon ? (
                               <span className="text-sm">{authorAvatarText}</span>
@@ -1211,6 +1125,7 @@ export function TaskDetailModal({
                                 {comment.content && (
                                   <p className="break-all whitespace-pre-wrap text-sm">{linkifyText(comment.content)}</p>
                                 )}
+                                {comment.reviewTaskId && <Link className="mt-2 block text-xs text-blue-600 hover:underline" href={`/projects/${projectId}/board?task=${comment.reviewTaskId}`}>このコメントの確認依頼を開く</Link>}
                                 {/* Comment Attachments */}
                                 {comment.attachments && comment.attachments.length > 0 && (
                                   <div className={cn("flex flex-wrap gap-2", comment.content && "mt-2")}>
@@ -1235,102 +1150,20 @@ export function TaskDetailModal({
                   </div>
                 )}
 
-                {/* Comment Input */}
-                <div className="rounded-lg border p-3">
-                  <Textarea
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    onPaste={handlePaste}
-                    placeholder="コメントを書く（画像は貼り付け可能）"
-                    rows={3}
-                    className="resize-none break-all border-none p-0 shadow-none focus-visible:ring-0"
-                  />
-                  {/* Pending Files Preview */}
-                  {pendingFiles.length > 0 && (
-                    <div className="mt-2 space-y-2">
-                      {/* Image previews - large thumbnails */}
-                      {pendingFiles.filter(f => f.type.startsWith('image/')).length > 0 && (
-                        <div className="grid grid-cols-2 gap-2">
-                          {pendingFiles.map((file, index) => {
-                            if (!file.type.startsWith('image/')) return null;
-                            return (
-                              <div key={index} className="relative group">
-                                {/* Blob preview is intentionally rendered with img. */}
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={URL.createObjectURL(file)}
-                                  alt={file.name}
-                                  className="w-full max-h-40 rounded-lg object-cover border"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => removePendingFile(index)}
-                                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/80"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {/* Non-image files - badge style */}
-                      {pendingFiles.filter(f => !f.type.startsWith('image/')).length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {pendingFiles.map((file, index) => {
-                            if (file.type.startsWith('image/')) return null;
-                            return (
-                              <div
-                                key={index}
-                                className="flex items-center gap-1 rounded border bg-muted px-2 py-1 text-xs"
-                              >
-                                <FileIcon className="h-3 w-3" />
-                                <span className="max-w-[100px] truncate">{file.name}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => removePendingFile(index)}
-                                  className="ml-1 text-muted-foreground hover:text-foreground"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="mt-2 flex flex-shrink-0 items-center justify-between">
-                    <label className="cursor-pointer text-muted-foreground hover:text-foreground">
-                      <Paperclip className="h-4 w-4" />
-                      <input
-                        type="file"
-                        multiple
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                    </label>
-                    <Button
-                      size="sm"
-                      onClick={handleAddComment}
-                      disabled={(!commentText.trim() && pendingFiles.length === 0) || isSubmittingComment}
-                    >
-                      {isSubmittingComment ? 'アップロード中...' : 'コメントを投稿'}
-                    </Button>
-                  </div>
-                </div>
+                {user && <CommentComposer key={`${user.id}:${projectId}:${task.id}`} projectId={projectId} taskId={task.id} authorId={user.id} authorName={user.displayName || 'メンバー'} members={localMembers} />}
               </div>
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between border-t px-6 py-3 text-xs text-muted-foreground">
+          <div className="flex shrink-0 items-center justify-between border-t px-6 py-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-4">
               <span>
                 タスク作成: {task.createdAt ? format(task.createdAt, 'yyyy年M月d日 HH:mm', { locale: ja }) : '-'}
               </span>
             </div>
             <div className="flex items-center gap-2">
+              <TaskArchiveButton key={task.id} projectId={projectId} taskId={task.id} taskTitle={task.title} userId={user?.id} onArchived={onClose} />
               {onDuplicate && (
                 <Button
                   variant="ghost"
@@ -1364,6 +1197,9 @@ export function TaskDetailModal({
 
 // Checklist Card Component
 interface ChecklistCardProps {
+  projectId: string;
+  viewerId: string;
+  members: ChecklistMemberState;
   checklist: Checklist;
   isExpanded: boolean;
   onToggleExpand: () => void;
@@ -1371,10 +1207,14 @@ interface ChecklistCardProps {
   onAddItem: (text: string) => void;
   onToggleItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
+  onMoveItem: (itemId: string, targetId: string) => Promise<void>;
   progress: number;
 }
 
 function ChecklistCard({
+  projectId,
+  viewerId,
+  members,
   checklist,
   isExpanded,
   onToggleExpand,
@@ -1382,10 +1222,29 @@ function ChecklistCard({
   onAddItem,
   onToggleItem,
   onDeleteItem,
+  onMoveItem,
   progress,
 }: ChecklistCardProps) {
   const [newItemText, setNewItemText] = useState('');
   const [isAddingItem, setIsAddingItem] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [orderError, setOrderError] = useState('');
+  const orderPending = useRef(false);
+
+  const handleMove = async (itemId: string, targetId: string) => {
+    if (orderPending.current || itemId === targetId) return;
+    orderPending.current = true;
+    setIsSavingOrder(true);
+    setOrderError('');
+    try {
+      await onMoveItem(itemId, targetId);
+    } catch {
+      setOrderError('並べ替えを保存できませんでした。表示順は変更していません。接続・権限を確認し、タスクを開き直してから再度お試しください。');
+    } finally {
+      orderPending.current = false;
+      setIsSavingOrder(false);
+    }
+  };
 
   const handleAddItem = () => {
     if (newItemText.trim()) {
@@ -1395,7 +1254,7 @@ function ChecklistCard({
   };
 
   return (
-    <div className="rounded-lg border">
+    <fieldset disabled={isSavingOrder} className="min-w-0 rounded-lg border" aria-label={checklist.title} aria-busy={isSavingOrder}>
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex-1">
@@ -1432,35 +1291,11 @@ function ChecklistCard({
       {/* Items */}
       {isExpanded && (
         <div className="border-t px-4 py-2">
-          {checklist.items
-            .sort((a, b) => a.order - b.order)
-            .map((item) => (
-              <div
-                key={item.id}
-                className="group flex items-center gap-3 py-2"
-              >
-                <Checkbox
-                  checked={item.isChecked}
-                  onCheckedChange={() => onToggleItem(item.id)}
-                />
-                <span
-                  className={cn(
-                    'min-w-0 flex-1 break-all text-sm',
-                    item.isChecked && 'text-muted-foreground line-through'
-                  )}
-                >
-                  {item.text}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                  onClick={() => onDeleteItem(item.id)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
+          <p className="pb-1 text-[11px] text-muted-foreground">左のつまみをドラッグして並べ替え。担当者はこのブラウザだけに保存します。</p>
+          {isSavingOrder && <p role="status" className="py-1 text-xs text-muted-foreground">順番を保存中…</p>}
+          {orderError && <p role="alert" className="py-1 text-xs text-destructive">{orderError}</p>}
+          <SortableChecklistItems items={checklist.items} disabled={isSavingOrder} onMove={handleMove} onToggle={onToggleItem} onDelete={onDeleteItem}
+            renderAssignees={item => <ChecklistItemAssignees scope={[viewerId, projectId, checklist.taskId, checklist.id, item.id]} itemText={item.text} members={members} disabled={isSavingOrder} />} />
 
           {/* Add Item */}
           {isAddingItem ? (
@@ -1517,6 +1352,6 @@ function ChecklistCard({
           )}
         </div>
       )}
-    </div>
+    </fieldset>
   );
 }

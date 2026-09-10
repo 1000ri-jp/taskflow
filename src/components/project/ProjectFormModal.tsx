@@ -20,7 +20,7 @@ import { LIST_COLORS } from '@/types';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
-const PROJECT_ICONS = ['📁', '🚀', '💼', '🎯', '📊', '🔧', '💡', '🎨', '📱', '🌐'];
+const PROJECT_ICONS = ['📁', '🦙', '🚀', '💼', '🎯', '📊', '🔧', '💡', '🎨', '📱', '🌐'];
 
 export function ProjectFormModal() {
   const router = useRouter();

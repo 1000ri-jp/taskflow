@@ -33,6 +33,22 @@ export interface ProjectUrl {
   url: string;
 }
 
+export type MilestoneStatus = 'planned' | 'in_progress' | 'achieved' | 'cancelled';
+
+export interface Milestone {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string;
+  status: MilestoneStatus;
+  dueDate: Date | null;
+  order: number;
+  achievedAt: Date | null;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ProjectMember {
   id: string; // Firestore document ID
   userId: string;
@@ -59,6 +75,11 @@ export interface List {
 // Task types
 export interface Task {
   id: string;
+  // Shared review requests reuse the task collection and normal assignee/completion fields.
+  parentTaskId?: string;
+  sourceCommentId?: string;
+  taskKind?: 'review_request';
+  milestoneId?: string | null;
   projectId: string;
   listId: string;
   title: string;
@@ -116,6 +137,7 @@ export interface ChecklistItem {
 // Comment types
 export interface Comment {
   id: string;
+  reviewTaskId?: string;
   taskId: string;
   content: string;
   authorId: string;
@@ -176,6 +198,7 @@ export interface Notification {
 }
 
 export type NotificationType =
+  | 'review_requested'
   | 'task_assigned'
   | 'task_updated'
   | 'comment_added'

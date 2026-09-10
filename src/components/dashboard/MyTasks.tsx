@@ -71,6 +71,7 @@ export function MyTasks() {
                         <p className="truncate text-xs text-muted-foreground">
                           {task.projectName}
                         </p>
+                        {task.parentTaskId && <p className="truncate text-xs text-muted-foreground">親タスク：{task.parentTitle ?? '親タスクあり'}</p>}
                       </div>
 
                       {/* Due Date & Priority */}
