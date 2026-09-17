@@ -328,10 +328,10 @@ export default function ApiKeysPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto w-full min-w-0 max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
         <Link href="/settings">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="設定に戻る" title="設定に戻る">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -341,9 +341,9 @@ export default function ApiKeysPage() {
         </div>
       </div>
 
-      <Card>
+      <Card density="compact">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5" />
@@ -486,7 +486,7 @@ export default function ApiKeysPage() {
                         ))}
                       </div>
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-wrap items-center justify-between">
                           <Label>対象プロジェクト</Label>
                           <div className="flex gap-2">
                             <Button
@@ -671,7 +671,7 @@ export default function ApiKeysPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card density="compact">
         <CardHeader>
           <CardTitle>MCP サーバー設定</CardTitle>
           <CardDescription>

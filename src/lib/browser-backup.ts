@@ -15,7 +15,7 @@ export const BACKUP_KEYS = [
   ['taskflow.checklistAssignees.local.v1', 'チェックリスト項目の担当者（テスト）'],
   ['taskflow.meetingProposalReview.v2', '朝会提案の採用・保留・修正・登録先候補'],
   ['taskflow.meetingProposalReview.v1', '旧版：朝会提案の確認結果'],
-  ['taskflow.meetingChecklistDraft.v1', '朝会の子タスク配置・完了チェック・期限（テスト）'],
+  ['taskflow.meetingChecklistDraft.v1', '朝会のサブタスク配置・完了チェック・期限（テスト）'],
   ['taskflow.testCountdown.v1', 'カウントダウン対象タスク（テスト）'],
   ['companionAIPanelOpen', 'AIパネルの開閉'],
   ['companionAIPanelPosition', 'AIパネルの位置'],

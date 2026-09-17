@@ -3,6 +3,7 @@
 import { KozueDashboard } from '@/components/dashboard/KozueDashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
+import { DashboardNavigation } from '@/components/dashboard/DashboardNavigation';
 
 export default function MyDashboardPage() {
   const { user, isLoading } = useAuth();
@@ -23,5 +24,5 @@ export default function MyDashboardPage() {
 
   const displayName = user?.displayName?.split(' ')[0] || 'ユーザー';
 
-  return <KozueDashboard displayName={displayName} />;
+  return <><DashboardNavigation current="overview" /><KozueDashboard displayName={displayName} mode="overview" /></>;
 }

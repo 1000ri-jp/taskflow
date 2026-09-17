@@ -1,0 +1,62 @@
+{
+  "taskQuestions": {
+    "A": [],
+    "B": [],
+    "C": [],
+    "D": [
+      "本日12時までに、追加費用ありの速達と部数削減の通常便のどちらを選びますか？"
+    ]
+  },
+  "facts": {
+    "M1": [
+      {
+        "target": 0,
+        "field": "needed",
+        "role": "assertion",
+        "option": "l1d1"
+      }
+    ],
+    "I1": [
+      {
+        "target": 0,
+        "field": "arrival",
+        "role": "assertion",
+        "option": "l1d1"
+      }
+    ],
+    "E1": [
+      {
+        "target": 0,
+        "field": "arrival",
+        "role": "assertion",
+        "option": "l1d1"
+      },
+      {
+        "target": 0,
+        "field": "arrival",
+        "role": "quoted",
+        "option": "l2d1"
+      }
+    ],
+    "C1": [],
+    "E2": [
+      {
+        "target": 0,
+        "field": "arrival",
+        "role": "assertion",
+        "option": "l1d1"
+      }
+    ]
+  },
+  "askAgain": {
+    "initial": true,
+    "heldDuplicate": false,
+    "unrelatedEdit": false,
+    "correctedArrival": false,
+    "sourceUnavailable": false
+  },
+  "limitations": [
+    "C1から発注変更の権限は判断できない。",
+    "sourceUnavailableでは現在の必要日を検証できない。既存保留を維持し、問題解消とは判定しない。"
+  ]
+}

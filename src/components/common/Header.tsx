@@ -14,11 +14,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useUIStore } from '@/stores/uiStore';
-import { NotificationDropdown } from './NotificationDropdown';
+import { AppearanceSwitcher } from './AppearanceSwitcher';
+import { dashboardHref, useDashboardViewStore } from '@/stores/dashboardViewStore';
 
 export function Header() {
   const { user, signOut } = useAuth();
-  const { toggleSidebar, openCommandPalette } = useUIStore();
+  const { toggleSidebar, openCommandPalette, isSidebarOpen } = useUIStore();
+  const dashboardView = useDashboardViewStore(state => state.view);
 
   const getInitials = (name: string) => {
     return name
@@ -30,25 +32,25 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
+    <header className="tf-header sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-3 sm:gap-4 lg:px-6">
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden"
+        className={isSidebarOpen ? 'lg:hidden' : ''}
         onClick={toggleSidebar}
       >
         <Menu className="h-5 w-5" />
         <span className="sr-only">Toggle sidebar</span>
       </Button>
 
-      <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+      <Link href={dashboardHref(dashboardView)} className="tf-brand flex items-center gap-2 hover:opacity-80 transition-opacity">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
           TF
         </div>
         <span className="hidden font-semibold md:inline-block">TaskFlow</span>
       </Link>
 
-      <div className="hidden min-w-0 flex-1 sm:block">
+      <div className="hidden min-w-0 flex-1 sm:flex sm:justify-end">
         <button
           type="button"
           onClick={openCommandPalette}
@@ -62,7 +64,7 @@ export function Header() {
         </button>
       </div>
 
-      <div className="flex items-center gap-1 sm:gap-2">
+      <div className="ml-auto flex items-center gap-1 sm:gap-2">
         <Button
           variant="ghost"
           size="icon"
@@ -73,7 +75,7 @@ export function Header() {
           <Search className="h-5 w-5" />
           <span className="sr-only">検索</span>
         </Button>
-        <NotificationDropdown />
+        <AppearanceSwitcher />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

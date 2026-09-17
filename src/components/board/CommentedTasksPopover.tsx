@@ -6,11 +6,14 @@ import { ja } from 'date-fns/locale';
 import { Loader2, MessageSquareText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ControlHint } from '@/components/ui/control-hint';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
+import { taskRowInteraction } from '@/components/ui/density';
 import { getTaskComments } from '@/lib/firebase/firestore';
 import type { Comment, List, Task } from '@/types';
 
@@ -25,6 +28,7 @@ interface CommentedTasksPopoverProps {
   tasks: Task[];
   lists: List[];
   onTaskClick: (taskId: string) => void;
+  iconOnly?: boolean;
 }
 
 export function CommentedTasksPopover({
@@ -32,6 +36,7 @@ export function CommentedTasksPopover({
   tasks,
   lists,
   onTaskClick,
+  iconOnly = false,
 }: CommentedTasksPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +58,7 @@ export function CommentedTasksPopover({
     const results = await Promise.allSettled(
       tasks.map(async (task) => ({
         task,
-        comments: await getTaskComments(projectId, task.id),
+        comments: await (isE2EMockAuthEnabled() ? import('@/lib/task/detailMock').then(({readTaskDetailsMock}) => readTaskDetailsMock(projectId, task.id).comments) : getTaskComments(projectId, task.id)),
       }))
     );
 
@@ -88,17 +93,19 @@ export function CommentedTasksPopover({
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
+      <ControlHint label="コメント" description="コメントがあるタスクをまとめて確認します。">
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8">
-          <MessageSquareText className="mr-1.5 h-3.5 w-3.5" />
-          コメントあり
+        <Button variant="outline" size="sm" className={iconOnly ? 'relative h-8 w-8 p-0' : 'h-8'} aria-label="コメント">
+          <MessageSquareText className={iconOnly ? 'h-4 w-4' : 'mr-1.5 h-3.5 w-3.5'} />
+          {!iconOnly && 'コメント'}
           {loadedKey === taskKey && (
-            <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+            <Badge variant="secondary" aria-hidden="true" className={iconOnly ? 'absolute -right-1 -top-1 h-3.5 min-w-3.5 justify-center px-0.5 text-[9px]' : 'ml-1 h-4 px-1 text-xs'}>
               {summaries.length}
             </Badge>
           )}
         </Button>
       </PopoverTrigger>
+      </ControlHint>
       <PopoverContent className="w-96 p-0" align="start">
         <div className="border-b px-3 py-2.5">
           <p className="text-sm font-semibold">コメント付きタスク</p>
@@ -127,7 +134,7 @@ export function CommentedTasksPopover({
                   <button
                     key={task.id}
                     type="button"
-                    className="block w-full px-3 py-3 text-left hover:bg-muted/60"
+                    className={taskRowInteraction + ' block w-full px-3 py-3 text-left'}
                     onClick={() => {
                       setIsOpen(false);
                       onTaskClick(task.id);

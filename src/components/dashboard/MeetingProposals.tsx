@@ -21,6 +21,7 @@ import { MEETING_CHECKLIST_STORAGE_KEY, useMeetingChecklistStore } from '@/store
 import { MeetingChecklistPlacement } from './MeetingChecklistPlacement';
 import { MeetingChecklistItems } from './MeetingChecklistItems';
 import { ProjectIconBadge } from './ProjectIconBadge';
+import { MeetingIntake } from './MeetingIntake';
 
 const compact = 'h-5 min-w-10 rounded px-1.5 text-[10px] font-bold leading-none';
 const statusLabels: Record<ReviewStatus, string> = { pending: '未確認', adopted: '採用済（未反映）', held: '保留中', dismissed: '不要' };
@@ -106,16 +107,16 @@ export function MeetingProposals({ tasks, tasksLoading, tasksError, isSample = f
       {status !== 'pending' && <button type="button" className="rounded text-xs text-muted-foreground underline focus-visible:ring-2" onClick={() => review(proposal.id, 'pending')}>未確認に戻す</button>}
     </div>;
   };
-  return <section className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm" aria-label="今日の朝会から">
+  return <div className="space-y-4"><MeetingIntake projects={projects} tasks={tasks} disabled={tasksLoading || isLoading || !!tasksError || !!error}/><details><summary className="cursor-pointer text-sm text-muted-foreground">以前の会議メモ v2・ブラウザ下書き</summary><section className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm" aria-label="今日の朝会から">
     <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-4 sm:px-5">
       <div className="flex flex-wrap items-center gap-2"><Mic2 className="h-4 w-4 text-muted-foreground" /><h2 className="font-semibold tracking-tight">今日の朝会から</h2><Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50">会議メモ v2・下書き</Badge></div>
       <p className="text-xs text-muted-foreground" role="status">確認済み {reviewedCount} / {MEETING_ACTIONS.length}件</p>
     </div>
     <div className="space-y-1 border-b bg-blue-50/40 px-5 py-3 text-xs text-muted-foreground">
-      <p>新しい添付メモをAIで整理した固定の下書きです。毎日の会議取込・AI再生成は未接続。</p>
+      <p>以前の添付メモを整理した固定の下書きです。新しい文字起こしは上の取込から整理・反映できます。</p>
       <p className="text-amber-800">{MEETING_DATE_NOTE}</p>
       <p className="font-medium text-blue-800">採用・修正はこのブラウザだけに保存します。TaskFlowのタスクには反映されません。</p>
-      <p>{MEETING_BUNDLES.length}チェックリスト・{MEETING_ACTIONS.length}件の提案。追加先の大タスクごとに整理し、子タスクの担当・期限・完了条件を保持します。</p>
+      <p>{MEETING_BUNDLES.length}チェックリスト・{MEETING_ACTIONS.length}件の提案。追加先の大タスクごとに整理し、サブタスクの担当・期限・完了条件を保持します。</p>
       <p>作業チェックと個人別期限もテスト用にこのブラウザだけに保存します。実際の完了状態とは別です。大タスクの照合は候補なので、追加先を確認してください。</p>
       <p>「各自」は会議参加者3名を複数担当として展開します。登録済みの判定は候補のため、詳細で対応先・差分を確認してください。</p>
       {members.hasError && <p role="alert">担当者名を取得できませんでした。<button type="button" className="underline" onClick={members.refresh}>担当者を再取得</button></p>}
@@ -159,8 +160,8 @@ export function MeetingProposals({ tasks, tasksLoading, tasksError, isSample = f
                   <MeetingChecklistPlacement bundleId={bundle.id} title={bundle.title} tasks={tasks} projects={projects} ready={ready}/>
                 </div>
                 <div className="min-w-0 space-y-1">
-                  <button type="button" className="flex w-full items-center justify-between gap-3 rounded text-left text-sm font-medium hover:text-blue-700 focus-visible:ring-2" aria-expanded={expanded} aria-label={bundle.title + 'の子タスクを表示'} onClick={() => setExpandedBundles(current => expanded ? current.filter(id => id !== bundle.id) : [...current, bundle.id])}>
-                    <span>{listTitle}</span><span className="shrink-0 text-xs font-normal text-muted-foreground">{expanded ? '閉じる' : '子タスクを確認'}（{entries.length}項目）</span>
+                  <button type="button" className="flex w-full items-center justify-between gap-3 rounded text-left text-sm font-medium hover:text-blue-700 focus-visible:ring-2" aria-expanded={expanded} aria-label={bundle.title + 'のサブタスクを表示'} onClick={() => setExpandedBundles(current => expanded ? current.filter(id => id !== bundle.id) : [...current, bundle.id])}>
+                    <span>{listTitle}</span><span className="shrink-0 text-xs font-normal text-muted-foreground">{expanded ? '閉じる' : 'サブタスクを確認'}（{entries.length}項目）</span>
                   </button>
                   <div className="flex flex-wrap gap-2 text-[11px]">{groups.filter(g => bundle.counts[g]).map(g => <span key={g} className={groupStyles[g] + ' rounded px-1.5 py-0.5'}>{groupLabels[g]} {bundle.counts[g]}</span>)}<span className="text-muted-foreground">下書き確認 {checked}/{bundle.children.length}</span></div>
                   <p className="text-[11px] text-muted-foreground">チェックリスト · 作業チェック {completed}/{entries.length}（テスト）</p>
@@ -252,5 +253,5 @@ export function MeetingProposals({ tasks, tasksLoading, tasksError, isSample = f
         </div>}
       </DialogContent>
     </Dialog>
-  </section>;
+  </section></details></div>;
 }

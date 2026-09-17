@@ -64,7 +64,7 @@ describe('buildTaskFlowBrief', () => {
     const result = buildTaskFlowBrief([], [], [createNotification({type:'review_requested', taskId:'review-id', data:{commentId:'original',sourceTaskId:'parent'}})], now);
     expect(result.rows[0].total).toBe(0);
     expect(result.rows[2].total).toBe(1);
-    expect(result.rows[2].items[0]).toMatchObject({source:'CK',urgent:true,href:'/projects/project-1/board?task=review-id'});
+    expect(result.rows[2].items[0]).toMatchObject({source:'CK',urgent:true,href:'/projects/project-1/board?task=parent&comment=original'});
   });
   it('collects unread task notifications, due tasks, and stopped tasks', () => {
     const dueToday = createTask({
@@ -143,7 +143,7 @@ describe('buildTaskFlowBrief', () => {
     const brief = buildTaskFlowBrief([task], [task], [], now);
     expect(brief.rows.find((row) => row.label === '今日やる')?.items[0].priority).toBe('high');
     const upcoming = { ...task, id: 'upcoming-high-task', dueDate: new Date(2026, 8, 3, 18) };
-    expect(buildTaskFlowUpcoming([upcoming], now, 3)[0].tasks[0].priority).toBe('high');
+    expect(buildTaskFlowUpcoming([upcoming], now, 5)[0].tasks[0].priority).toBe('high');
   });
 
   it('keeps an assigned review request with a due date only in confirmation waiting', () => {
@@ -250,15 +250,15 @@ describe('buildTaskFlowBrief', () => {
 });
 
 describe('buildTaskFlowUpcoming', () => {
-  it('includes fourth and fifth day tasks only in the five-day range', () => {
-    const tasks = [4, 5, 6].map((offset) => createTask({ id: `day-${offset}`, dueDate: new Date(2026, 8, 2 + offset) }));
-    tasks.push(createTask({ id: 'archived', dueDate: new Date(2026, 8, 7), isArchived: true }));
-    const days = buildTaskFlowUpcoming(tasks, now, 5);
-    expect(days.map((day) => day.label)).toEqual(['明日', '2日後', '3日後', '4日後', '5日後']);
-    expect(days.map((day) => day.tasks.map((task) => task.id))).toEqual([[], [], [], ['day-4'], ['day-5']]);
-    expect(buildTaskFlowUpcoming(tasks, now, 3).flatMap((day) => day.tasks)).toEqual([]);
+  it('includes sixth and seventh day tasks only in the seven-day range and excludes later or archived tasks', () => {
+    const tasks = [5, 6, 7, 8].map((offset) => createTask({ id: `day-${offset}`, dueDate: new Date(2026, 8, 2 + offset) }));
+    tasks.push(createTask({ id: 'archived', dueDate: new Date(2026, 8, 9), isArchived: true }));
+    const days = buildTaskFlowUpcoming(tasks, now, 7);
+    expect(days.map((day) => day.label)).toEqual(['明日', '2日後', '3日後', '4日後', '5日後', '6日後', '7日後']);
+    expect(days.map((day) => day.tasks.map((task) => task.id))).toEqual([[], [], [], [], ['day-5'], ['day-6'], ['day-7']]);
+    expect(buildTaskFlowUpcoming(tasks, now).flatMap((day) => day.tasks.map(task => task.id))).toEqual(['day-5']);
   });
-  it('groups visible active tasks due tomorrow through three days from now', () => {
+  it('groups visible active tasks due tomorrow through five days from now', () => {
     const tomorrowLow = createTask({
       id: 'tomorrow-low',
       title: '明日の通常タスク',
@@ -291,7 +291,7 @@ describe('buildTaskFlowUpcoming', () => {
     });
     const outsideRange = createTask({
       id: 'outside-range',
-      dueDate: new Date(2026, 8, 6),
+      dueDate: new Date(2026, 8, 8),
     });
 
     const result = buildTaskFlowUpcoming(
@@ -306,7 +306,7 @@ describe('buildTaskFlowUpcoming', () => {
       now
     );
 
-    expect(result.map((day) => day.label)).toEqual(['明日', '2日後', '3日後']);
+    expect(result.map((day) => day.label)).toEqual(['明日', '2日後', '3日後', '4日後', '5日後']);
     expect(result[0].tasks.map((task) => task.id)).toEqual([
       'tomorrow-high',
       'tomorrow-low',

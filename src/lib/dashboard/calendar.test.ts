@@ -22,10 +22,10 @@ function createEvent(
 }
 
 describe('Google Calendar dashboard data', () => {
-  it('includes fourth and fifth day calendar events when five days are requested', () => {
-    const events = [4, 5, 6].map((offset) => createEvent({ id: `day-${offset}`, start: new Date(2026, 8, 2 + offset, 10), end: new Date(2026, 8, 2 + offset, 11) }));
-    expect(buildCalendarUpcomingDays(events, now, 5).map((day) => day.events.map((event) => event.id))).toEqual([[], [], [], ['day-4'], ['day-5']]);
-    expect(buildCalendarUpcomingDays(events, now).flatMap((day) => day.events)).toEqual([]);
+  it('includes sixth and seventh day calendar events in the seven-day range while keeping the default at five', () => {
+    const events = [5, 6, 7, 8].map((offset) => createEvent({ id: `day-${offset}`, start: new Date(2026, 8, 2 + offset, 10), end: new Date(2026, 8, 2 + offset, 11) }));
+    expect(buildCalendarUpcomingDays(events, now, 7).map((day) => day.events.map((event) => event.id))).toEqual([[], [], [], [], ['day-5'], ['day-6'], ['day-7']]);
+    expect(buildCalendarUpcomingDays(events, now).flatMap((day) => day.events.map(event => event.id))).toEqual(['day-5']);
   });
   it('builds the today row with time and a read-only event link', () => {
     const row = buildCalendarBriefRow([createEvent()], now);
@@ -39,7 +39,7 @@ describe('Google Calendar dashboard data', () => {
     });
   });
 
-  it('groups tomorrow through three days from now and preserves empty days', () => {
+  it('groups tomorrow through five days from now and preserves empty days', () => {
     const tomorrow = createEvent({
       id: 'tomorrow',
       start: new Date(2026, 8, 3),
@@ -58,6 +58,8 @@ describe('Google Calendar dashboard data', () => {
       ['tomorrow'],
       [],
       ['three-days-later'],
+      [],
+      [],
     ]);
   });
 });

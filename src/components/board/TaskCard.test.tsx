@@ -4,7 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TaskCard } from './TaskCard';
 import type { Label, Tag, Task } from '@/types';
 import { DEFAULT_BOARD_DISPLAY, useBoardDisplayStore } from '@/stores/boardDisplayStore';
+import { useTaskCommentPresence } from '@/hooks/useTaskCommentPresence';
 import { getUsersByIds } from '@/lib/firebase/firestore';
+import { useTaskCommentUnread } from '@/contexts/NotificationContext';
+
+vi.mock('@/contexts/NotificationContext', () => ({ useTaskCommentUnread: vi.fn(() => ({ hasUnread: false, isLoading: false, error: null })) }));
+
+vi.mock('@/hooks/useTaskCommentPresence', () => ({ useTaskCommentPresence: vi.fn(() => ({ anchor: { current: null }, presence: { status: 'ready', hasComments: false, checkedAt: 0 } })) }));
 
 vi.mock('@dnd-kit/sortable', () => ({
   useSortable: ({ disabled }: { disabled?: boolean }) => ({
@@ -139,7 +145,7 @@ describe('TaskCard', () => {
     expect(within(card).getByText('高')).toBeInTheDocument();
     expect(within(card).queryByText('進行中')).not.toBeInTheDocument();
     expect(within(card).queryByText(baseTask.description)).not.toBeInTheDocument();
-    expect(within(card).queryByText('デザイン')).not.toBeInTheDocument();
+    expect(within(card).getByTestId('task-card-label')).toHaveTextContent('デザイン');
     expect(within(card).getByText('UI改善')).toBeInTheDocument();
   });
 
@@ -218,7 +224,8 @@ describe('TaskCard', () => {
     expect(card).toHaveClass('border-neutral-300', 'bg-emerald-50/50');
     expect(card).not.toHaveClass('border-emerald-300');
     const completion = within(card).getByTestId('task-card-completion');
-    expect(completion).toHaveTextContent('7/20完了');
+    expect(completion).toHaveTextContent(/^7\/20$/);
+    expect(completion).toHaveAccessibleName('完了日：2026年7月20日');
     expect(within(completion).getByText('7/20')).toHaveAttribute('datetime', '2026-07-20');
     expect(completion).toHaveAttribute('title', '完了日：2026年7月20日');
     expect(within(card).getByText(baseTask.title)).toHaveClass('line-through');
@@ -276,7 +283,7 @@ describe('TaskCard', () => {
     expect(screen.getByText(baseTask.title).parentElement).not.toContainElement(completion);
     act(() => useBoardDisplayStore.getState().setOption('showAssignees', false));
     expect(screen.queryByTestId('task-card-assignees')).not.toBeInTheDocument();
-    expect(screen.getByTestId('task-card-completion')).toHaveTextContent('9/1完了');
+    expect(screen.getByTestId('task-card-completion')).toHaveTextContent('9/1');
   });
 
   it('omits an empty footer on incomplete tasks with all metadata hidden', () => {
@@ -287,7 +294,7 @@ describe('TaskCard', () => {
 
   it('shows the actual completion date rather than the due date', () => {
     renderTaskCard({ ...baseTask, isCompleted: true, completedAt: new Date(2026, 6, 21) });
-    expect(screen.getByTestId('task-card-completion')).toHaveTextContent('7/21完了');
+    expect(screen.getByTestId('task-card-completion')).toHaveTextContent('7/21');
     expect(screen.getByTestId('task-card-date-rail')).toHaveTextContent('7/15〜7/18');
   });
 
@@ -301,7 +308,8 @@ describe('TaskCard', () => {
     renderTaskCard(task);
     const assignees = await screen.findByTestId('task-card-assignees');
     const tag = screen.getByTestId('task-card-tag');
-    expect(tag.previousElementSibling).toBe(assignees);
+    expect(screen.getByTestId('task-card-label').previousElementSibling).toBe(assignees);
+    expect(tag.previousElementSibling).toBe(screen.getByTestId('task-card-label'));
     expect(tag).toHaveTextContent('UI改善');
     expect(tag).toHaveAttribute('title', 'UI改善');
     expect(tag).toHaveStyle({ backgroundColor: tags[0].color });
@@ -327,9 +335,68 @@ describe('TaskCard', () => {
   });
 
   it('does not render tag badges when the task has no matching tags', () => {
-    renderTaskCard({ ...baseTask, assigneeIds: [], tagIds: ['deleted-tag'], priority: null });
+    renderTaskCard({ ...baseTask, assigneeIds: [], labelIds: ['deleted-label'], tagIds: ['deleted-tag'], priority: null });
     expect(screen.queryByTestId('task-card-tag')).not.toBeInTheDocument();
     expect(screen.queryByTestId('task-card-metadata')).not.toBeInTheDocument();
+  });
+
+  it('shows the presence mark even with other metadata hidden without changing the task', () => {
+    vi.mocked(useTaskCommentPresence).mockReturnValueOnce({ anchor: { current: null }, presence: { status: 'ready', hasComments: true, checkedAt: 0 } });
+    useBoardDisplayStore.setState({ settings: { showListName: false, showAssignees: false, showPriority: false, showTags: false } });
+    const original = structuredClone(baseTask);
+    renderTaskCard();
+    const mark = screen.getByRole('img', { name: 'コメントあり' });
+    expect(screen.getByTestId('task-card-metadata')).toContainElement(mark);
+    expect(mark).toHaveAttribute('title', 'コメントあり');
+    expect(baseTask).toEqual(original);
+  });
+
+  it('distinguishes an unreadable comment source from known zero comments', () => {
+    vi.mocked(useTaskCommentPresence).mockReturnValueOnce({ anchor: { current: null }, presence: { status: 'error', checkedAt: 0 } });
+    renderTaskCard();
+    expect(screen.getByRole('img', { name: 'コメントを確認できません' })).toHaveTextContent('?');
+    expect(screen.queryByRole('img', { name: 'コメントあり' })).not.toBeInTheDocument();
+  });
+
+  it('places the comment mark after priority and list badges at the right edge', () => {
+    vi.mocked(useTaskCommentPresence).mockReturnValueOnce({ anchor: { current: null }, presence: { status: 'ready', hasComments: true, checkedAt: 0 } });
+    useBoardDisplayStore.setState({ settings: { ...DEFAULT_BOARD_DISPLAY, showListName: true } });
+    renderTaskCard();
+    const mark = screen.getByTestId('task-card-comments');
+    const trailing = mark.parentElement!;
+    expect(trailing).toHaveClass('ml-auto', 'justify-end');
+    expect(trailing.lastElementChild).toBe(mark);
+    expect(within(trailing).getByText('高')).toBeInTheDocument();
+    expect(within(trailing).getByText('進行中')).toBeInTheDocument();
+    expect(mark).toHaveClass('text-muted-foreground');
+  });
+
+  it('shows unread comments in red and returns to the normal color when read', () => {
+    vi.mocked(useTaskCommentPresence).mockReturnValue({ anchor: { current: null }, presence: { status: 'ready', hasComments: true, checkedAt: 0 } });
+    vi.mocked(useTaskCommentUnread).mockReturnValue({ hasUnread: true, isLoading: false, error: null });
+    const view = renderTaskCard();
+    expect(screen.getByRole('img', { name: '未読コメントあり' })).toHaveClass('text-red-600');
+    expect(useTaskCommentUnread).toHaveBeenLastCalledWith('project-1', 'task-1');
+    vi.mocked(useTaskCommentUnread).mockReturnValue({ hasUnread: false, isLoading: false, error: null });
+    view.rerender(<TaskCard projectId="project-1" task={baseTask} listName="進行中" listColor="#2563eb" labels={labels} tags={tags} onClick={vi.fn()} />);
+    expect(screen.getByRole('img', { name: 'コメントあり' })).not.toHaveClass('text-red-600');
+    vi.mocked(useTaskCommentPresence).mockReturnValue({ anchor: { current: null }, presence: { status: 'ready', hasComments: false, checkedAt: 0 } });
+  });
+
+  it('keeps unread lookup failures distinct from a read comment', () => {
+    vi.mocked(useTaskCommentPresence).mockReturnValueOnce({ anchor: { current: null }, presence: { status: 'ready', hasComments: true, checkedAt: 0 } });
+    vi.mocked(useTaskCommentUnread).mockReturnValueOnce({ hasUnread: false, isLoading: false, error: new Error('offline') });
+    renderTaskCard();
+    expect(screen.getByRole('img', { name: 'コメントあり（未読状態を確認できません）' })).toHaveTextContent('?');
+  });
+
+  it('shows a newly arrived unread notification even when the presence cache still says no comments', () => {
+    useBoardDisplayStore.setState({ settings: { showListName: false, showAssignees: false, showPriority: false, showTags: false } });
+    const view = renderTaskCard();
+    expect(screen.queryByTestId('task-card-comments')).not.toBeInTheDocument();
+    vi.mocked(useTaskCommentUnread).mockReturnValueOnce({ hasUnread: true, isLoading: false, error: null });
+    view.rerender(<TaskCard projectId="project-1" task={baseTask} listName="進行中" listColor="#2563eb" labels={labels} tags={tags} onClick={vi.fn()} />);
+    expect(screen.getByRole('img', { name: '未読コメントあり' })).toHaveClass('text-red-600');
   });
 
   it('does not substitute a deadline or update date for an unrecorded completion date', () => {
@@ -340,4 +407,19 @@ describe('TaskCard', () => {
     expect(screen.getByTestId('task-card-completion').querySelector('time')).toBeNull();
     expect(task).toEqual(original);
   });
+});
+
+it('hides the Moai label on board cards while preserving task data and other labels', () => {
+  useBoardDisplayStore.setState({settings:{...DEFAULT_BOARD_DISPLAY}});
+  const task = {...baseTask,assigneeIds:[],priority:null,labelIds:['ai-moai','renamed-moai',labels[0].id],tagIds:[]};
+  const moai = {...labels[0],id:'ai-moai',name:'モアイ',color:'#64748b'};
+  const renamedMoai = {...moai,id:'renamed-moai'};
+  render(<TaskCard projectId="project-1" task={task} listName="天然石" listColor="#333333" labels={[moai,renamedMoai,labels[0]]} tags={[]} onClick={vi.fn()} />);
+  expect(screen.queryByText('モアイ')).not.toBeInTheDocument();
+  expect(screen.getAllByTestId('task-card-label').map(element=>element.textContent)).toEqual(['デザイン']);
+  act(()=>useBoardDisplayStore.getState().setOption('showTags',false));
+  expect(screen.queryAllByTestId('task-card-label')).toHaveLength(0);
+  act(()=>useBoardDisplayStore.getState().setOption('showTags',true));
+  expect(screen.getAllByTestId('task-card-label').map(element=>element.textContent)).toEqual(['デザイン']);
+  expect(task.labelIds).toEqual(['ai-moai','renamed-moai',labels[0].id]);
 });

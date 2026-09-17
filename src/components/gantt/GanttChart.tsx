@@ -30,7 +30,8 @@ import {
   type ViewMode,
   type TaskBarResult,
 } from '@/lib/utils/gantt';
-import type { Task, List, Label } from '@/types';
+import type { Task, List, Label, Milestone } from '@/types';
+import { tasksInList, groupTaskFamilies } from '@/lib/board/taskHierarchy';
 import {
   calculateEffectiveStartDate,
   getAllDependentTasks,
@@ -42,6 +43,9 @@ interface GanttChartProps {
   tasks: Task[];
   lists: List[];
   labels: Label[];
+  listId?: string | null;
+  milestones?: Milestone[];
+  onMilestoneClick?: (id: string) => void;
   onTaskClick?: (taskId: string) => void;
   onTaskUpdate?: (taskId: string, data: Partial<Task>) => void;
 }
@@ -59,6 +63,9 @@ export function GanttChart({
   labels,
   onTaskClick,
   onTaskUpdate,
+  listId,
+  milestones = [],
+  onMilestoneClick,
 }: GanttChartProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -105,10 +112,11 @@ export function GanttChart({
   }, [lists]);
 
   // Calculate date range and columns
+  const datedMilestones = useMemo(() => milestones.filter(item => item.dueDate && item.status !== 'cancelled'), [milestones]);
   const columnWidth = getColumnWidth(viewMode);
   const { start: rangeStart, end: rangeEnd } = useMemo(
-    () => getDateRange(tasks, viewMode),
-    [tasks, viewMode]
+    () => getDateRange(tasks, viewMode, 7, datedMilestones.map(item => item.dueDate!)),
+    [tasks, viewMode, datedMilestones]
   );
   const columns = useMemo(
     () => generateDateColumns(rangeStart, rangeEnd, viewMode),
@@ -185,19 +193,22 @@ export function GanttChart({
 
   // Apply filters to sorted tasks
   const filteredTasks = useMemo(() => {
-    return sortedTasks.filter((task) => {
+    const scopedIds = new Set(tasksInList(tasks, listId ?? null).map(task => task.id));
+    const matching = sortedTasks.filter((task) => {
+      if (task.isArchived || !scopedIds.has(task.id)) return false;
       // Filter by completed status
       if (!showCompleted && task.isCompleted) return false;
 
       // Filter by list (if any lists are selected)
-      if (selectedListIds.size > 0 && !selectedListIds.has(task.listId)) return false;
+      if (listId === undefined && selectedListIds.size > 0 && !selectedListIds.has(task.listId)) return false;
 
       return true;
     });
-  }, [sortedTasks, showCompleted, selectedListIds]);
+    return groupTaskFamilies(matching, tasks).flatMap(family => [family.task, ...family.children]);
+  }, [sortedTasks, showCompleted, selectedListIds, listId, tasks]);
 
   // Check if any filter is active
-  const hasActiveFilter = !showCompleted || selectedListIds.size > 0;
+  const hasActiveFilter = !showCompleted || (listId === undefined && selectedListIds.size > 0);
 
   // Calculate task positions for dependency arrows (including predicted positions)
   const taskPositions = useMemo(() => {
@@ -549,7 +560,7 @@ export function GanttChart({
 
   // Calculate chart height based on content
   const chartContentHeight = Math.max(
-    filteredTasks.length * TASK_ROW_HEIGHT + HEADER_HEIGHT,
+    (filteredTasks.length + datedMilestones.length) * TASK_ROW_HEIGHT + HEADER_HEIGHT,
     MIN_CHART_HEIGHT
   );
 
@@ -613,7 +624,7 @@ export function GanttChart({
                 </div>
 
                 {/* List filter */}
-                <div className="space-y-2">
+                {listId === undefined && <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">リスト</span>
                     {selectedListIds.size > 0 && (
@@ -667,7 +678,7 @@ export function GanttChart({
                       </label>
                     ))}
                   </div>
-                </div>
+                </div>}
 
                 {/* Clear all filters */}
                 {hasActiveFilter && (
@@ -691,7 +702,7 @@ export function GanttChart({
         <div className="hidden items-center gap-4 sm:flex">
           {/* Legend */}
           <div className="flex items-center gap-3 text-sm">
-            {lists.slice(0, 5).map((list) => (
+            {lists.filter(list => filteredTasks.some(task => task.listId === list.id)).slice(0, 5).map((list) => (
               <div key={list.id} className="flex items-center gap-1">
                 <div
                   className="h-3 w-3 rounded"
@@ -741,14 +752,14 @@ export function GanttChart({
                     className="h-2 w-2 flex-shrink-0 rounded-full"
                     style={{ backgroundColor: listColors[task.listId] }}
                   />
-                  <span
+                  <div className="min-w-0 flex-1"><span className="block truncate text-[10px] text-muted-foreground" title={lists.find(list => list.id === task.listId)?.name}>{lists.find(list => list.id === task.listId)?.name ?? '分類不明'}{task.parentTaskId && ` · 親：${tasks.find(parent => parent.id === task.parentTaskId)?.title ?? '表示できません'}`}</span><span
                     className={cn(
-                      'flex-1 truncate text-sm',
+                      'block truncate text-sm',
                       task.isCompleted && 'text-muted-foreground line-through'
                     )}
                   >
-                    {task.title}
-                  </span>
+                    {task.parentTaskId && '↳ '}{task.title || '名称未設定のタスク'}
+                  </span></div>
                   {taskLabels.slice(0, 2).map((label) => (
                     <Badge
                       key={label.id}
@@ -765,6 +776,7 @@ export function GanttChart({
                 </div>
               );
             })}
+            {datedMilestones.map(item => <button key={item.id} type="button" className="flex w-full items-center gap-2 border-b bg-violet-50/50 px-3 text-left text-xs text-violet-800 hover:bg-violet-100" style={{ height: TASK_ROW_HEIGHT }} onClick={() => onMilestoneClick?.(item.id)}><span>⚑</span><span className="min-w-0 truncate">{item.title}</span><span className="ml-auto shrink-0">{formatTaskDate(item.dueDate)}</span></button>)}
           </div>
         </div>
 
@@ -1060,6 +1072,14 @@ export function GanttChart({
                     )}
                   </div>
                 );
+              })}
+              {datedMilestones.map(item => {
+                const date = item.dueDate!;
+                let index = columns.findIndex((column, i) => date >= column.date && (!columns[i + 1] || date < columns[i + 1].date));
+                if (index < 0) index = 0;
+                return <div key={item.id} className="relative border-b bg-violet-50/30" style={{ height: TASK_ROW_HEIGHT }}>
+                  <button type="button" aria-label={`${item.title}の節目 ${formatTaskDate(date)}`} title={`${item.title} · ${formatTaskDate(date)}${item.status === 'achieved' ? ' · 達成' : ''}`} className="absolute top-1.5 z-10 rounded bg-violet-100 px-1.5 py-1 text-sm text-violet-800 hover:bg-violet-200" style={{ left: index * columnWidth }} onClick={() => onMilestoneClick?.(item.id)}>⚑</button>
+                </div>;
               })}
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render as renderUI, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KozueDashboard } from './KozueDashboard';
 import { DEFAULT_INBOX_DISPLAY, INBOX_DISPLAY_STORAGE_KEY, useInboxDisplayStore } from '@/stores/inboxDisplayStore';
@@ -10,6 +10,20 @@ import { TARGET_TASK_STORAGE_KEY, useTargetTaskStore } from '@/stores/targetTask
 import type { DashboardTask } from '@/lib/dashboard/brief';
 
 const recommendationTaskState = vi.hoisted(() => ({ tasks: [] as DashboardTask[] }));
+const commentHook = vi.hoisted(() => vi.fn());
+vi.mock('@/components/google/GoogleWorkspacePanel', () => ({ GoogleInboxSource: ({ service }: { service: string }) => <p>{service === 'gmail' ? 'Gmail連携の取得状況' : 'Google Chat連携の取得状況'}</p>, GoogleWorkspaceSummary: () => null }));
+
+function toggleLegacy(open: boolean) {
+  const details = screen.getByText('従来の一覧・予定・表示設定').closest('details')!;
+  details.open = open;
+  fireEvent(details, new Event('toggle'));
+}
+
+function render(ui: Parameters<typeof renderUI>[0]) {
+  const view = renderUI(ui);
+  toggleLegacy(true);
+  return view;
+}
 
 const projectState = vi.hoisted(() => ({
   projects: [{ id: 'project-a', name: '表示するプロジェクトA' }, { id: 'project-b', name: '表示するプロジェクトB' }],
@@ -24,7 +38,7 @@ const commentState = vi.hoisted(() => ({
   ],
   isLoading: false, hasError: false, metadataIncomplete: false, updatedAt: new Date(2026, 8, 3, 10), refresh: vi.fn(),
 }));
-vi.mock('@/hooks/useDashboardComments', () => ({ useDashboardComments: () => commentState }));
+vi.mock('@/hooks/useDashboardComments', () => ({ useDashboardComments: (...args: unknown[]) => { commentHook(...args); return commentState; } }));
 
 vi.mock('@/hooks/useMeetingMembers', () => ({ useMeetingMembers: () => ({ users: [], isLoading: false, hasError: false, refresh: vi.fn() }) }));
 vi.mock('@/hooks/useProjects', () => ({ useProjects: () => projectState }));
@@ -73,7 +87,7 @@ vi.mock('@/hooks/useTaskFlowBrief', () => ({
         projectName: '確認プロジェクト',
         href: '/projects/test-project/board?task=upcoming-task',
       }],
-    }, ...Array.from({ length: 4 }, (_, index) => ({ dayOffset: index + 2, label: `${index + 2}日後`, date: new Date(2026, 8, index + 5), tasks: index < 2 ? [] : [{ id: `day-${index + 2}`, title: `${index + 2}日後の確認タスク`, projectName: '確認プロジェクト', href: `/projects/test-project/board?task=day-${index + 2}` }] }))],
+    }, ...Array.from({ length: 6 }, (_, index) => ({ dayOffset: index + 2, label: `${index + 2}日後`, date: new Date(2026, 8, index + 5), tasks: index < 2 ? [] : [{ id: `day-${index + 2}`, title: `${index + 2}日後の確認タスク`, projectName: '確認プロジェクト', href: `/projects/test-project/board?task=day-${index + 2}` }] }))],
     upcomingCalendarDays: [],
     isLoading: false,
     areTasksLoading: false,
@@ -85,12 +99,24 @@ vi.mock('@/hooks/useTaskFlowBrief', () => ({
 }));
 
 describe('KozueDashboard integration', () => {
+  it('defers the legacy view and its comment reads until opened, then retains the mounted view', () => {
+    renderUI(<KozueDashboard displayName="Kozue" />);
+    expect(screen.queryByText('今日のブリーフ')).not.toBeInTheDocument();
+    expect(commentHook.mock.lastCall?.[3]).toBe(false);
+    toggleLegacy(true);
+    const heading = screen.getByRole('heading', { name: '今日のブリーフ' });
+    expect(commentHook.mock.lastCall?.[3]).toBe(true);
+    toggleLegacy(false);
+    expect(heading.isConnected).toBe(true);
+    toggleLegacy(true);
+    expect(screen.getByRole('heading', { name: '今日のブリーフ' })).toBe(heading);
+  });
   beforeEach(() => {
     recommendationTaskState.tasks = [];
     localStorage.removeItem(TARGET_TASK_STORAGE_KEY);
     useTargetTaskStore.setState({ selections: [], persistenceFailed: false });
     localStorage.removeItem(UPCOMING_RANGE_STORAGE_KEY);
-    useUpcomingRangeStore.setState({ dayCount: 3, persistenceFailed: false });
+    useUpcomingRangeStore.setState({ dayCount: 5, persistenceFailed: false });
     localStorage.removeItem(MEET_LINK_STORAGE_KEY);
     localStorage.removeItem(LEGACY_MEET_LINK_STORAGE_KEY);
     useMeetLinkStore.setState({ links: emptyMeetLinks(), persistenceFailed: false });
@@ -124,7 +150,7 @@ describe('KozueDashboard integration', () => {
     expect(screen.getByRole('region', { name: '共通カウントダウン' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: '共通カウントダウン' })).toHaveClass('w-full', 'max-w-[640px]', 'justify-self-end');
     const headings = screen.getAllByRole('heading', { level: 2 });
-    expect(headings.slice(0, 3).map((heading) => heading.textContent)).toEqual(['今日のブリーフ', '直近3日', '今月の的']);
+    expect(headings.slice(0, 3).map((heading) => heading.textContent)).toEqual(['今日のブリーフ', '直近5日', '今月の的']);
   });
 
   it('includes the year and leaves single-digit months and days unpadded', () => {
@@ -134,24 +160,28 @@ describe('KozueDashboard integration', () => {
     expect(screen.getByText('2027.1.2')).toBeVisible();
   });
 
-  it('switches between three and five days and restores the chosen display period', () => {
+  it('switches between five and seven days and restores the chosen display period', () => {
     render(<KozueDashboard displayName="Kozue" />);
     const picker = screen.getByRole('group', { name: '直近の表示期間' });
-    expect(within(picker).getByRole('button', { name: '3日' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.queryByText('4日後の確認タスク')).not.toBeInTheDocument();
-    fireEvent.click(within(picker).getByRole('button', { name: '5日' }));
-    expect(screen.getByRole('heading', { name: '直近5日' })).toBeInTheDocument();
     expect(within(picker).getByRole('button', { name: '5日' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('link', { name: /4日後の確認タスク/ })).toHaveAttribute('href', '/projects/test-project/board?task=day-4');
+    expect(screen.queryByRole('button', { name: '3日' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /5日後の確認タスク/ })).toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem(UPCOMING_RANGE_STORAGE_KEY)!)).toBe(5);
+    expect(screen.queryByText('6日後の確認タスク')).not.toBeInTheDocument();
+    fireEvent.click(within(picker).getByRole('button', { name: '7日' }));
+    expect(screen.getByRole('heading', { name: '直近7日' })).toBeInTheDocument();
+    expect(within(picker).getByRole('button', { name: '7日' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('link', { name: /6日後の確認タスク/ })).toHaveAttribute('href', '/projects/test-project/board?task=day-6');
+    expect(screen.getByRole('link', { name: /7日後の確認タスク/ })).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem(UPCOMING_RANGE_STORAGE_KEY)!)).toBe(7);
     expect(screen.getByText('3日動いていない')).toBeInTheDocument();
     cleanup();
+    useUpcomingRangeStore.setState({ dayCount: 5 });
     render(<KozueDashboard displayName="Kozue" />);
+    expect(screen.getByRole('heading', { name: '直近7日' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '5日' }));
     expect(screen.getByRole('heading', { name: '直近5日' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '3日' }));
-    expect(screen.getByRole('heading', { name: '直近3日' })).toBeInTheDocument();
-    expect(screen.queryByText('5日後の確認タスク')).not.toBeInTheDocument();
+    expect(screen.queryByText('6日後の確認タスク')).not.toBeInTheDocument();
+    expect(screen.queryByText('7日後の確認タスク')).not.toBeInTheDocument();
   });
 
   it('hides project tasks only in the stale row, preserves other sections, and can restore all', () => {
@@ -189,7 +219,7 @@ describe('KozueDashboard integration', () => {
     expect(screen.queryByText('停止タスク1')).not.toBeInTheDocument();
     expect(screen.getByText('停止タスク4')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '3日動いていないの表示設定' }));
-    expect(screen.getByRole('checkbox', { name: 'プロジェクトAの新しい名前' })).not.toBeChecked();
+    expect(within(screen.getByRole('dialog')).getByRole('checkbox', { name: 'プロジェクトAの新しい名前' })).not.toBeChecked();
   });
 
   it('keeps saved exclusions when the project list fails', () => {
@@ -281,7 +311,7 @@ describe('KozueDashboard integration', () => {
   it('selects real projects for targets and persists the selection without reusing sample goals', () => {
     render(<KozueDashboard displayName="Kozue" />);
     const targets = screen.getByRole('region', { name: '今月の的' });
-    expect(within(targets).getByText('表示サンプル')).toBeInTheDocument();
+    expect(within(targets).queryByText('表示サンプル')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '今月の的に表示するプロジェクトを選択' }));
     const picker = screen.getByRole('dialog');
     fireEvent.click(within(picker).getByRole('checkbox', { name: '表示するプロジェクトA' }));
@@ -297,8 +327,8 @@ describe('KozueDashboard integration', () => {
     expect(within(targets).getAllByRole('link')).toHaveLength(2);
     fireEvent.click(within(picker).getByRole('button', { name: 'すべて外す' }));
     expect(within(targets).getByText(/表示するプロジェクトがありません/)).toBeInTheDocument();
-    fireEvent.click(within(picker).getByRole('button', { name: 'サンプル表示に戻す' }));
-    expect(within(targets).getByText('2商品を出品する')).toBeInTheDocument();
+    fireEvent.click(within(picker).getByRole('button', { name: '選択をリセット' }));
+    expect(within(targets).queryByText('2商品を出品する')).not.toBeInTheDocument();
   });
 
   it('shows three automatic recommendations, ignores legacy manual choices, and reflects task completion', () => {
@@ -363,13 +393,21 @@ describe('KozueDashboard integration', () => {
     expect(screen.queryByText('確認タスク11')).not.toBeInTheDocument();
   });
 
-  it('stacks inbox and meeting full-width and shares the brief row layout', () => {
+  it('stacks the new meeting intake full-width and preserves the previous meeting rows on expansion', () => {
     render(<KozueDashboard displayName="Kozue" />);
     const brief = screen.getByRole('heading', { name: '今日のブリーフ' }).closest('section')!;
     const inbox = screen.getByRole('region', { name: '受信箱' });
     const meeting = screen.getByRole('region', { name: '今日の朝会から' });
     expect(inbox.parentElement).toBe(brief.parentElement);
-    expect(inbox.nextElementSibling).toBe(meeting);
+    const intake = screen.getByRole('region', { name: '会議・メモを取り込む' });
+    expect(inbox.nextElementSibling).toBe(intake.closest('details'));
+    expect(intake.closest('details')?.parentElement).toBe(brief.parentElement);
+    expect(intake).not.toBeVisible();
+    fireEvent.click(screen.getByText('以前の会議下書き'));
+    expect(intake).toBeVisible();
+    expect(meeting).not.toBeVisible();
+    fireEvent.click(screen.getByText('以前の会議メモ v2・ブラウザ下書き'));
+    expect(meeting).toBeVisible();
     const rowClass = 'lg:grid-cols-[150px_minmax(0,1fr)]';
     for (const section of [brief, inbox, meeting]) {
       expect(section).toHaveClass('border-blue-200');
@@ -379,30 +417,20 @@ describe('KozueDashboard integration', () => {
     expect(within(meeting).getByText('会議メモ v2・下書き')).toBeInTheDocument();
     expect(within(meeting).getByText(/TaskFlowのタスクには反映されません/)).toBeInTheDocument();
     expect(within(meeting).queryAllByRole('article')).toHaveLength(0);
-    expect(within(meeting).getAllByRole('button', { name: /の子タスクを表示$/ })).toHaveLength(13);
+    expect(within(meeting).getAllByRole('button', { name: /のサブタスクを表示$/ })).toHaveLength(13);
   });
 
-  it('labels the weekly score as fixed sample data that is not connected', () => {
+  it('hides disconnected sample scores in the real workspace', () => {
     render(<KozueDashboard displayName="Kozue" />);
-    const targets = screen.getByRole('region', { name: '今月の的' });
-    const goals = screen.getByRole('region', { name: '達成目標' });
-    const score = screen.getByRole('region', { name: '今週のスコア（表示サンプル）' });
-    expect(within(targets).queryByRole('region', { name: '達成目標' })).not.toBeInTheDocument();
-    expect(targets.nextElementSibling).toBe(goals);
-    expect(goals.nextElementSibling).toBe(score);
-    expect(goals).toHaveClass('rounded-2xl', 'border', 'shadow-sm');
-    expect(within(score).getByText('表示サンプル・未連携')).toBeInTheDocument();
-    expect(within(score).getByText(/数値はレイアウト確認用の固定サンプルです/)).toHaveTextContent(
-      '売上・レビュー・金額データには接続していません。'
-    );
+    expect(screen.queryByRole('region', {name:'今週のスコア（表示サンプル）'})).not.toBeInTheDocument();
   });
 
   it('matches every meeting action button to the compact source badges', () => {
     render(<KozueDashboard displayName="Kozue" />);
     const meeting = screen.getByRole('region', { name: '今日の朝会から' });
     const inbox = screen.getByRole('region', { name: '受信箱' });
-    const badges = within(inbox).getAllByText('MAIL');
-    fireEvent.click(within(meeting).getByRole('button', { name: '出展情報の準備・提出の子タスクを表示' }));
+    const badges = within(inbox).getAllByText('TF');
+    fireEvent.click(within(meeting).getByRole('button', { name: '出展情報の準備・提出のサブタスクを表示' }));
     const buttons = within(meeting).getAllByRole('button', { name: /^(採用|直す|保留|不要)$/ });
     expect(buttons).toHaveLength(28);
     for (const element of [...badges, ...buttons]) {
@@ -428,13 +456,13 @@ describe('KozueDashboard integration', () => {
     expect(within(inbox).getByText(/表示する項目がありません/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('checkbox', { name: 'Google Chat' }));
     expect(within(inbox).queryByText(/表示する項目がありません/)).not.toBeInTheDocument();
-    expect(within(inbox).getByText('Google Chatは未連携です。メッセージはまだ取得していません。')).toBeInTheDocument();
+    expect(within(inbox).getByText('Google Chat連携の取得状況')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '今日のブリーフ' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '出展情報の準備・提出の子タスクを表示' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '出展情報の準備・提出のサブタスクを表示' })).toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem(INBOX_DISPLAY_STORAGE_KEY)!)).toEqual({ gmail: false, comments: false, googleChat: true });
     fireEvent.click(screen.getByRole('button', { name: '初期設定に戻す' }));
     expect(within(inbox).getByText('コメント：TaskFlow実データ')).toBeInTheDocument();
-    expect(within(inbox).queryByText(/Google Chatは未連携/)).not.toBeInTheDocument();
+    expect(within(inbox).queryByText(/Google Chat連携の取得状況/)).not.toBeInTheDocument();
   });
 
   it('restores the selected channels when the dashboard is opened again', () => {
@@ -443,7 +471,7 @@ describe('KozueDashboard integration', () => {
     const inbox = screen.getByRole('region', { name: '受信箱' });
     expect(within(inbox).queryByText('「納品形式について質問です…」')).not.toBeInTheDocument();
     expect(within(inbox).getByText('実際の確認コメント')).toBeInTheDocument();
-    expect(within(inbox).getByText(/Google Chatは未連携/)).toBeInTheDocument();
+    expect(within(inbox).getByText(/Google Chat連携の取得状況/)).toBeInTheDocument();
   });
 
   it('shows real comments with their context and a same-origin task link, not the old sample', () => {
@@ -464,9 +492,9 @@ describe('KozueDashboard integration', () => {
     expect(message).toContainElement(within(inbox).getByText(/確認担当者 ／ 実プロジェクト/));
     expect(within(inbox).queryByText('タスクへ')).not.toBeInTheDocument();
     expect(within(inbox).queryByText('Gmailへ')).not.toBeInTheDocument();
-    expect(within(inbox).getByText('「納品形式について質問です…」').parentElement).toHaveAttribute('aria-disabled', 'true');
+    expect(within(inbox).queryByText('「納品形式について質問です…」')).not.toBeInTheDocument();
     expect(within(inbox).queryByText(/144タイプ/)).not.toBeInTheDocument();
-    expect(within(inbox).getByText(/Gmailは表示サンプル/)).toBeInTheDocument();
+    expect(within(inbox).getByText('Gmail連携の取得状況')).toBeInTheDocument();
     fireEvent.click(within(inbox).getByRole('button', { name: 'コメントを更新' }));
     expect(commentState.refresh).toHaveBeenCalled();
   });

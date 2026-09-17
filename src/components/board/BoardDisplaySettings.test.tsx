@@ -18,11 +18,11 @@ describe('BoardDisplaySettings', () => {
     expect(screen.getByRole('checkbox', { name: '列名' })).not.toBeChecked();
     expect(screen.getByRole('checkbox', { name: '担当者' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: '優先度' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'タグ' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'ラベル・タグ' })).toBeChecked();
     fireEvent.click(screen.getByRole('checkbox', { name: '列名' }));
     fireEvent.click(screen.getByRole('checkbox', { name: '担当者' }));
     fireEvent.click(screen.getByRole('checkbox', { name: '優先度' }));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'タグ' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'ラベル・タグ' }));
     expect(useBoardDisplayStore.getState().settings).toEqual({ showListName: true, showAssignees: false, showPriority: false, showTags: false });
     fireEvent.click(screen.getByRole('button', { name: '初期設定に戻す' }));
     expect(useBoardDisplayStore.getState().settings).toEqual(DEFAULT_BOARD_DISPLAY);
@@ -46,6 +46,6 @@ describe('BoardDisplaySettings', () => {
     expect(useBoardDisplayStore.getState().settings).toEqual(DEFAULT_BOARD_DISPLAY);
     expect(screen.getByText(/ドラッグ移動を停止/)).toBeVisible();
     fireEvent.click(screen.getByRole('button',{name:'初期設定に戻す'}));
-    expect(useBoardSortStore.getState().byProject.p).toBe('manual');
+    expect(useBoardSortStore.getState().byProject.p).toBe('due-asc');
   });
 });

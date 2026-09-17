@@ -1,7 +1,7 @@
 import { addDays, format, isSameDay, startOfDay } from 'date-fns';
 import type { DashboardBriefRow } from './brief';
 import type { GoogleCalendarEvent } from '@/lib/google/calendar';
-import type { UpcomingRange } from './upcoming-range';
+import { DEFAULT_UPCOMING_DAYS, type UpcomingRange } from './upcoming-range';
 
 export interface DashboardCalendarDay {
   dayOffset: number;
@@ -46,7 +46,7 @@ export function buildCalendarBriefRow(
 export function buildCalendarUpcomingDays(
   events: GoogleCalendarEvent[],
   now: Date = new Date(),
-  dayCount: UpcomingRange = 3
+  dayCount: UpcomingRange = DEFAULT_UPCOMING_DAYS
 ): DashboardCalendarDay[] {
   return Array.from({ length: dayCount }, (_, index) => index + 1).map((dayOffset) => {
     const date = startOfDay(addDays(now, dayOffset));

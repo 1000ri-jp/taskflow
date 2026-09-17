@@ -18,10 +18,11 @@ export interface Project {
   headerImageUrl?: string; // Project header/banner image URL
   color: string;
   ownerId: string;
+  defaultAssigneeId?: string | null; // Optional default for new work; independent of ownership.
   memberIds: string[];
   urls?: ProjectUrl[]; // Related URLs for the project
   isArchived: boolean;
-  order: number; // Display order in sidebar
+  order: number; // Legacy default order; personal sidebar order lives on the user document
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +37,9 @@ export interface ProjectUrl {
 export type MilestoneStatus = 'planned' | 'in_progress' | 'achieved' | 'cancelled';
 
 export interface Milestone {
+  kind?: 'date' | 'achievement';
+  achievementCondition?: string;
+  requiredTaskIds?: string[];
   id: string;
   projectId: string;
   title: string;
@@ -68,17 +72,42 @@ export interface List {
   autoCompleteOnEnter: boolean; // Mark tasks as complete when entering this list
   autoUncompleteOnExit: boolean; // Remove completion when tasks leave this list
   autoSetStartDateOnEnter: boolean; // Set task startDate when entering this list (only if not already set)
+  defaultAssigneeId?: string | null; // List default takes precedence over the project default for new work.
   createdAt: Date;
   updatedAt: Date;
 }
 
 // Task types
+export interface TaskWorkState {
+  status: 'hold' | 'wait';
+  reason: string;
+  resumeCondition: string;
+  reviewAt: string | null;
+}
+
 export interface Task {
+  aiSuggested?: boolean; // Created from an AI proposal; its normal label remains editable.
+  recurrence?: import('@/lib/task/recurrence').TaskRecurrence | null;
+  completionCriteria?: string;
+  primaryAssigneeId?: string | null;
+  workProgress?: 'not_started' | 'started';
+  review?: import('@/lib/task/workflow').ReviewCycle;
+  reviewRequests?: Record<string, import('@/lib/task/reviews').TaskReviewRequest>;
+  reviewRecordId?: string; // In-memory compatibility projection, never a task document.
+  workState?: TaskWorkState | null;
+  relatedTaskIds?: string[];
+  mergedIntoTaskId?: string;
+  mergedFromTaskIds?: string[];
+  automation?: import('@/lib/task/automationTypes').TaskAutomationSummary;
+  completionPolicy?: import('@/lib/task/automationTypes').AllChildrenCompletionPolicy;
   id: string;
   // Shared review requests reuse the task collection and normal assignee/completion fields.
   parentTaskId?: string;
+  /** Parent-owned order for visible direct subtasks; Task.order remains board order. */
+  subtaskOrderIds?: string[];
   sourceCommentId?: string;
-  taskKind?: 'review_request';
+  sourceCommentTaskId?: string; // Original comment location, independent of the current parent.
+  taskKind?: 'review_request' | 'decision';
   milestoneId?: string | null;
   projectId: string;
   listId: string;
@@ -100,6 +129,7 @@ export interface Task {
   isArchived: boolean; // Soft delete - archived tasks are hidden but not deleted
   archivedAt: Date | null; // When the task was archived
   archivedBy: string | null; // Who archived the task
+  autoArchiveCompletedAt?: Date | null; // Retained on restore; the same completion is not auto-archived again
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -132,11 +162,14 @@ export interface ChecklistItem {
   text: string;
   isChecked: boolean;
   order: number;
+  dueDate?: string | null;
 }
 
 // Comment types
+export type CommentPurpose = 'memo' | 'review_request';
 export interface Comment {
   id: string;
+  purpose?: CommentPurpose;
   reviewTaskId?: string;
   taskId: string;
   content: string;
@@ -284,12 +317,4 @@ export const TAG_COLORS = [
   { name: 'pink', value: '#ec4899' },
   { name: 'teal', value: '#14b8a6' },
   { name: 'gray', value: '#6b7280' },
-] as const;
-
-// Default tags for new projects
-export const DEFAULT_TAGS = [
-  { name: '進行中', color: '#3b82f6' },
-  { name: '指示待ち', color: '#f97316' },
-  { name: '完了', color: '#22c55e' },
-  { name: '確認中', color: '#ef4444' },
 ] as const;

@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, useId } from 'react';
 import { useRouter } from 'next/navigation';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AsyncState } from '@/components/ui/async-state';
 import { Badge } from '@/components/ui/badge';
 import { useUIStore } from '@/stores/uiStore';
 import { useGlobalSearch, type SearchResult } from '@/hooks/useGlobalSearch';
@@ -38,7 +39,10 @@ export function CommandPalette() {
     projectResults,
     taskResults,
     isSearching,
+    error,
+    retry,
   } = useGlobalSearch();
+  const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -73,7 +77,7 @@ export function CommandPalette() {
       query.trim()
         ? [
             ...projectResults.map((r) => ({ type: 'project' as const, data: r })),
-            ...taskResults.map((r) => ({ type: 'task' as const, data: r })),
+            ...taskResults.slice(0, 20).map((r) => ({ type: 'task' as const, data: r })),
           ]
         : quickActions.map((a) => ({ type: 'action' as const, data: a })),
     [projectResults, query, quickActions, taskResults]
@@ -137,7 +141,7 @@ export function CommandPalette() {
         case 'ArrowUp':
           e.preventDefault();
           setSelectedIndex((prev) =>
-            prev > 0 ? prev - 1 : allItems.length - 1
+            prev > 0 ? prev - 1 : Math.max(0, allItems.length - 1)
           );
           break;
         case 'Enter':
@@ -151,7 +155,7 @@ export function CommandPalette() {
 
   // Scroll selected item into view
   useEffect(() => {
-    const el = document.querySelector(`[data-command-index="${selectedIndex}"]`);
+    const el = inputRef.current?.closest('[role="dialog"]')?.querySelector(`[data-command-index="${selectedIndex}"]`);
     el?.scrollIntoView({ block: 'nearest' });
   }, [selectedIndex]);
 
@@ -174,11 +178,19 @@ export function CommandPalette() {
         showCloseButton={false}
         className="top-[20%] translate-y-0 p-0 sm:max-w-xl gap-0"
       >
+        <DialogTitle className="sr-only">タスク・プロジェクトを検索</DialogTitle>
+        <DialogDescription className="sr-only">名前や説明の言葉を入力して、仕事を開けます。</DialogDescription>
         {/* Search input */}
         <div className="flex items-center border-b px-3">
           <Search className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
           <input
             ref={inputRef}
+            role="combobox"
+            aria-label="プロジェクトやタスクを検索"
+            aria-autocomplete="list"
+            aria-expanded={isCommandPaletteOpen}
+            aria-controls={listId}
+            aria-activedescendant={allItems[selectedIndex] ? `${listId}-${selectedIndex}` : undefined}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -193,9 +205,10 @@ export function CommandPalette() {
           </kbd>
         </div>
 
+        {query.trim() && error && <AsyncState state="error" message={error} onRetry={retry} />}
         {/* Results */}
         <ScrollArea className="max-h-[300px] overflow-y-auto">
-          <div className="p-2">
+          <div id={listId} role="listbox" aria-label="検索候補" aria-busy={isSearching} className="p-2">
             {/* No query: show quick actions */}
             {!query.trim() && (
               <div>
@@ -205,6 +218,10 @@ export function CommandPalette() {
                 {quickActions.map((action, index) => (
                   <button
                     key={action.id}
+                    id={`${listId}-${index}`}
+                    role="option"
+                    aria-selected={selectedIndex === index}
+                    tabIndex={-1}
                     data-command-index={index}
                     onClick={() => handleSelect(index)}
                     onMouseEnter={() => setSelectedIndex(index)}
@@ -237,6 +254,10 @@ export function CommandPalette() {
                       return (
                         <button
                           key={`project-${result.id}`}
+                          id={`${listId}-${index}`}
+                          role="option"
+                          aria-selected={selectedIndex === index}
+                          tabIndex={-1}
                           data-command-index={index}
                           onClick={() => handleSelect(index)}
                           onMouseEnter={() => setSelectedIndex(index)}
@@ -274,6 +295,10 @@ export function CommandPalette() {
                       return (
                         <button
                           key={`task-${result.id}`}
+                          id={`${listId}-${index}`}
+                          role="option"
+                          aria-selected={selectedIndex === index}
+                          tabIndex={-1}
                           data-command-index={index}
                           onClick={() => handleSelect(index)}
                           onMouseEnter={() => setSelectedIndex(index)}
@@ -310,7 +335,7 @@ export function CommandPalette() {
                 )}
 
                 {/* No results */}
-                {!isSearching && projectResults.length === 0 && taskResults.length === 0 && (
+                {!isSearching && !error && projectResults.length === 0 && taskResults.length === 0 && (
                   <div className="py-6 text-center text-sm text-muted-foreground">
                     検索結果が見つかりませんでした
                   </div>

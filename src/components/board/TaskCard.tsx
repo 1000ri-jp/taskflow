@@ -1,12 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format, startOfDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { AlertTriangle, Calendar, CheckCircle2, Clock, Link2, MoveRight } from 'lucide-react';
+import { AlertTriangle, Calendar, CheckCircle2, Clock, Link2, MessageCircle, MoveRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -24,12 +24,17 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { cn } from '@/lib/utils';
+import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import { getUsersByIds, getTaskAttachments } from '@/lib/firebase/firestore';
 import type { Task, Label, Tag, User as UserType, Attachment, List } from '@/types';
 import { isTaskOverdue, getEffectiveDates } from '@/lib/utils/task';
 import { taskReviewState } from '@/lib/board/taskViews';
-import { TaskFlowStateBadge } from './TaskViewFields';
-import { useBoardDisplayStore } from '@/stores/boardDisplayStore';
+import { TaskStatus, TaskFlowStateBadge } from './TaskViewFields';
+import { useTaskCommentPresence } from '@/hooks/useTaskCommentPresence';
+import { useTaskCommentUnread } from '@/contexts/NotificationContext';
+import { useBoardDisplayStore, type BoardDisplaySettings } from '@/stores/boardDisplayStore';
+import { taskCardInteraction } from '@/components/ui/density';
+import { MOAI_LABEL, MOAI_LABEL_ID } from '@/lib/task/moaiLabel';
 
 interface TaskCardProps {
   projectId: string;
@@ -44,10 +49,24 @@ interface TaskCardProps {
   onMove?: (listId: string) => void;
   isDragging?: boolean;
   disableDragging?: boolean;
+  footer?: ReactNode;
+  ariaLabel?: string;
+  displaySettings?: Partial<BoardDisplaySettings>;
 }
 
-export function TaskCard({ projectId, task, listName, listColor, labels, tags, allTasks, onClick, lists = [], onMove, isDragging, disableDragging = false }: TaskCardProps) {
-  const display = useBoardDisplayStore((state) => state.settings);
+export function TaskCard({ projectId, task, listName, listColor, labels, tags, allTasks, onClick, lists = [], onMove, isDragging, disableDragging = false, footer, ariaLabel, displaySettings }: TaskCardProps) {
+  const { anchor: commentAnchor, presence: commentPresence } = useTaskCommentPresence(projectId, task.id);
+  const hasComments = commentPresence.status === 'ready' && commentPresence.hasComments;
+  const commentError = commentPresence.status === 'error';
+  const commentUnread = useTaskCommentUnread(projectId, task.id);
+  // A new notification is newer evidence than the bounded presence cache.
+  const hasUnreadComments = commentUnread.hasUnread;
+  const commentLabel = hasUnreadComments ? '未読コメントあり'
+    : commentError ? 'コメントを確認できません'
+      : commentUnread.error ? 'コメントあり（未読状態を確認できません）'
+        : commentUnread.isLoading ? 'コメントあり（未読状態を確認中）' : 'コメントあり';
+  const sharedDisplay = useBoardDisplayStore((state) => state.settings);
+  const display = { ...sharedDisplay, ...displaySettings };
   const [assignees, setAssignees] = useState<UserType[]>([]);
   const [imageAttachments, setImageAttachments] = useState<Attachment[]>([]);
 
@@ -68,7 +87,8 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
         if (isMounted) setAssignees([]);
       });
     } else {
-      getUsersByIds(task.assigneeIds).then((users) => {
+      const people = isE2EMockAuthEnabled() ? import('@/lib/task/organizationMock').then(({getOrganizationMockUsers}) => getOrganizationMockUsers(task.assigneeIds)) : getUsersByIds(task.assigneeIds);
+      people.then((users) => {
         if (isMounted) setAssignees(users);
       });
     }
@@ -80,7 +100,8 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
   // Fetch image attachments
   useEffect(() => {
     if (projectId && task.id) {
-      getTaskAttachments(projectId, task.id).then((attachments) => {
+      const files = isE2EMockAuthEnabled() ? import('@/lib/task/detailMock').then(({readTaskDetailsMock}) => readTaskDetailsMock(projectId, task.id).attachments) : getTaskAttachments(projectId, task.id);
+      files.then((attachments) => {
         // Filter only image attachments
         const images = attachments.filter((a) => a.type.startsWith('image/'));
         setImageAttachments(images);
@@ -94,6 +115,7 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
   };
 
   const taskLabels = labels.filter((label) => task.labelIds.includes(label.id));
+  const visibleTaskLabels = taskLabels.filter(label => label.id !== MOAI_LABEL_ID && label.name !== MOAI_LABEL.name);
   const taskTags = tags.filter((tag) => task.tagIds?.includes(tag.id));
   const today = startOfDay(new Date());
   const isOverdue = isTaskOverdue(task, today);
@@ -128,13 +150,14 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
 
   const moveTargets = lists.filter((list) => list.id !== task.listId);
   const hasDateRail = Boolean(task.startDate || task.dueDate);
-  const hasVisibleMetadata = task.isCompleted || display.showListName ||
+  const showProgress = !task.isCompleted && (task.workProgress === 'started' || !!task.dependsOnTaskIds?.length);
+  const hasVisibleMetadata = showProgress || task.isCompleted || hasComments || hasUnreadComments || commentError || display.showListName ||
     (display.showAssignees && assignees.length > 0) ||
-    (display.showTags && taskTags.length > 0) ||
+    (display.showTags && (taskTags.length > 0 || visibleTaskLabels.length > 0)) ||
     (display.showPriority && Boolean(task.priority));
   const hasHoverDetails = Boolean(
     task.description ||
-    taskLabels.length > 0 ||
+    visibleTaskLabels.length > 0 ||
     taskTags.length > 0 ||
     task.completedAt ||
     hasDateRail ||
@@ -165,15 +188,15 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
     <Badge
       data-testid="task-card-completion"
       title={task.completedAt ? `完了日：${format(task.completedAt, 'yyyy年M月d日', { locale: ja })}` : '完了日未記録'}
+      aria-label={task.completedAt ? `完了日：${format(task.completedAt, 'yyyy年M月d日', { locale: ja })}` : '完了日未記録'}
       className="h-5 shrink-0 gap-1 bg-emerald-100 px-1.5 text-[10px] text-emerald-800 hover:bg-emerald-100"
     >
-      <CheckCircle2 className="h-3 w-3" />
+      <CheckCircle2 aria-hidden="true" className="h-3 w-3" />
       {task.completedAt ? (
         <>
           <time dateTime={format(task.completedAt, 'yyyy-MM-dd')}>
             {format(task.completedAt, 'M/d', { locale: ja })}
           </time>
-          完了
         </>
       ) : '完了日未記録'}
     </Badge>
@@ -181,9 +204,10 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
 
   const card = (
     <div
-      ref={setNodeRef}
+      ref={node => { setNodeRef(node); commentAnchor.current = node; }}
       style={style}
       {...attributes}
+      aria-label={ariaLabel}
       {...listeners}
       aria-disabled={undefined}
       aria-roledescription={disableDragging ? undefined : attributes['aria-roledescription']}
@@ -200,7 +224,7 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
       data-testid="task-card"
       data-completed={task.isCompleted ? 'true' : 'false'}
       className={cn(
-        'group cursor-pointer overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md',
+        'group cursor-pointer overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-md', taskCardInteraction,
         (isDragging || isSortableDragging) && 'opacity-50 shadow-lg',
         isDeadlineOverdue && 'border-red-500 border-2 bg-red-50',
         task.isCompleted && 'border-neutral-300 bg-emerald-50/50'
@@ -269,7 +293,7 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
           </aside>
         )}
 
-        <div className="min-w-0 flex-1 p-3">
+        <div className="min-w-0 flex-1 px-3 py-2">
           <div className="flex items-start gap-2">
             <p
               className={cn(
@@ -281,7 +305,7 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
             </p>
             {reviewState && <TaskFlowStateBadge label={reviewState.label} completed={reviewState.completed} />}
           </div>
-          {task.parentTaskId && <p className="mt-1 truncate text-[10px] text-blue-700">子タスク · {allTasks?.find(parent => parent.id === task.parentTaskId)?.title ?? '親タスクあり'}</p>}
+          {task.parentTaskId && <p className="mt-1 truncate text-[10px] text-blue-700">サブタスク · {allTasks?.find(parent => parent.id === task.parentTaskId)?.title ?? '親タスクを表示できません'}</p>}
 
           {hasVisibleMetadata && (
             <div data-testid="task-card-metadata" className="mt-2 flex min-h-6 flex-wrap items-center justify-between gap-2">
@@ -303,7 +327,9 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
                     )}
                   </div>
                 )}
+                {showProgress && <TaskStatus task={task} allTasks={allTasks} />}
                 {completionBadge}
+                {display.showTags && visibleTaskLabels.map(label => <Badge key={label.id} data-testid="task-card-label" title={label.name} className="h-5 max-w-full min-w-0 px-1.5 text-[10px] text-white" style={{backgroundColor:label.color}}>{label.name}</Badge>)}
                 {display.showTags && taskTags.map((tag) => (
                   <Badge
                     key={tag.id}
@@ -317,7 +343,7 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
                 ))}
               </div>
 
-              <div className="flex min-w-0 items-center justify-end gap-1">
+              <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
                 {display.showPriority && task.priority && (
                   <Badge
                     variant="outline"
@@ -344,11 +370,20 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
                     <span className="truncate">{listName}</span>
                   </Badge>
                 )}
+                {(hasComments || hasUnreadComments || commentError) && <span
+                  data-testid="task-card-comments"
+                  role="img"
+                  aria-label={commentLabel}
+                  title={commentError ? 'コメントを確認できません。タスクを開いて確認してください。' : commentLabel}
+                  className={cn('inline-flex h-5 shrink-0 items-center gap-0.5', hasUnreadComments ? 'text-red-600' : 'text-muted-foreground')}
+                ><MessageCircle aria-hidden="true" className="h-3.5 w-3.5" />{(commentError || commentUnread.error) && <span aria-hidden="true" className="text-[10px]">?</span>}</span>}
               </div>
             </div>
           )}
         </div>
       </div>
+      {commentPresence.status === 'loading' && <span className="sr-only">コメントを確認中</span>}
+      {footer}
     </div>
   );
 
@@ -360,9 +395,9 @@ export function TaskCard({ projectId, task, listName, listColor, labels, tags, a
 
         {task.description && <p className="whitespace-pre-wrap text-background/85">{task.description}</p>}
 
-        {(taskLabels.length > 0 || taskTags.length > 0) && (
+        {(visibleTaskLabels.length > 0 || taskTags.length > 0) && (
           <div className="flex flex-wrap gap-1">
-            {taskLabels.map((label) => (
+            {visibleTaskLabels.map((label) => (
               <Badge
                 key={label.id}
                 className="h-5 px-1.5 text-[10px] text-white"

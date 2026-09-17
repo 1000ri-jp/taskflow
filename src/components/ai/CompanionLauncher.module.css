@@ -1,0 +1,107 @@
+.mascot {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  pointer-events: none;
+  color: #106789;
+}
+
+.body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  border: 1.5px solid #62bfdf;
+  border-radius: 48% 52% 46% 54%;
+  background: radial-gradient(circle at 32% 22%, #f7fdff 0%, #c9efff 46%, #87d5ef 100%);
+  box-shadow: inset 0 2px 3px rgb(255 255 255 / 90%), 0 4px 10px rgb(41 135 172 / 22%);
+  transform-origin: 50% 80%;
+  animation: bounce 4.2s ease-in-out infinite;
+}
+
+.shadow {
+  position: absolute;
+  bottom: 5px;
+  width: 44px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2589ad;
+  opacity: 0.18;
+  animation: bounceShadow 4.2s ease-in-out infinite;
+}
+
+.halo {
+  position: absolute;
+  inset: 3px;
+  border: 1px solid #62bfdf;
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+.mascot[data-unread="true"] {
+  color: #92400e;
+}
+
+.mascot[data-unread="true"] .body {
+  border-color: #f0b74b;
+  background: radial-gradient(circle at 32% 22%, #fffbeb 0%, #fde68a 46%, #fbbf24 100%);
+  box-shadow: inset 0 2px 3px rgb(255 255 255 / 90%), 0 4px 10px rgb(180 83 9 / 22%);
+}
+
+.mascot[data-unread="true"] .shadow {
+  background: #d97706;
+}
+
+.mascot[data-unread="true"]:not([data-busy="true"]) .halo {
+  border-color: #f0b74b;
+}
+
+.mascot[data-busy="true"] .halo {
+  border-width: 2px;
+  border-color: transparent;
+  border-top-color: currentColor;
+  opacity: 0.7;
+  animation: think 1.6s linear infinite;
+}
+
+@keyframes bounce {
+  0%, 45%, 100% { transform: translateY(0) scale(1) rotate(0); }
+  53% { transform: translateY(1px) scale(1.12, 0.9); }
+  64% { transform: translateY(-3px) scale(0.94, 1.07) rotate(-4deg); }
+  74% { transform: translateY(1px) scale(1.09, 0.92) rotate(3deg); }
+  84% { transform: translateY(-2px) scale(0.98, 1.03) rotate(-2deg); }
+  94% { transform: translateY(0) scale(1) rotate(0); }
+}
+
+@keyframes bounceShadow {
+  0%, 45%, 100% { transform: scaleX(1); opacity: 0.18; }
+  53%, 74% { transform: scaleX(1.12); opacity: 0.23; }
+  64% { transform: scaleX(0.8); opacity: 0.11; }
+  84% { transform: scaleX(0.9); opacity: 0.14; }
+}
+
+@keyframes think {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body, .shadow, .halo, .mascot[data-busy="true"] .halo { animation: none; }
+}
+
+.callout {
+  box-shadow: 0 12px 32px rgb(120 75 15 / 20%), 0 3px 8px rgb(0 0 0 / 12%);
+  animation: calloutEnter 220ms ease-out;
+}
+
+@keyframes calloutEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .callout { animation: none; }
+}

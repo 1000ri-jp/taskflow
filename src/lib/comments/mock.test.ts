@@ -1,0 +1,85 @@
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+const state = vi.hoisted(() => ({ uid: 'alice', enabled: true }));
+vi.mock('@/stores/authStore', () => ({ useAuthStore: { getState: () => ({ user: { id: state.uid, displayName: state.uid } }) } }));
+vi.mock('@/lib/firebase/testMode', () => ({ isE2EMockAuthEnabled: () => state.enabled }));
+vi.mock('@/lib/firebase/config', () => ({ getFirebaseAuth: () => { throw new Error('Firebase must not be called'); } }));
+vi.mock('@/lib/firebase/authToken', () => ({ getAuthHeaders: () => { throw new Error('Firebase must not be called'); } }));
+import { mockStampRequest, mockStampSettingsKey, uploadMockStamp } from './mock';
+import { deleteCustomStamp, fetchStampSettings, putCommentReaction, putStampSettings, uploadCustomStamp } from './client';
+import type { ReactionList } from './reactions';
+const id = 'custom_10000000-0000-0000-0000-000000000001' as const;
+const imageUrl = 'data:image/webp;base64,c21hbGwtcHJldmlldw==';
+const input = () => ({ id, name: 'うちのこ', file: new File(['png bytes'], 'cat.png', { type: 'image/png' }) });
+const fetcher = vi.fn();
+const decode = vi.fn(async () => {});
+beforeEach(() => {
+  vi.clearAllMocks(); state.uid = 'alice'; state.enabled = true; localStorage.clear();
+  vi.stubGlobal('fetch', fetcher);
+  Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:mock-preview') });
+  Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+  vi.stubGlobal('Image', class { src = ''; naturalWidth = 1024; naturalHeight = 512; decode = decode; });
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
+  vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue(imageUrl);
+});
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); localStorage.clear(); });
+it('stores only a small browser preview on explicit upload, keeps other state, and never calls Firebase/API', async () => {
+  localStorage.setItem('existing-workbench', 'keep');
+  expect(await fetchStampSettings('alice')).toEqual({ seenStampId: 'wave', customStamps: [] });
+  expect(localStorage.getItem(mockStampSettingsKey('alice'))).toBeNull();
+  const saved = await uploadCustomStamp('alice', input());
+  expect(saved).toEqual({ seenStampId: id, customStamps: [{ id, name: 'うちのこ', imageUrl }] });
+  expect(await fetchStampSettings('alice')).toEqual(saved);
+  expect(localStorage.getItem('existing-workbench')).toBe('keep');
+  expect(fetcher).not.toHaveBeenCalled();
+  expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledWith('image/webp', 0.85);
+  expect(localStorage.getItem(mockStampSettingsKey('alice'))).not.toContain('png bytes');
+});
+it('keeps one catalog image on retry without overriding a newer favorite and snapshots comment history', async () => {
+  const source = input();
+  await uploadCustomStamp('alice', source);
+  const action = { projectId: 'p', taskId: 't', commentId: 'c', kind: 'seen' as const, stampId: id, active: true };
+  await putCommentReaction('alice', action);
+  await putStampSettings('alice', 'meruru');
+  await uploadCustomStamp('alice', source);
+  const current = await fetchStampSettings('alice');
+  expect(current.seenStampId).toBe('meruru'); expect(current.customStamps).toHaveLength(1);
+  const read = () => mockStampRequest<Record<string, ReactionList>>('alice', '/api/comment-reactions?projectId=p&taskId=t&commentId=c');
+  expect((await read()).c.own?.marks.seen).toMatchObject({ stampId: id, customStamp: { name: 'うちのこ', imageUrl } });
+  // Catalog availability does not determine whether an already posted mark can be removed.
+  localStorage.setItem(mockStampSettingsKey('alice'), JSON.stringify({ seenStampId: 'wave', customStamps: [] }));
+  await putCommentReaction('alice', { ...action, active: false });
+  expect((await read()).c.own).toBeNull();
+  expect(fetcher).not.toHaveBeenCalled();
+});
+it('rejects other users stamps and an in-flight account change without writing', async () => {
+  await uploadMockStamp('alice', input());
+  state.uid = 'bob';
+  expect((await fetchStampSettings('bob')).customStamps).toEqual([]);
+  await expect(putStampSettings('bob', id)).rejects.toThrow('絵柄');
+  await expect(putCommentReaction('bob', { projectId: 'p', taskId: 't', commentId: 'c', kind: 'seen', stampId: id, active: true })).rejects.toThrow('自分');
+  state.uid = 'alice';
+  decode.mockImplementationOnce(async () => { state.uid = 'bob'; });
+  await expect(uploadMockStamp('alice', { ...input(), id: 'custom_20000000-0000-0000-0000-000000000002' })).rejects.toThrow('ログイン');
+  expect(localStorage.getItem(mockStampSettingsKey('bob'))).toBeNull();
+  expect(JSON.parse(localStorage.getItem(mockStampSettingsKey('alice'))!).customStamps).toHaveLength(1);
+});
+it('refuses changed retry content and is inaccessible outside local mock mode', async () => {
+  await uploadMockStamp('alice', input());
+  await expect(uploadMockStamp('alice', { ...input(), name: '違う名前' })).rejects.toThrow('内容が変わっています');
+  state.enabled = false;
+  await expect(mockStampRequest('alice', '/api/comment-stamp-settings')).rejects.toThrow('ログイン');
+  expect(fetcher).not.toHaveBeenCalled();
+});
+it('removes the mock catalog entry without changing posted reactions or another user', async () => {
+  await uploadMockStamp('alice', input());
+  await putCommentReaction('alice', { projectId: 'p', taskId: 't', commentId: 'c', kind: 'seen', stampId: id, active: true });
+  const key = 'taskflow-comment-reactions-mock-v1:p:t:c';
+  const historical = localStorage.getItem(key);
+  await expect(deleteCustomStamp('bob', id)).rejects.toThrow('ログイン');
+  expect(await deleteCustomStamp('alice', id)).toEqual({ seenStampId: 'wave', customStamps: [] });
+  expect(localStorage.getItem(key)).toBe(historical);
+  expect(localStorage.getItem(mockStampSettingsKey('bob'))).toBeNull();
+  await putStampSettings('alice', 'cat');
+  expect((await deleteCustomStamp('alice', id)).seenStampId).toBe('cat');
+  expect(fetcher).not.toHaveBeenCalled();
+});

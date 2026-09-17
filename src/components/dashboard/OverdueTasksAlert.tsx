@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import { useAuthStore } from '@/stores/authStore';
 import { startOfDay, format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Link from 'next/link';
+import { taskRowInteraction } from '@/components/ui/density';
 
 interface OverdueTask {
   id: string;
@@ -25,6 +27,14 @@ export function OverdueTasksAlert() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (isE2EMockAuthEnabled()) {
+      Promise.resolve().then(() => {
+        setOverdueTasks([]);
+        setIsLoading(false);
+      });
+      return;
+    }
+
     const fetchOverdueTasks = async () => {
       if (!user) {
         setIsLoading(false);
@@ -109,7 +119,7 @@ export function OverdueTasksAlert() {
             <Link
               key={task.id}
               href={`/projects/${task.projectId}/board`}
-              className="flex items-center justify-between rounded-md bg-white/50 px-3 py-2 transition-colors hover:bg-white dark:bg-black/20 dark:hover:bg-black/30"
+              className={taskRowInteraction + ' flex items-center justify-between rounded-md bg-white/50 px-3 py-2 dark:bg-black/20'}
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{task.title}</p>

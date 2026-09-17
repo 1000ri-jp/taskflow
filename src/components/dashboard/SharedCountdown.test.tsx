@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SharedCountdown, isLocalCountdownPreview } from './SharedCountdown';
 import type { DashboardTask } from '@/lib/dashboard/brief';
@@ -28,9 +28,29 @@ describe('SharedCountdown', () => {
     hook.save.mockResolvedValue(undefined);
   });
   afterEach(() => { cleanup(); vi.useRealTimers(); });
+  it('updates the day count at midnight in Japan without a network request', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-03T23:59:59+09:00'));
+    hook.data = { status: 'ready', target: { projectId: 'p', taskId: 't' }, revision: 1, task: { title: task.title, projectName: task.projectName, dueDate: task.dueDate!.toISOString(), isCompleted: false, isAbandoned: false } };
+    render(<SharedCountdown {...props} />);
+    expect(screen.getByText('あと20日')).toBeInTheDocument();
+    await act(async () => { await vi.advanceTimersByTimeAsync(1100); });
+    expect(screen.getByText('あと19日')).toBeInTheDocument();
+    expect(hook.refresh).not.toHaveBeenCalled();
+  });
+  it('refreshes shared data with the manual button without saving', () => {
+    render(<SharedCountdown {...props} />);
+    const refresh = screen.getByRole('button', { name: 'カウントダウンを更新' });
+    const settings = screen.getByRole('button', { name: '共通カウントダウンの設定' });
+    expect(refresh).toHaveClass('col-start-4');
+    expect(settings).toHaveClass('col-start-3');
+    fireEvent.click(refresh);
+    expect(hook.refresh).toHaveBeenCalledTimes(1);
+    expect(hook.save).not.toHaveBeenCalled();
+  });
   it('previews eligible tasks and saves only IDs after explicit confirmation', async () => {
     render(<SharedCountdown {...props} />);
-    expect(screen.getByRole('region', { name: '共通カウントダウン' })).toHaveClass('w-full', 'max-w-[640px]', 'justify-self-end');
+    expect(screen.getByRole('region', { name: '共通カウントダウン' })).toHaveClass('w-full', 'max-w-[640px]', 'justify-self-end', 'gap-x-3', 'py-3', 'pl-3', 'pr-5');
     open();
     expect(screen.getAllByRole('radio')).toHaveLength(1);
     expect(screen.getByRole('button', { name: '全員共通で保存' })).toBeDisabled();
@@ -56,7 +76,8 @@ describe('SharedCountdown', () => {
   it('shows current task data, preserves the opening revision, and keeps conflicts visible', async () => {
     hook.data = { status: 'ready', target: { projectId: 'p', taskId: 't' }, revision: 2, task: { title: '出展準備', projectName: '展示会', dueDate: task.dueDate!.toISOString(), isCompleted: false, isAbandoned: false } };
     const { rerender } = render(<SharedCountdown {...props} />);
-    expect(screen.getByRole('link', { name: /あと20日.*出展準備/ })).toHaveAttribute('href', '/projects/p/board?task=t');
+    expect(screen.getByRole('region', { name: '共通カウントダウン' })).toHaveTextContent('出展準備');
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
     open();
     hook.data = { ...hook.data, revision: 3 };
     rerender(<SharedCountdown {...props} />);

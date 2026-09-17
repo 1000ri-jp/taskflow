@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ControlHint } from '@/components/ui/control-hint';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useBoardDisplayStore, type BoardDisplaySettings as Settings } from '@/stores/boardDisplayStore';
@@ -12,11 +13,11 @@ import { BOARD_SORT_OPTIONS, isBoardSort } from '@/lib/board/sort';
 const options: { key: keyof Settings; label: string }[] = [
   { key: 'showListName', label: '列名' },
   { key: 'showAssignees', label: '担当者' },
-  { key: 'showTags', label: 'タグ' },
+  { key: 'showTags', label: 'ラベル・タグ' },
   { key: 'showPriority', label: '優先度' },
 ];
 
-export function BoardDisplaySettings({ projectId }: { projectId?: string }) {
+export function BoardDisplaySettings({ projectId, iconOnly = false }: { projectId?: string; iconOnly?: boolean }) {
   const { settings, hydrate, setOption, reset } = useBoardDisplayStore();
   const { byProject, hydrate: hydrateSort, setSort, persistenceFailed } = useBoardSortStore();
 
@@ -24,23 +25,25 @@ export function BoardDisplaySettings({ projectId }: { projectId?: string }) {
 
   return (
     <Popover>
+      <ControlHint label="表示設定" description="カードに表示する項目と、タスクの並び順を変更します。">
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8">
-          <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
-          表示設定
+        <Button variant="outline" size="sm" className={iconOnly ? 'h-8 w-8 p-0' : 'h-8'} aria-label="表示設定">
+          <SlidersHorizontal className={iconOnly ? 'h-4 w-4' : 'mr-1.5 h-3.5 w-3.5'} />
+          {!iconOnly && '表示設定'}
         </Button>
       </PopoverTrigger>
+      </ControlHint>
       <PopoverContent className="w-64 max-h-[var(--radix-popover-content-available-height)] space-y-3 overflow-y-auto" align="end">
         {projectId && <div className="space-y-2 border-b pb-3">
           <label className="block space-y-2 text-sm font-medium">
             <span>タスクの並び順</span>
             <select className="h-9 w-full rounded-md border bg-background px-2 text-sm font-normal"
-              value={byProject[projectId] ?? 'manual'} onChange={event => { if (isBoardSort(event.target.value)) setSort(projectId, event.target.value); }}>
+              value={byProject[projectId] ?? 'due-asc'} onChange={event => { if (isBoardSort(event.target.value)) setSort(projectId, event.target.value); }}>
               {BOARD_SORT_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </label>
-          <p className="text-xs leading-relaxed text-muted-foreground">このプロジェクトの各列に適用。このブラウザだけに保存します。完了済みは下、日付未設定は各グループの末尾です。</p>
-          {(byProject[projectId] ?? 'manual') !== 'manual' && <p className="text-xs text-muted-foreground">日付順の間はカードのドラッグ移動を停止します。手動で動かす場合は「元の並び順」に戻してください。</p>}
+          <p className="text-xs leading-relaxed text-muted-foreground">各列の初期値です。列ごとの設定がある場合は、そちらを優先。このブラウザだけに保存します。完了済みは下、日付未設定は各グループの末尾です。</p>
+          {(byProject[projectId] ?? 'due-asc') !== 'manual' && <p className="text-xs text-muted-foreground">日付順の間はカードのドラッグ移動を停止します。手動で動かす場合は「元の並び順」に戻してください。</p>}
           {persistenceFailed && <p role="alert" className="text-xs text-destructive">並び順をブラウザに保存できません。この画面内のみ適用します。</p>}
         </div>}
         <p className="text-sm font-medium">カード下部に表示</p>
@@ -55,7 +58,7 @@ export function BoardDisplaySettings({ projectId }: { projectId?: string }) {
         <p className="text-xs leading-relaxed text-muted-foreground">
           このブラウザの全ボードに適用します。タスクのデータは変更しません。
         </p>
-        <Button variant="ghost" size="sm" className="w-full" onClick={() => { reset(); if (projectId) setSort(projectId, 'manual'); }}>初期設定に戻す</Button>
+        <Button variant="ghost" size="sm" className="w-full" onClick={() => { reset(); if (projectId) setSort(projectId, 'due-asc'); }}>初期設定に戻す</Button>
       </PopoverContent>
     </Popover>
   );

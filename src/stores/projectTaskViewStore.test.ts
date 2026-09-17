@@ -9,9 +9,10 @@ describe('project task view preferences (browser only)', () => {
     store.getState().setDefault(taskViewScope('user-a', 'project-a'), 'outline');
     store.getState().setDefault(taskViewScope('user-a', 'project-b'), 'calendar');
     store.getState().setDefault(taskViewScope('user-b', 'project-a'), 'table');
+    store.getState().setDefault(taskViewScope('user-a', 'project-c'), 'gantt');
     store.setState({ byScope: {}, hydrated: false });
     store.getState().hydrate();
-    expect(store.getState().byScope).toEqual({ '["user-a","project-a"]': 'outline', '["user-a","project-b"]': 'calendar', '["user-b","project-a"]': 'table' });
+    expect(store.getState().byScope).toEqual({ '["user-a","project-a"]': 'outline', '["user-a","project-b"]': 'calendar', '["user-b","project-a"]': 'table', '["user-a","project-c"]': 'gantt' });
     expect(localStorage.getItem('unrelated')).toBe('keep');
   });
   it('ignores malformed settings and unsupported views', () => {

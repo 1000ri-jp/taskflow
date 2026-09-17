@@ -29,7 +29,7 @@ interface UseUnifiedConversationReturn {
   messages: AIMessage[];
   isLoading: boolean;
   error: string | null;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, supportOverride?: string) => Promise<void>;
   confirmToolExecution: (toolCalls: ToolCall[]) => Promise<void>;
   cancelToolExecution: () => void;
   loadConversation: (conversationId: string) => Promise<void>;
@@ -53,6 +53,7 @@ export function useUnifiedConversation({
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(conversationId);
 
   const toolChainDepthRef = useRef(0);
+  const supportOverrideRef = useRef<string | undefined>(undefined);
   const pendingToolCallsRef = useRef<ToolCall[] | null>(null);
 
   const { provider, getActiveModel } = useAISettingsStore();
@@ -117,6 +118,7 @@ export function useUnifiedConversation({
         model,
         enableTools: true,
         projectId: projectId || undefined,
+        supportOverride: supportOverrideRef.current,
       }),
     });
 
@@ -216,7 +218,9 @@ export function useUnifiedConversation({
     }
 
     const defaultListId = context.project?.lists[0]?.id;
+    const sourceUserMessage=[...currentMessages].reverse().find(message=>message.role==='user');
     const results = await executeUnifiedTools(toolCalls, {
+      sourceUserMessage:sourceUserMessage?{id:sourceUserMessage.id,content:sourceUserMessage.content}:undefined,
       scope: projectId ? 'project' : 'personal',
       projectId: projectId || '',
       projectIds: projectIds,
@@ -313,8 +317,9 @@ export function useUnifiedConversation({
     }
   }, [projectId, projectIds, userId, context, callAI, persistMessage, onToolConfirmRequired]);
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, supportOverride?: string) => {
     if (!userId) return;
+    supportOverrideRef.current = supportOverride;
 
     setIsLoading(true);
     setError(null);

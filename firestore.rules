@@ -59,7 +59,9 @@ service cloud.firestore {
 
       // AI設定（APIキーなど） - 本人のみアクセス可
       match /settings/{settingId} {
-        allow read, write: if isAllowedUser() && request.auth.uid == userId;
+        allow read: if isAllowedUser() && request.auth.uid == userId;
+        // Archive grants and original stamp images are validated by the authenticated server.
+        allow write: if isAllowedUser() && request.auth.uid == userId && !(settingId in ['autoArchive', 'commentStamps']);
       }
     }
 
@@ -88,11 +90,28 @@ service cloud.firestore {
         allow read, write: if canAccessProject(projectId);
       }
 
+      // Shared archive grants and runner status are written only by the authenticated server.
+      match /settings/{settingId} {
+        allow read: if canAccessProject(projectId) && settingId in ['autoArchive', 'autoArchiveRun'];
+        allow write: if false;
+      }
+
       match /tasks/{taskId} {
-        allow read, write: if canAccessProject(projectId);
+        allow read, delete: if canAccessProject(projectId);
+        // Automation grants and outcomes are written by the authenticated server transaction only.
+        allow create: if canAccessProject(projectId) && !request.resource.data.keys().hasAny(['automation', 'completionPolicy', 'autoArchiveCompletedAt', 'reviewRequests'])
+          && (!('review' in request.resource.data) || (request.resource.data.taskKind == 'review_request'
+            && request.resource.data.review.responses == {} && request.resource.data.review.round == 1
+            && request.resource.data.review.policy in ['any', 'all'] && request.resource.data.isCompleted == false));
+        allow update: if canAccessProject(projectId)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['automation', 'completionPolicy', 'autoArchiveCompletedAt', 'review', 'reviewRequests'])
+          && (!(resource.data.get('taskKind', '') == 'review_request')
+            || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isCompleted', 'completedAt', 'taskKind']));
 
         match /comments/{commentId} {
-          allow read, write: if canAccessProject(projectId);
+          allow read, create: if canAccessProject(projectId);
+          allow update: if canAccessProject(projectId) && (resource.data.get('reviewTaskId', '') == '' || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['content','reviewTaskId','purpose']));
+          allow delete: if canAccessProject(projectId) && resource.data.get('reviewTaskId', '') == '';
         }
 
         match /checklists/{checklistId} {

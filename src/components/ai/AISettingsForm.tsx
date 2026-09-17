@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAISettings } from '@/hooks/useAISettings';
+import { AIModelSelector } from './AIModelSelector';
 import { useProjects } from '@/hooks/useProjects';
 import { filterProjectsForAI, normalizeAllowedProjectIdsForSave } from '@/lib/ai/projectAccess';
 import { AIProviderType } from '@/types/ai';
@@ -75,10 +76,6 @@ export function AISettingsForm() {
     }
   };
 
-  const handleResetModel = () => {
-    setModel(defaultModels[provider]);
-  };
-
   const handleToggleProject = (projectId: string) => {
     setProjectAccessSaveSuccess(false);
     setProjectAccessSaveError(null);
@@ -132,7 +129,7 @@ export function AISettingsForm() {
   return (
     <div className="space-y-6">
       {/* Provider Selection */}
-      <Card>
+      <Card density="compact">
         <CardHeader>
           <CardTitle>AIプロバイダー</CardTitle>
           <CardDescription>
@@ -176,6 +173,8 @@ export function AISettingsForm() {
                   variant="ghost"
                   size="icon"
                   className="absolute right-0 top-0 h-full px-3"
+                  aria-label={showApiKey ? '入力中のAPIキーを隠す' : '入力中のAPIキーを表示'}
+                  title={showApiKey ? '入力中のAPIキーを隠す' : '入力中のAPIキーを表示'}
                   onClick={() => setShowApiKey(!showApiKey)}
                 >
                   {showApiKey ? (
@@ -236,7 +235,7 @@ export function AISettingsForm() {
       </Card>
 
       {/* Model Configuration */}
-      <Card>
+      <Card density="compact">
         <CardHeader>
           <CardTitle>モデル設定</CardTitle>
           <CardDescription>
@@ -244,30 +243,16 @@ export function AISettingsForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>モデル名</Label>
-            <div className="flex gap-2">
-              <Input
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="モデル名を入力"
-              />
-              <Button
-                variant="outline"
-                onClick={handleResetModel}
-                disabled={model === defaultModels[provider]}
-              >
-                デフォルトに戻す
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              デフォルト: {defaultModels[provider]}
-            </p>
-          </div>
+          <AIModelSelector
+            provider={provider}
+            model={model}
+            defaultModel={defaultModels[provider]}
+            onChange={setModel}
+          />
         </CardContent>
       </Card>
 
-      <Card>
+      <Card density="compact">
         <CardHeader>
           <CardTitle>AIアクセス対象プロジェクト</CardTitle>
           <CardDescription>
@@ -311,22 +296,22 @@ export function AISettingsForm() {
               プロジェクトがありません。作成後にAIアクセス対象を選択できます。
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y rounded-lg border">
               {projects.map((project) => (
-                <div key={project.id} className="flex items-start gap-3 rounded-md border p-3">
+                <div key={project.id} className="flex items-start gap-3 p-3">
                   <Checkbox
                     id={`ai-project-${project.id}`}
                     checked={selectedProjectIds.includes(project.id)}
                     onCheckedChange={() => handleToggleProject(project.id)}
                   />
-                  <div className="grid gap-0.5 leading-none">
+                  <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 leading-snug">
                     <label
                       htmlFor={`ai-project-${project.id}`}
                       className="cursor-pointer text-sm font-medium"
                     >
                       {project.name}
                     </label>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="min-w-0 break-words text-xs text-muted-foreground">
                       {project.description || 'このプロジェクトでAIを利用できます'}
                     </p>
                   </div>
@@ -370,7 +355,7 @@ export function AISettingsForm() {
       </Card>
 
       {/* API Key Help */}
-      <Card>
+      <Card density="compact">
         <CardHeader>
           <CardTitle>APIキーの取得方法</CardTitle>
         </CardHeader>

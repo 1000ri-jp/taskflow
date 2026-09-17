@@ -1,8 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CommentedTasksPopover } from './CommentedTasksPopover';
 import { getTaskComments } from '@/lib/firebase/firestore';
 import type { Comment, List, Task } from '@/types';
+
+beforeAll(() => vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} }));
+afterAll(() => vi.unstubAllGlobals());
 
 vi.mock('@/lib/firebase/firestore', () => ({
   getTaskComments: vi.fn(),
@@ -71,7 +74,11 @@ describe('CommentedTasksPopover', () => {
 
     expect(getTaskComments).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'コメントあり' }));
+    fireEvent.pointerMove(screen.getByRole('button', { name: 'コメント' }), { pointerType: 'mouse' });
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('コメントがあるタスクをまとめて確認します。');
+    expect(getTaskComments).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'コメント' }));
 
     expect(await screen.findByText('最新コメントの内容')).toBeInTheDocument();
     expect(screen.getByText('列：生成AIなんでも展示会')).toBeInTheDocument();
@@ -87,7 +94,7 @@ describe('CommentedTasksPopover', () => {
       tasks={[taskBase, { ...taskBase, id: 'task-2', listId: 'list-2' }]}
       lists={[list, { ...list, id: 'list-2', name: '東京ゲームダンジョン' }]}
       onTaskClick={onTaskClick} />);
-    fireEvent.click(screen.getByRole('button', { name: 'コメントあり' }));
+    fireEvent.click(screen.getByRole('button', { name: 'コメント' }));
     expect(await screen.findByText('列：東京ゲームダンジョン')).toBeInTheDocument();
     expect(screen.getByText('列：生成AIなんでも展示会')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /列：東京ゲームダンジョン/ }));
@@ -97,7 +104,7 @@ describe('CommentedTasksPopover', () => {
   it('reflects current task membership and renamed columns without fetching again', async () => {
     const onTaskClick = vi.fn();
     const { rerender } = render(<CommentedTasksPopover projectId="project-1" tasks={[taskBase]} lists={[list]} onTaskClick={onTaskClick} />);
-    fireEvent.click(screen.getByRole('button', { name: 'コメントあり' }));
+    fireEvent.click(screen.getByRole('button', { name: 'コメント' }));
     await screen.findByText('列：生成AIなんでも展示会');
     rerender(<CommentedTasksPopover projectId="project-1" tasks={[{ ...taskBase, listId: 'list-2' }]}
       lists={[list, { ...list, id: 'list-2', name: '移動先の列' }]} onTaskClick={onTaskClick} />);
@@ -110,7 +117,7 @@ describe('CommentedTasksPopover', () => {
 
   it('keeps the task accessible if its column cannot be resolved', async () => {
     render(<CommentedTasksPopover projectId="project-1" tasks={[taskBase]} lists={[]} onTaskClick={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'コメントあり' }));
+    fireEvent.click(screen.getByRole('button', { name: 'コメント' }));
     expect(await screen.findByText('列：列名不明')).toBeInTheDocument();
     expect(screen.getByText(taskBase.title)).toBeInTheDocument();
   });

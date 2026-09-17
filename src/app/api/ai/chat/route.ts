@@ -7,6 +7,11 @@ import {
   verifyAuthToken,
 } from '@/lib/firebase/admin';
 import { filterProjectsForAI, isAIProjectAllowed } from '@/lib/ai/projectAccess';
+import { openDescriptionConversation, prepareDescription, readDescriptionConversation } from '@/lib/ai/descriptionOperations';
+import { openReplyDraft, prepareReplyDraft, readReplyDraft, ReplyDraftSaveError } from '@/lib/ai/replyDrafts';
+import type { DraftRequest } from '@/lib/ai/scopedConversationClient';
+import { readAISupportInstructions } from '@/lib/ai/support/repository';
+import { SecretaryError } from '@/lib/secretary/engine';
 
 // Enable streaming for Vercel
 export const runtime = 'nodejs';
@@ -14,6 +19,9 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 interface ChatRequest {
+  supportOverride?: string;
+  draft?: DraftRequest;
+  description?: { action: 'open' | 'read' | 'message'; conversationId: string; projectId?: string; taskId?: string; requestId?: string; content?: string };
   messages: AIMessage[];
   context: AIContext;
   provider: AIProviderType;
@@ -38,6 +46,36 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as ChatRequest;
+    if (body.draft) {
+      try {
+        const d = body.draft;
+        if (body.description || typeof d !== 'object' || Object.keys(d).some(k => !['action', 'conversationId', 'sourceId', 'candidateId', 'signature', 'requestId', 'content'].includes(k))) throw new SecretaryError('INVALID', '返信案の依頼を確認してください。');
+        let view;
+        if (d.action === 'read') view = await readReplyDraft(userId, d.conversationId!);
+        else if (isValidProvider(body.provider) && d.action === 'open') view = await openReplyDraft(userId, d.sourceId!, d.candidateId!, d.signature!, body.provider, body.model);
+        else if (isValidProvider(body.provider) && d.action === 'message') view = await prepareReplyDraft(userId, d.conversationId!, d.requestId!, d.content!, body.provider, body.model);
+        else throw new SecretaryError('INVALID', '返信案の操作を確認してください。');
+        return Response.json(view, { headers: { 'Cache-Control': 'no-store' } });
+      } catch (error) {
+        const status = error instanceof SecretaryError ? ({ INVALID: 422, CONFLICT: 409, FORBIDDEN: 403, INCOMPLETE: 503, AI_UNAVAILABLE: 503 })[error.code] : 503;
+        return Response.json({ error: error instanceof SecretaryError ? error.message : '返信案の取得・保存に失敗しました。同じ依頼を再試行できます。', ...(error instanceof ReplyDraftSaveError ? { unsaved: error.draft } : {}) }, { status });
+      }
+    }
+    if (body.description) {
+      try {
+        const d = body.description;
+        if (typeof d !== 'object' || Object.keys(d).some(k => !['action', 'conversationId', 'projectId', 'taskId', 'requestId', 'content'].includes(k))) throw new SecretaryError('INVALID', '説明の依頼を確認してください。');
+        let view;
+        if (d.action === 'open') view = await openDescriptionConversation(userId, d.projectId!, d.taskId!, d.conversationId);
+        else if (d.action === 'read') view = await readDescriptionConversation(userId, d.conversationId);
+        else if (d.action === 'message' && isValidProvider(body.provider)) view = await prepareDescription(userId, d.conversationId, d.requestId!, d.content!, body.provider, body.model);
+        else throw new SecretaryError('INVALID', '説明の操作を確認してください。');
+        return Response.json(view, { headers: { 'Cache-Control': 'no-store' } });
+      } catch (error) {
+        const status = error instanceof SecretaryError ? ({ INVALID: 422, CONFLICT: 409, FORBIDDEN: 403, INCOMPLETE: 503, AI_UNAVAILABLE: 503 })[error.code] : 503;
+        return Response.json({ error: error instanceof SecretaryError ? error.message : '説明の取得・保存に失敗しました。同じ依頼を再試行できます。' }, { status });
+      }
+    }
     const { messages, context, provider, model, enableTools, projectId } = body;
 
     // Validate required fields
@@ -61,6 +99,8 @@ export async function POST(request: NextRequest) {
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    if (body.supportOverride !== undefined && (typeof body.supportOverride !== 'string' || body.supportOverride.length > 1000)) return Response.json({ error: '今回の手伝い方は1000文字以内で指定してください。' }, { status: 400 });
 
     // Retrieve API key from server-side storage
     const apiKey = await getUserAIApiKey(userId, provider);
@@ -86,6 +126,8 @@ export async function POST(request: NextRequest) {
         : context.projects,
     };
 
+    const supportInstructions = await readAISupportInstructions(userId, body.supportOverride);
+
     // Get provider and create streaming response
     const aiProvider = getProvider(provider);
 
@@ -105,7 +147,7 @@ export async function POST(request: NextRequest) {
           filteredContext,
           apiKey,
           model,
-          { enableTools, projectId: projectId ?? undefined }
+          { enableTools, projectId: projectId ?? undefined, supportInstructions }
         );
 
         for await (const chunk of generator) {

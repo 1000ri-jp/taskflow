@@ -1,0 +1,1138 @@
+{
+  "revision": "ui-guide-2026-09-18.17",
+  "canonical": "docs/TASKFLOW_DESIGN_STANDARD_2026-09-13.md#13",
+  "entries": [
+    {
+      "id": "text",
+      "level": "basic",
+      "name": "文字・見出し・色",
+      "purpose": "主情報、読む説明、補足の強弱を比べる。",
+      "status": "adopted",
+      "sources": [
+        "src/components/ui/typography.tsx",
+        "src/app/ui-tokens.css",
+        "src/app/globals.css",
+        "src/app/neo-appearance.css"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "標準"
+        }
+      ],
+      "scope": "本文は14px、補足は12px。説明の行間を一覧行の密度へ押し込めない。色は既存テーマの意味付き変数を使う。",
+      "impact": "共有の文字役割を使う見出し・説明、共通トークンを使う行とカード。既存テーマ色の変更は全画面へ及ぶ。",
+      "links": [
+        {
+          "href": "/profile",
+          "label": "マイアカウント"
+        },
+        {
+          "href": "/settings",
+          "label": "設定"
+        },
+        {
+          "href": "/projects",
+          "label": "プロジェクト設定へ"
+        }
+      ]
+    },
+    {
+      "id": "button",
+      "level": "basic",
+      "name": "ボタン・アイコン",
+      "purpose": "主要操作、補助操作、アイコンだけの操作。",
+      "status": "adopted",
+      "sources": [
+        "src/components/ui/button.tsx",
+        "src/components/ui/control-hint.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "標準"
+        }
+      ],
+      "scope": "主要／枠あり／控えめの意味を保持。アイコンには読み上げ名と説明を残す。",
+      "impact": "ButtonとControlHintを直接・間接に利用する画面。用途固有の幅指定は各利用先に残る。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "Neo"
+        },
+        {
+          "href": "/settings",
+          "label": "設定"
+        }
+      ]
+    },
+    {
+      "id": "input",
+      "level": "basic",
+      "name": "入力・選択",
+      "purpose": "長い日本語の入力、説明、チェック。",
+      "status": "adopted",
+      "sources": [
+        "src/components/ui/input.tsx",
+        "src/components/ui/textarea.tsx",
+        "src/components/ui/checkbox.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "標準"
+        }
+      ],
+      "scope": "単行と複数行の役割を分け、狭い画面でも操作する高さを残す。",
+      "impact": "フォーム全般。入力値の保存先と権限は利用先が持つ。",
+      "links": [
+        {
+          "href": "/profile",
+          "label": "マイアカウント"
+        },
+        {
+          "href": "/settings",
+          "label": "設定"
+        },
+        {
+          "href": "/projects",
+          "label": "プロジェクト設定へ"
+        }
+      ]
+    },
+    {
+      "id": "navigation",
+      "level": "basic",
+      "name": "表示切替・タブ・メニュー",
+      "purpose": "選択中の画面と押した結果を揃える。",
+      "status": "adopted",
+      "sources": [
+        "src/components/ui/view-switcher.tsx",
+        "src/components/ui/tabs.tsx",
+        "src/components/ui/dropdown-menu.tsx"
+      ],
+      "variants": [
+        {
+          "id": "segmented",
+          "label": "表示切替"
+        },
+        {
+          "id": "tabs",
+          "label": "内容タブ"
+        },
+        {
+          "id": "menu",
+          "label": "メニュー"
+        }
+      ],
+      "scope": "表示切替は今日→カレンダー→タスク→モアイの提案。内容タブとメニューは別の名前付き用途。",
+      "impact": "Neoの表示切替、既存のTabs・DropdownMenu利用先。フィルターや保存の意味は変えない。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "Neoの表示切替"
+        },
+        {
+          "href": "/settings",
+          "label": "設定"
+        }
+      ]
+    },
+    {
+      "id": "card",
+      "level": "basic",
+      "name": "設定カード",
+      "purpose": "見出し・補足・内容を一つにまとめる。",
+      "status": "adopted",
+      "sources": [
+        "src/components/ui/card.tsx"
+      ],
+      "variants": [
+        {
+          "id": "compact",
+          "label": "コンパクト"
+        },
+        {
+          "id": "standard",
+          "label": "標準"
+        }
+      ],
+      "scope": "コンパクトは既存設定向け。標準を必要とする入力・説明の広さは残す。",
+      "impact": "設定、プロフィール、AI支援設定など。コンパクトの内側余白は同じトークンで変わる。",
+      "links": [
+        {
+          "href": "/profile",
+          "label": "マイアカウント"
+        },
+        {
+          "href": "/settings",
+          "label": "設定"
+        },
+        {
+          "href": "/projects",
+          "label": "プロジェクト設定へ"
+        }
+      ]
+    },
+    {
+      "id": "states",
+      "level": "basic",
+      "name": "取得状態",
+      "purpose": "取得中・0件・失敗を区別し、再取得する。",
+      "status": "adopted",
+      "sources": [
+        "src/components/ui/async-state.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "標準"
+        }
+      ],
+      "scope": "失敗を0件に置き換えない。再取得は利用先の処理を呼ぶ。",
+      "impact": "アクティビティの状態表示と、各業務画面の共通ヘッダーから開く検索の取得失敗・再取得。各業務画面自身の全取得状態や、まだ移行していない固有の状態表示には及ばない。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "プロジェクトを選んで開く"
+        }
+      ]
+    },
+    {
+      "id": "outline",
+      "level": "composition",
+      "name": "担当・期限と子タスクの行",
+      "purpose": "担当・期限を読み、矢印で実際の子タスクを展開する。",
+      "status": "adopted",
+      "sources": [
+        "src/components/board/TaskOutlineView.tsx",
+        "src/components/board/TaskChildrenSummary.tsx",
+        "src/components/board/TaskViewFields.tsx",
+        "src/components/ui/density.ts"
+      ],
+      "variants": [
+        {
+          "id": "children",
+          "label": "子タスクあり"
+        },
+        {
+          "id": "plain",
+          "label": "子タスクなし"
+        }
+      ],
+      "scope": "行の上下余白とタイトルは共通。計画リストは広い画面で列を揃え、狭幅では折り返す。子のカード内要約は別バリエーション。",
+      "impact": "計画リスト、テーブル、アクティビティの共通行密度。子の要約はボード・カレンダーにも間接利用。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "プロジェクトを選んで開く"
+        }
+      ]
+    },
+    {
+      "id": "table",
+      "level": "composition",
+      "name": "比較するテーブル行",
+      "purpose": "担当・期限・状態を列で比較して並べ替える。",
+      "status": "adopted",
+      "sources": [
+        "src/components/board/TaskTableView.tsx",
+        "src/components/ui/density.ts"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "標準"
+        }
+      ],
+      "scope": "列の比較を優先し、狭幅では表の中を横スクロール。計画リストと同じ行余白を使う。",
+      "impact": "プロジェクトのテーブル表示。並べ替えは表示だけ。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "プロジェクトを選んで開く"
+        }
+      ]
+    },
+    {
+      "id": "proposal",
+      "level": "composition",
+      "name": "モアイの提案カード",
+      "purpose": "理由・変更前後・資料を読んで採用／保留／見送りを選ぶ。",
+      "status": "adopted",
+      "sources": [
+        "src/components/dashboard/OrganizationProposalCard.tsx",
+        "src/components/task/PreviewChanges.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "未決定の提案"
+        }
+      ],
+      "scope": "提案の内容と操作を共通化。採用条件、権限、競合、履歴は接続側で維持する。",
+      "impact": "Neoのモアイの提案。変更前後の表示はメモ整理でも利用する。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "Neo → モアイの提案"
+        }
+      ]
+    },
+    {
+      "id": "bubble",
+      "level": "composition",
+      "name": "モアイの吹き出し",
+      "purpose": "軽い声かけを読み、閉じる。",
+      "status": "adopted",
+      "sources": [
+        "src/components/ai/CompanionBubble.tsx",
+        "src/components/ai/CompanionLauncher.module.css"
+      ],
+      "variants": [
+        {
+          "id": "greeting",
+          "label": "声かけ"
+        }
+      ],
+      "scope": "外枠は声かけ／通知／軽い確認で共有。タイマー、既読、移動位置、通知の内容は用途ごとに異なる。",
+      "impact": "全業務画面のモアイ。ガイドでは位置保存・通知取得は行わない。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "Neoのモアイ"
+        },
+        {
+          "href": "/projects",
+          "label": "プロジェクトのモアイ"
+        }
+      ]
+    },
+    {
+      "id": "setting",
+      "level": "composition",
+      "name": "保存状態付きの設定欄",
+      "purpose": "入力→保存中→失敗→再試行→成功を確かめる。",
+      "status": "adopted",
+      "sources": [
+        "src/components/ui/setting-field.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "主担当の選択"
+        }
+      ],
+      "scope": "入力と結果を同じ場所に出す。保存先・権限・下書き保持は接続側が持つ。",
+      "impact": "プロジェクト主担当欄。既存タスクへの一括適用は別の操作のまま。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "プロジェクトを選んで開く"
+        }
+      ]
+    },
+    {
+      "id": "list-layout",
+      "level": "layout",
+      "name": "一覧の型",
+      "purpose": "件数、列、行、展開と詳細への入口を確認する。",
+      "status": "adopted",
+      "sources": [
+        "src/components/board/TaskOutlineView.tsx",
+        "src/components/board/TaskTableView.tsx"
+      ],
+      "variants": [
+        {
+          "id": "outline",
+          "label": "計画リスト"
+        },
+        {
+          "id": "table",
+          "label": "テーブル"
+        }
+      ],
+      "scope": "同じ仕事の読み方を切り替える。表の列と計画リストの折り返しは用途上の違い。",
+      "impact": "プロジェクトの計画リスト／テーブル。カンバンとガントは独自の型として残る。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "プロジェクトを選んで開く"
+        }
+      ]
+    },
+    {
+      "id": "detail-layout",
+      "level": "layout",
+      "name": "詳細の型",
+      "purpose": "見出し、説明・経緯、下部の操作を配置する。",
+      "status": "adopted",
+      "sources": [
+        "src/components/ui/screen-layouts.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "タスク詳細"
+        }
+      ],
+      "scope": "実画面と同じDialog・DetailFrame・DetailBody。説明、コメント、編集欄は読むための広さを残す。",
+      "impact": "ボード・ガントから開くタスク詳細。ガイドの中身は架空で、実タスクの自動保存処理は接続しない。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "プロジェクトを選んで開く"
+        }
+      ]
+    },
+    {
+      "id": "settings-layout",
+      "level": "layout",
+      "name": "設定の型",
+      "purpose": "同じ密度のカードと保存欄を縦に配置する。",
+      "status": "adopted",
+      "sources": [
+        "src/components/ui/screen-layouts.tsx",
+        "src/components/ui/card.tsx",
+        "src/components/ui/setting-field.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "標準"
+        }
+      ],
+      "scope": "個人設定は中央、プロジェクト設定は左寄せという名前付きの違い。カードの内側とセクション間隔は共通。",
+      "impact": "プロフィール、アプリ設定、プロジェクト設定。",
+      "links": [
+        {
+          "href": "/profile",
+          "label": "マイアカウント"
+        },
+        {
+          "href": "/settings",
+          "label": "設定"
+        },
+        {
+          "href": "/projects",
+          "label": "プロジェクト設定へ"
+        }
+      ]
+    },
+    {
+      "id": "settings-dashboard-order-trial",
+      "level": "composition",
+      "name": "アプリ設定のダッシュボード選択位置",
+      "purpose": "設定ページ上部でダッシュボード選択を最初の設定項目に置く採用基準を確認する。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/app/(dashboard)/settings/page.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "ダッシュボード選択を先頭に表示"
+        }
+      ],
+      "scope": "採用済み：アプリ設定ページでは、ダッシュボードの選択をページ上部の最初の設定項目に置く。選択肢の名称・見た目、他の設定項目の順序、余白寸法はこの採用に含めない。ガイド内の選択は架空データで、保存しない。",
+      "impact": "アプリ設定ページの設定項目順。UIガイドは架空表示だけを担当し、設定画面・保存処理の変更と表示検証は機能改善タスク担当。",
+      "links": [
+        {
+          "href": "/settings",
+          "label": "設定画面（実装状況は別途確認）"
+        }
+      ],
+      "adoption": {
+        "status": "limited",
+        "summary": "アプリ設定ページでダッシュボードの選択をページ上部の最初の設定項目に置く。他の設定項目順・寸法・選択肢の見た目は未採用。"
+      },
+      "implementation": {
+        "status": "in-progress",
+        "summary": "bde4の現行設定ページではダッシュボード選択が最初に置かれ、順序を確認するテストがある。採用基準に対する実画面表示の最終確認は機能改善タスク担当。"
+      }
+    },
+    {
+      "id": "search",
+      "level": "composition",
+      "name": "検索の状態と選択",
+      "purpose": "取得中・0件・失敗・部分取得と、上下キーでの選択を架空データで確認する。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/extendedFixtures.ts",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/ui/input.tsx",
+        "src/components/ui/button.tsx",
+        "src/components/ui/async-state.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "通常の取得"
+        },
+        {
+          "id": "partial",
+          "label": "一部だけ取得"
+        }
+      ],
+      "scope": "Input・Button・AsyncStateを共有。検索一覧と選択操作はガイド専用の未採用見本。CommandPaletteや業務検索フックは使用しない。",
+      "impact": "F01/F05/F10：将来の共通検索の状態・ラベル検討。実検索への反映状況は機能改善担当が検証する。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ]
+    },
+    {
+      "id": "notifications",
+      "level": "composition",
+      "name": "通知履歴と既読の再試行",
+      "purpose": "通知を選び、本文を読み、既読失敗後の再試行を確認する。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/extendedFixtures.ts",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/ui/button.tsx",
+        "src/components/ui/async-state.tsx",
+        "src/components/common/HistoryPane.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "一覧と本文"
+        }
+      ],
+      "scope": "共有HistoryPaneを使用。通知の内容・既読操作はガイド専用の架空状態。useNotificationsを実行しない。",
+      "impact": "F10：ヘッダーとモアイの通知履歴が対象候補。既読・保存・導線の見た目は未採用。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ]
+    },
+    {
+      "id": "calendar",
+      "level": "layout",
+      "name": "カレンダーの専用表示",
+      "purpose": "現在の月・週を切り替え、長いタスク名と内部横スクロールを確認する。",
+      "status": "reference",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/extendedFixtures.ts",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/ui/button.tsx",
+        "src/components/board/TaskCalendarView.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "日付と架空タスク"
+        }
+      ],
+      "scope": "既存TaskCalendarViewに閲覧日基準の架空データを渡す表示見本。追加・日付移動のcallbackを接続せず、TaskCreationFormはマウントしない。共通化の新基準ではない。",
+      "impact": "F10：プロジェクトのカレンダー。既存専用配置の確認用で、全状態の実画面検証を代替しない。",
+      "adoption": {
+        "status": "limited",
+        "summary": "完了したタスクにはチェック印と「完了」、未完了には丸印と「未完了」を表示し、色だけに頼らず状態を区別する。既存タイトル・担当・ラベル・詳細を開く操作は保つ。"
+      },
+      "implementation": {
+        "status": "partial",
+        "summary": "機能改善タスクのbde4実装報告と現行コード照合で、TaskCalendarViewにチェック/丸印と完了/未完了の可視表示を確認。両状態と行を開く操作を含む5テストファイル・65テスト、ESLint、TypeScript、git diff --checkが成功。CDPタイムアウトにより実画面の目視確認は未完了。UIガイドの表示確認・他ブランチ/本番への反映とは別状態。"
+      },
+      "links": [
+        {
+          "href": "/projects",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ]
+    },
+    {
+      "id": "gantt",
+      "level": "layout",
+      "name": "ガントの専用表示",
+      "purpose": "期間・表示単位・フィルターと、架空タスクの開き方を確認する。",
+      "status": "reference",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/extendedFixtures.ts",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/ui/button.tsx",
+        "src/components/gantt/GanttChart.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "期間の比較"
+        }
+      ],
+      "scope": "既存GanttChartを使用し、保存callbackを接続しない。専用配置の新しい採用判断や日付保存の検証は含まない。",
+      "impact": "F10：プロジェクトのガント。読み取り表示と内部スクロールの確認用。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ]
+    },
+    {
+      "id": "progress",
+      "level": "layout",
+      "name": "進捗の列とカード",
+      "purpose": "複数の状態列と長いカードを横に比較する。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/extendedFixtures.ts",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/ui/card.tsx",
+        "src/components/ui/button.tsx",
+        "src/lib/task/status.ts"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "状態別の架空カード"
+        }
+      ],
+      "scope": "既存Card・ButtonとTASK_STATUSES/taskStatusを使用した構成見本。実TaskProgressView/TaskCardは業務フックを持つため使用しない。列の保存・ドラッグは未接続。",
+      "impact": "F04/F10：カンバン進捗を検討する架空見本。実ビューと同一ではなく、幅修正の確認には実画面検証が必要。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ]
+    },
+    {
+      "id": "frame-trial",
+      "level": "layout",
+      "name": "画面枠とモアイの配置案",
+      "purpose": "狭幅で本文・最下部の操作・吹き出しの干渉を比較する。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/extendedFixtures.ts",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/ui/button.tsx",
+        "src/components/board/TaskOutlineView.tsx",
+        "src/components/ai/CompanionBubble.tsx"
+      ],
+      "variants": [
+        {
+          "id": "overlay",
+          "label": "比較用：本文に重ねる"
+        },
+        {
+          "id": "dock",
+          "label": "未採用案：置き場を分ける"
+        }
+      ],
+      "scope": "F02/F08の簡略化した未採用案。TaskOutlineViewとCompanionBubbleは共有し、外枠・位置・説明/フィルター収納はガイド内だけ。実Launcher・保存位置の再現ではない。",
+      "impact": "採用時の候補：共通ランチャーとプロジェクト外枠、Neo・設定等。共有実装は機能改善担当が変更・検証する。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ]
+    },
+    {
+      "id": "table-trial",
+      "level": "composition",
+      "name": "比較表の名前列を保つ案",
+      "purpose": "固定なしと名前列固定を同じ架空の小表で比べる。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/extendedFixtures.ts",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/ui/button.tsx",
+        "src/components/ui/density.ts"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "比較用：固定なし"
+        },
+        {
+          "id": "pinned",
+          "label": "未採用案：名前列を固定"
+        }
+      ],
+      "scope": "F09：既存の内部横スクロールは妥当な採用済み仕様。小表はガイド専用でTaskTableViewではない。名前列固定は未採用。",
+      "impact": "採用時はTaskTableView、table/list-layoutの利用先が候補。実装・狭幅検証は機能改善担当が行う。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ]
+    },
+    {
+      "id": "history-trial",
+      "level": "composition",
+      "name": "履歴の名前と対象への入口案",
+      "purpose": "業務名・未知の項目・削除済みの対象を読み分ける。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/extendedFixtures.ts",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/ui/button.tsx",
+        "src/components/ui/density.ts"
+      ],
+      "variants": [
+        {
+          "id": "label",
+          "label": "未採用案：業務名で表示"
+        },
+        {
+          "id": "link",
+          "label": "未採用案：対象への入口を追加"
+        }
+      ],
+      "scope": "F07：履歴の業務名と対象への導線は未採用。共通の行密度とButtonを使い、架空の本文だけを開く。実ActivityLogPanelの取得・保存は使用しない。",
+      "impact": "採用時の候補はプロジェクト活動履歴。名称変換と実リンクは機能改善担当へ引き継ぐ。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ]
+    },
+    {
+      "id": "neo-brief-row-trial",
+      "level": "composition",
+      "name": "Neoの今日の仕事行・情報間隔",
+      "purpose": "タイトルと付随情報の間、付随情報のまとまり同士の間隔を区別して確認する。",
+      "status": "trial",
+      "adoption": {
+        "status": "limited",
+        "summary": "NeoMorningBriefの今日の仕事・期限行とNeoDashboardのタスク一覧行だけ、上下各2px・横20px・内側間隔を維持し、操作対象は最低32px。今日の仕事・期限行の担当者アイコンは仕事の続きと同じ約24px。追加採用：タイトルと付随情報の間隔を保ち、付随情報のまとまり同士を狭める。gap-x-3／gap-x-2は現行実装参照値で独立採用寸法ではない。塊間16px・アイコン／優先度まわり4pxは未採用比較案。"
+      },
+      "implementation": {
+        "status": "implemented",
+        "summary": "前回の各4pxは実装・関連検証済み。最新の各2pxはメイン側bde4で実装・検証済み。今日の仕事・期限行は仕事の続きと同じ24px担当者アイコンを表示。2026-09-18の追加採用について、機能改善側bde4のNeoBriefTaskRowはタイトル側gap-x-3を保ち、付随情報群にgap-x-2を適用。6テストファイル179件、ESLint、TypeScript、git diff --check成功の報告に含まれる。新しいgap値は実装参照値。"
+      },
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/dashboard/NeoBriefTaskRow.tsx",
+        "src/components/board/TaskViewFields.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "タイトルとの間隔を保ち、付随情報のまとまり間を狭める（採用）"
+        },
+        {
+          "id": "previous-groups",
+          "label": "塊間を広く・アイコン間を狭く（比較案）"
+        }
+      ],
+      "scope": "最新採用の限定基準：NEO_TASK_ROW_CLASSを共有するNeoの今日の仕事・期限行とタスク一覧行は上下各2px、横20px、内側の情報間隔を維持し、操作対象は最低32px。今日の仕事・期限行の担当者アイコンは「仕事の続き」と同じ約24px。追加採用：タイトルと付随情報の間隔は保ち、付随情報のまとまり同士だけを狭める。gap-x-3／gap-x-2は機能改善側の実装参照で数値自体は採用値ではない。未採用比較：塊間16px・アイコン／優先度まわり4px。この複合見本全体のstatusはtrial。見本は架空データだけを使う。",
+      "impact": "最新の2px基準はNeoMorningBriefとNeoDashboardのNEO_TASK_ROW_CLASS直接利用先だけ。担当者アイコン24pxは今日の仕事・期限行だけ。新しい間隔関係は同じNeoBriefTaskHeadingを使うNeoの行を対象とする。実画面反映・検証は機能改善タスク担当。他のNeo/TaskFlow行やglobal compactRowには広げない。以前の4px実装履歴を保持し、16/4px比較案は未採用。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ]
+    },
+    {
+      "id": "neo-brief-assignee-filter-trial",
+      "level": "composition",
+      "name": "今日のブリーフィングの担当者アイコン選択",
+      "purpose": "メンバーアイコンを使い、自分を初期選択し、「全員」にもアイコンを付ける限定基準と名前表示の試作を確認する。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/dashboard/NeoToday.tsx",
+        "src/components/dashboard/NeoMorningBrief.tsx",
+        "src/components/ui/avatar.tsx",
+        "src/components/ui/button.tsx"
+      ],
+      "variants": [
+        {
+          "id": "wrap",
+          "label": "名前を折り返す"
+        },
+        {
+          "id": "compact",
+          "label": "長い名前を省略する"
+        }
+      ],
+      "scope": "採用済み：担当者の選択肢をメンバーアイコンで示し、自分を初期選択する。「全員」には全員を表すアイコンを付ける。名前の折り返し・省略、狭幅での配置、正確な選択UI・寸法・並びは未採用の試作。見本の操作は架空状態の切替だけで取得・保存をしない。",
+      "impact": "ガイド専用の架空担当者・架空タスクで既存Avatar/Buttonを表示し、選択はコンポーネント内stateだけに反映する。NeoToday/NeoMorningBriefの実画面フィルター、共通Avatar/Button、取得・保存・絞り込みロジックは機能改善タスク担当であり、このUIガイドタスクでは編集しない。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ],
+      "implementation": {
+        "status": "implemented",
+        "summary": "機能改善側報告：NeoTodayの担当者別表示を実装し、本人初期選択・担当者アイコン・全員アイコンを含む切替を広幅・390px幅で確認済み。ユーザー採用範囲と、名前の折り返し/省略などの見本案は別状態。"
+      },
+      "adoption": {
+        "status": "limited",
+        "summary": "担当者フィルターはメンバーアイコンを表示し、自分を初期選択する。「全員」には全員アイコンを付ける。名前の折り返し・省略、狭幅配置、寸法や選択UIは採用していない。"
+      }
+    },
+    {
+      "id": "neo-shared-countdown-trial",
+      "level": "composition",
+      "name": "共通カウントダウンの情報表示と間隔",
+      "purpose": "表示専用を保ち、カードの内側左端・上下余白・アイコンと内容の間隔の関係を確認する。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/dashboard/SharedCountdown.tsx"
+      ],
+      "variants": [
+        {
+          "id": "aligned-spacing",
+          "label": "左端・上下余白・アイコンと内容の間隔を揃える（採用）"
+        },
+        {
+          "id": "left-padding-reference",
+          "label": "以前の左余白pl-6（24px）実装参照"
+        }
+      ],
+      "scope": "採用済み：共通カウントダウンの「あとN日」表示と対象タスク名は情報表示専用で、タスク詳細へのリンクにしない。カード左余白を少し増やし、カード内側の左端とアイコンを揃え、アイコンと内容の間隔を上下の外側余白に揃える。pl-3・py-3・gap-x-3（各12px）は現行の実装参照値で、独立したユーザー指定値ではない。以前のpl-6（24px）は過去の実装値を示す比較表示で、今の指定寸法ではない。",
+      "impact": "共通カウントダウンの実画面・ログイン・読み込み表示は機能改善タスク担当。ガイドは架空カードと比較条件だけを扱う。共有部品・共通トークン・全体CSS・保存処理をこのタスクで変更しない。",
+      "adoption": {
+        "status": "limited",
+        "summary": "日数と対象名は情報表示専用でリンクにしない。カード内側の左端とアイコンを揃え、アイコンと内容の間隔を上下の外側余白に揃える。pl-3・py-3・gap-x-3は現行実装値の参照であり、具体的なpadding値は採用していない。"
+      },
+      "implementation": {
+        "status": "implemented",
+        "summary": "機能改善側は当初、表示専用カードとpl-5からpl-6への左余白増加を実装し、ログイン・読み込み表示にも同じ値を適用。その後の2026-09-18追加指示を受け、現行SharedCountdownでは左端pl-3・上下py-3・アイコンと内容gap-x-3の関係へ更新。機能改善タスクの6テストファイル179件、ESLint、TypeScript、git diff --check成功との報告。各px値はその時点の実装参照で採用寸法ではない。"
+      },
+      "links": [
+        {
+          "href": "/neo",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ]
+    },
+    {
+      "id": "task-row-one-line-trial",
+      "level": "composition",
+      "name": "タスク行の一行表示案",
+      "purpose": "短い親タスク名と付随情報の配置、サブタスク1件1行、および同じ役割のタスク行のhover・focusを試作見本で分けて確認する。",
+      "status": "trial",
+      "adoption": {
+        "status": "limited",
+        "summary": "採用済み範囲：①プロジェクトを問わずカンバンカード内で展開するサブタスク一覧は1件につき一つの視覚行とし、タイトル・担当者・状態・期限を同じ行に置く。②TaskFlowのタスク一覧・カード・サブタスク等で内容を開く同じ役割の行（ダッシュボード・カンバンを含む）に控えめな行面hover背景・色遷移・キーボードfocusを揃える。リンク下線だけ、アイコン操作、選択中、危険操作は別役割。③タスクカードに「モアイ」の文字ラベルを表示しない（🗿アイコンや保存ラベル・絞り込み意味を変更する指示ではない）。④カンバンカード内の「完了済みN件」summaryは、その上のサブタスク見出しと同程度の下端余白を持たせる。 ⑤カンバンsingle-lineのサブタスクタイトル行は内側を少し詰め、外側summary枠の上下余白px-2.5 py-1と行間mt-1 space-y-0.5を保つ。正確なmin-height/px値は独立採用していない。"
+      },
+      "implementation": {
+        "status": "partial",
+        "summary": "限定完了（機能改善タスク報告・現行コード照合）：§13.24のカンバン「完了済み N件」summaryだけにpy-1を追加し、直上のサブタスク見出しと同じ24px（16px文字＋上下4px）・下端4pxを確認。TaskChildrenSummary.test.tsx 6件、ESLint、TypeScript、ui:refresh、ui:check成功、JIMU委託カンバン広幅でcomputed height 24pxと上下padding 4pxを確認。全体statusはpending：全プロジェクトの展開サブタスク1件1行適用・確認、および同役割行hover/focusの実画面反映が残る。複合見本のstatusはtrial。28px行は独立採用ではない。 2026-09-18の機能改善タスク報告では、single-lineタイトルをmin-h-7（28px）からmin-h-6（24px）へ変更し、外枠px-2.5 py-1・行間mt-1 space-y-0.5を維持。通常幅・390px幅で短い「チャットワーク確認」が一行のまま表示された。24pxは実装参照値で共通採用寸法ではない。d30fの試作は24px参照に更新済み。現行ガイドTSX/CSS/catalogを使った使い捨て統合コピーでReact DOMテスト48/48件が成功。直接のブラウザー描画・目視は未確認。複合見本全体はtrial、限定採用はlimited、実画面反映は部分実装として別管理する。"
+      },
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/board/TaskCalendarView.tsx",
+        "src/components/board/BoardList.tsx",
+        "src/components/board/BoardView.tsx",
+        "src/components/board/TaskChildrenSummary.tsx",
+        "src/components/board/TaskViewFields.tsx",
+        "src/components/ui/density.ts",
+        "src/components/dashboard/NeoBriefTaskRow.tsx",
+        "src/components/dashboard/NeoMorningBrief.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "一行優先・付随情報を右横・サブタスク1件1行／24px実装参照（採用寸法ではない）"
+        }
+      ],
+      "scope": "採用済み：プロジェクトを問わずカンバンカード内で展開するサブタスク一覧を、タイトルと担当者・状態・期限が同じ視覚行にある1件1行で表示する。カード上に「モアイ」の文字ラベルを表示しない。🗿アイコンの表示位置は別途採用されたルールとして維持し、タスク名・保存ラベル・絞り込み意味は変えない。追加採用：TaskFlowのタスク一覧・カード・サブタスク等で内容を開く同じ役割の行（ダッシュボード・カンバンを含む）に控えめな行面hover背景・色遷移・キーボードfocusを揃える。リンク下線だけ、アイコン操作、選択中、危険操作は別役割とし、全ボタンへ広げない。28px、正確な行高・余白・色・遷移時間、親タスクの右横情報・🗿・個別枠は独立採用していない。複合見本全体はtrial、架空データのみ。採用済み：カンバンカード内の「完了済みN件」summaryに下端余白を設け、上のサブタスク見出しと同程度に整える。 追加採用（2026-09-18）：カンバンsingle-lineのサブタスクタイトル行の内側を少し詰め、外側summary枠のpx-2.5 py-1と行間mt-1 space-y-0.5を維持する。正確な高さは採用していない。bde4のmin-h-6（24px）は実装参照値であり、共通の採用寸法ではない。",
+      "impact": "ガイドではtask-row-one-line-trialの架空の親行・カンバンサブタスク行専用.oneLineRow、説明、管理テストだけを更新する。実画面では機能改善タスクが全プロジェクトのカンバンカード内で展開する同役割のサブタスク行、ダッシュボード／カンバン同役割行のhover・focus、カード上の文字ラベル表示を確認して反映・検証する。別ビューへ一律適用しない。完了済みsummaryは「完了済み N件」だけが対象。min-h-6/py-1の数値は実装具体化、28px行は試作値。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ]
+    },
+    {
+      "id": "neo-home-layout-trial",
+      "level": "composition",
+      "name": "Neoホームの見出し・パネル配置案",
+      "purpose": "ブリーフィング見出し、予定、カウントダウン、提案、判断記録、今日の期限/作業期間中の行と時間割の高さを架空データで確認する。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/dashboard/NeoMorningBrief.tsx",
+        "src/components/dashboard/NeoCalendar.tsx",
+        "src/components/dashboard/NeoScheduleCalendar.tsx",
+        "src/components/dashboard/SharedCountdown.tsx",
+        "src/components/dashboard/NeoReviewRequests.tsx",
+        "src/components/dashboard/OrganizationReviewInbox.tsx",
+        "src/components/dashboard/OrganizationProposalCard.tsx",
+        "src/components/ui/card.tsx",
+        "src/components/dashboard/NeoBriefTaskRow.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "ホームのまとまり・余白案"
+        },
+        {
+          "id": "history-under-proposal",
+          "label": "提案がある場合の折りたたみ履歴（採用）"
+        }
+      ],
+      "scope": "採用済み：今日のブリーフィング見出しは他の主要見出しと揃え、アイコンを常に表示して文字を少し大きくする。1行の予定は上下中央に置く。更新ボタンを右端に寄せる。「ほかN件を見る」を常時表示し、対象の説明文を表示しない。大枠を個別の枠で示し、タスク一覧の下端余白を大枠間と揃える。現在の提案がない場合は過去の判断・記録を1件ずつ枠で表示し、反映済みの変更はモアイのコメントとして示す。期限が今日以前の未完了タスクは「期限」、開始日が今日以前かつ期限が明日以降の未完了タスクは「作業期間中」に分け、期限超過を先に表示する。各群は優先度・期限の順。完了済みと開始日前を除外し、着手中/未着手と日付は保存値のまま表示して閲覧時に変更しない。保留・待ちは既存の扱いを維持する。親タスク参照は名前を表示し、「親:」を付けない。下部の30分枠は上部の期限タスクカードと同じ高さにする。提案がある場合は判断・記録を新しい順で折りたたみ表示し、各件を枠で囲み、反映済みの変更はモアイのコメントとして表示する。履歴は共有Cardのcompact表示で枠を示し、タスク一覧下端の関係はNEO_TASK_LIST_END_CLASSを実装参照とする。履歴の寸法・25px自体、Card/utilityの具体値は独立採用ではない。見出しの試作値18px/20pxも現行実装への参照値。操作・データはガイド内だけ。",
+      "impact": "ガイド内の架空データとローカル操作だけ。Neoの実見出し・予定・カウントダウン・提案・記録・タスク一覧への反映と実画面検証は機能改善タスク担当。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ],
+      "adoption": {
+        "status": "limited",
+        "summary": "見出しのアイコン常時表示と少し大きい文字、1行予定の上下中央、カウントダウン更新ボタンの右寄せ、「ほかN件を見る」の常時表示、対象説明文の非表示、大枠の個別枠とタスク一覧下端余白を大枠間と揃える。現在の提案がない場合は過去記録を1件ずつ個別枠で表示し、反映済み変更はモアイのコメントとして示す。期限と作業期間中の分類・除外・並び・保存済み進捗の維持・親名のprefix省略、および30分枠と期限カードの高さを揃える。提案がある場合も判断・記録の全件を新しい順で縦に並べ、初期状態は折りたたみ、各件を枠で示す。反映済み変更はモアイのコメントとして表示する。提案がない場合の1件ずつ表示とは別条件。履歴の寸法は未採用。25px自体も未採用。"
+      },
+      "implementation": {
+        "status": "partial",
+        "summary": "機能改善タスクのbde4実装報告・現行コードと対象テスト照合で、期限/作業期間中の分類、保存済み進捗と日付の非変更、未来開始/完了除外、期限超過先行と群内の優先度・期限順、保留/待ち維持、親名のprefix省略を確認。NeoScheduleCalendarでは30分枠と上部期限チップがともに25pxで一致。関連5テストファイル・65テスト、ESLint、TypeScript、git diff --checkが成功との報告。25pxは実装参照値で独立採用寸法ではない。CDPタイムアウトにより実画面の目視確認は未完了。他ブランチ/本番への反映とも別状態。 2026-09-18の機能改善タスク報告・OrganizationReviewInbox照合では、判断/記録をcreatedAt新しい順、縦並び、折りたたみ、各件枠付きで表示し、反映済みはauthorLabel=モアイのコメントとして表示。6ファイル179テスト、ESLint、TypeScript、git diff --check成功との報告。Neoホーム複合全体のCDP目視は未完了であり、履歴単独のコード反映・自動テスト・視覚確認を分ける。 2026-09-18の機能改善タスク連絡では、履歴の枠に共有Card density=compact、タスク一覧下端にNEO_TASK_LIST_END_CLASSを使う方針が共有された。utilityや余白の具体値はユーザー採用に追加せず、現画面反映と統合後の検証を別途確認する。"
+      }
+    },
+    {
+      "id": "detail-header-spacing-trial",
+      "level": "layout",
+      "name": "詳細ヘッダー上下余白案",
+      "purpose": "詳細ヘッダーの上側を広く、下側を狭くする方向を、採用値と試作値を分けて確認する。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/ui/screen-layouts.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "上を広く・下を狭くする方向案"
+        }
+      ],
+      "scope": "詳細ヘッダーの上側を少し広く、下側を少し狭くする方向だけを採用。20px/4pxはガイド見本内の試作値で、共通CSS・実画面・他のヘッダーへ適用しない。",
+      "impact": "ガイド専用見本内で共有DetailFrame/DetailHeaderの構造を参照し、インライン指定はこの試作インスタンスだけに限定する。実画面のTaskDetailModalや共通detail-header CSSは機能改善タスク担当。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ],
+      "adoption": {
+        "status": "limited",
+        "summary": "詳細ヘッダーの上余白を少し増やし、下余白を少し減らす方向を採用。正確な余白値・適用先の全体化は採用していない。"
+      },
+      "implementation": {
+        "status": "pending",
+        "summary": "ガイド見本のみ。実画面への反映・利用先の確認は機能改善タスクが担当し、共通CSSの変更前に影響画面を照合する。"
+      }
+    },
+    {
+      "id": "subtask-view-alignment-trial",
+      "level": "composition",
+      "name": "カンバン・進捗のサブタスク行",
+      "purpose": "プロジェクトを問わずカンバンカード内で展開するサブタスクと進捗ビューを1件1行で揃え、行密度と一覧枠の上下余白を比べる。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/board/BoardList.tsx",
+        "src/components/board/BoardView.tsx",
+        "src/components/board/TaskProgressView.tsx",
+        "src/components/board/ProgressTaskCard.tsx",
+        "src/components/board/TaskChildrenSummary.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "カンバンと進捗を同じ行で比較"
+        }
+      ],
+      "scope": "採用済み：プロジェクトを問わずカンバンカード内で展開するサブタスク一覧は1件1行とし、進捗ビューにも同じ表示ルールを適用する。各項目を一つの視覚行にし、行はコンパクトにしながら一覧枠の上端・下端の余白を保つ。正確な行高・行間・上下余白は独立採用ではない。見本は同じ架空行を二つの役割で描画し、実ビュー・ドラッグ保存・業務処理を使わない。",
+      "impact": "ガイド専用の比較見本。実カンバンおよびTaskProgressView/ProgressTaskCardで同じ基準が満たされるかの確認・反映は機能改善タスク担当。現行コードでは両系統がTaskChildrenSummaryのsingle-line指定を使うが、この記録は今回の実画面目視検証を意味しない。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ],
+      "adoption": {
+        "status": "limited",
+        "summary": "プロジェクトを問わずカンバンカード内で展開するサブタスクと進捗ビューを同じ扱いにし、1件1行・コンパクトな行・一覧枠の上下余白保持を採用。具体的な行高・padding値は指定していない。"
+      },
+      "implementation": {
+        "status": "pending",
+        "summary": "現行ソースではBoardList/BoardView/ProgressTaskCardがsingle-lineレイアウトを指定している。今回の採用基準に対する両ビューの実画面目視・上下余白確認と完了報告は機能改善タスク待ち。"
+      }
+    },
+    {
+      "id": "task-detail-subtask-order-trial",
+      "level": "composition",
+      "name": "詳細内サブタスクの並べ替え",
+      "purpose": "詳細内のサブタスクをドラッグハンドルとキーボードで並べ替え、親側に順番を保存するルールを確認する。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/task/TaskDetailModal.tsx",
+        "src/components/task/TaskRelations.tsx",
+        "src/components/task/SortableChecklistItems.tsx",
+        "src/lib/firebase/subtask-order.ts"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "ドラッグ・キーボードで並べ替え"
+        }
+      ],
+      "scope": "採用済み：詳細内サブタスクの順番はチェックリスト項目のようにドラッグハンドルとキーボードで並べ替える。並び順は親タスクに保存し、子タスク自体のorderは変更しない。順番を保存した後の「記録しました。」は詳細内に出さない。ガイド見本の操作はReact stateだけで、通信・保存・実データ変更はしない。詳細ヘッダーの上を広く下を狭くする方向も採用済みだが、正確な20px/4pxは試作値。",
+      "impact": "TaskDetailModal/TaskRelationsと既存のチェックリスト並べ替えを参照する。ガイド専用の架空詳細だけを変更。実装・保存処理・実画面確認は機能改善タスク担当。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ],
+      "adoption": {
+        "status": "limited",
+        "summary": "詳細内サブタスクはドラッグハンドル・キーボードで並べ替える。親タスクに並び順を保存し、子タスクのorderは変えない。詳細内の「記録しました。」インライン確認は隠す。ヘッダーは上を少し広く下を少し狭くするが、正確な余白値は指定していない。"
+      },
+      "implementation": {
+        "status": "in-progress",
+        "summary": "現行bde4ソースにTaskRelationsのKeyboardSensor/SortableContext、TaskDetailModalのreorderTaskSubtasks接続、親のsubtaskOrderIds更新、pt-5 pb-1のヘッダー指定がある。機能テストも存在する。今回の実画面表示・保存後の反映確認を含む最終検証は機能改善タスクの報告待ち。"
+      }
+    },
+    {
+      "id": "proposal-review-flow-trial",
+      "level": "composition",
+      "name": "モアイの提案・次の確認の流れ案",
+      "purpose": "既存のモアイ確認導線で候補を見比べる案と、親完了・未完了サブタスクの確認を試す。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/dashboard/OrganizationProposalCard.tsx",
+        "src/components/dashboard/NeoReviewRequests.tsx",
+        "src/lib/dashboard/review-requests.ts",
+        "src/components/dashboard/NeoTaskAttention.tsx",
+        "src/components/dashboard/NeoToday.tsx",
+        "src/components/ai/CompanionTaskChecks.tsx",
+        "src/components/ai/CompanionAI.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "提案の閲覧切替・優先理由"
+        },
+        {
+          "id": "parent-child-review",
+          "label": "親完了・未完了サブタスクの確認"
+        }
+      ],
+      "scope": "複合見本の既存提案フローは試作のまま。親完了・実際の未完了サブタスクが同時にある場合だけ、限定採用された確認導線を示す。ダッシュボードは上部の事実カードから親・各サブタスク詳細へ進み、質問・選択肢を重ねない。他画面のモアイは閉じた要約に親タイトルと未完了件数だけを出し、開いた後に事実説明と選択肢を示す。同じ確認を重複させず、新しい管理一覧・確認キューを作らない。取得中・取得成功で対象なし・取得失敗を区別し、本人の明示選択までは保存・状態変更しない。質問・選択肢の文言と処理は未採用。",
+      "impact": "ガイドではproposal-review-flow-trialの既存見本内でダッシュボード／モアイの表示役割を切り替え、架空データ・取得状態・ローカル確認だけを試す。実画面は機能改善タスクが既存completedParentIssuesと既存保存経路を確認して反映する。選択前に保存せず、独立した一覧や新しい確認キューは作らない。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ],
+      "adoption": {
+        "status": "limited",
+        "summary": "採用範囲：親完了時に未完了子がある時のみ確認。ダッシュボード＝事実カード＋親子詳細入口。その他＝閉じたモアイ要約（親名＋未完了件数）、展開後に事実・選択肢。取得失敗は対象なしと扱わない。重複表示はしない。明示選択前は保存・状態変更しない。新しい一覧・キューは作らない。"
+      },
+      "implementation": {
+        "status": "in-progress",
+        "summary": "機能改善側報告：NeoTaskAttentionとCompanionTaskChecksを既存の検知・保存経路へ接続中。選択前に保存しないテストあり。実データ該当なしのため390px実画面再現なし。完了・最終検証は機能改善タスクで確認。"
+      }
+    },
+    {
+      "id": "calendar-task-create-trial",
+      "level": "composition",
+      "name": "日付からタスク追加を開くカレンダー",
+      "purpose": "選んだ日を期限にしたタスク追加ポップアップを示し、キャンセルで閉じる操作を確認する。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/board/TaskCalendarView.tsx",
+        "src/components/task/TaskCreationForm.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "選択日を引き継ぐポップアップ（採用方向）"
+        }
+      ],
+      "scope": "採用済み：プロジェクトカレンダーの日付を選ぶと、その日を期限にした既存のタスク追加フォームをポップアップで開く。ガイド見本は別の未接続プレビューで、架空日付と入力だけをローカルstateで表示する。キャンセル・入力例の終了で保存せず閉じ、TaskCreationForm、業務callback、通信、保存処理は使わない。",
+      "impact": "F10：プロジェクトカレンダーのタスク追加。実画面は機能改善タスクが担当し、ガイドは独立した架空ポップアップ見本のみ更新する。日付選択と期限引継ぎ以外の入力配置は採用に含めない。",
+      "links": [
+        {
+          "href": "/projects",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ],
+      "adoption": {
+        "status": "limited",
+        "summary": "カレンダーの日付を選ぶとタスク追加ポップアップを開き、選択日を期限に引き継ぐ。キャンセルは追加せず閉じる。フォーム全体の配置・寸法は採用していない。"
+      },
+      "implementation": {
+        "status": "implemented",
+        "summary": "機能改善タスクのTaskCalendarView実装報告とソース照合で、日付押下からDialogを開き、見出しとTaskCreationFormへ選択日を渡し、キャンセルで閉じることを確認。日付保持・キャンセル・保存を含む実画面確認と関連テストは機能改善側で成功との報告。ガイドDOMテストは別記録。"
+      }
+    },
+    {
+      "id": "task-structure-guidance-trial",
+      "level": "composition",
+      "name": "モアイのタスク構造の使い分け説明",
+      "purpose": "既存の仕事とコメント・チェック項目に根拠がある場合のタスク／サブタスク／チェックリスト説明と、不明な場合の確認を試す。",
+      "status": "trial",
+      "sources": [
+        "src/components/ui-guide/ExtendedPreviews.tsx",
+        "src/components/ui-guide/ExtendedPreviews.module.css",
+        "src/components/task/TaskOrganizer.tsx",
+        "src/lib/task/organizationAnalysis.ts",
+        "src/components/dashboard/OrganizationProposalCard.tsx"
+      ],
+      "variants": [
+        {
+          "id": "standard",
+          "label": "根拠を示して説明・不明なら確認"
+        }
+      ],
+      "scope": "採用済み：モアイは会議内容と既存の仕事・コメント・チェック項目から構造が具体的に読める場合に限り、タスク／親子タスク／チェックリストの使い分けを理由とともに提案する。単なる件数や一般論だけでは構成を決めず、根拠が曖昧なら確認を促す。チェック項目を子タスクへ自動変換しない。見本は正本に記録された架空の関係と曖昧例だけを説明する。",
+      "impact": "TaskOrganizerの分析依頼と提案カードの説明が対象。実データ分析・提案・変換/保存処理は機能改善タスク担当。UIガイドは架空データと説明だけを扱い、タスク構造やチェックリストを変更しない。",
+      "links": [
+        {
+          "href": "/neo",
+          "label": "関連画面を開く（実装状況は別途確認）"
+        }
+      ],
+      "adoption": {
+        "status": "limited",
+        "summary": "タスク／サブタスク／チェックリストの使い分けは既存の会議内容・タスク・コメント・チェック項目に基づいて理由を示す。単なる件数や一般論を根拠にせず、関係が不明なら確認し、自動変換しない。具体的な分類を決めるための追加の一般閾値は設けない。"
+      },
+      "implementation": {
+        "status": "implemented",
+        "summary": "機能改善タスクのorganizationAnalysis・TaskOrganizer・OrganizationProposalCard実装報告とソース照合で、既存資料に裏付けられる場合だけ構成を提案し、提案カードにモアイの使い分け説明と具体的理由を示す。6ファイル179テスト、ESLint、TypeScript、git diff --check成功との報告。ガイド見本は別途DOMテストで確認する。"
+      }
+    }
+  ],
+  "guideRevision": "ui-guide-examples-2026-09-18.8"
+}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
+import { SecretaryPanel } from '@/components/secretary/SecretaryPanel';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import {
@@ -36,7 +37,9 @@ import type {
 } from '@/lib/dashboard/brief';
 import type { DashboardCalendarDay } from '@/lib/dashboard/calendar';
 import type { GoogleCalendarConnectionStatus } from '@/hooks/useGoogleCalendar';
+import { GoogleInboxSource } from '@/components/google/GoogleWorkspacePanel';
 import { cn } from '@/lib/utils';
+import { taskRowInteraction } from '@/components/ui/density';
 import { useInboxDisplayStore, type InboxDisplaySettings as InboxDisplayOptions } from '@/stores/inboxDisplayStore';
 import { InboxDisplaySettings } from './InboxDisplaySettings';
 import { useProjects } from '@/hooks/useProjects';
@@ -344,12 +347,13 @@ function BriefSection({
           <Loader2 className="h-3.5 w-3.5 animate-spin" />TaskFlowのデータを読み込んでいます
         </div>
       )}
+      {!isSample && calendarStatus === 'connected' && calendarError && <p role="alert" className="border-b bg-amber-50 px-5 py-3 text-xs text-amber-900">Googleカレンダー：{calendarError}</p>}
       {!isSample && calendarStatus !== 'connected' && (
         <div className="flex flex-col gap-3 border-b bg-blue-50/60 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-blue-950">Googleカレンダーを読み取り専用で表示</p>
             <p className="mt-0.5 text-xs text-blue-800">
-              {calendarError ?? '予定の作成・変更は行いません。接続情報はこの画面を閉じるまでだけ保持します。'}
+              {calendarError ?? 'Google連携設定から接続できます。接続はページを閉じても維持されます。'}
             </p>
           </div>
           <Button
@@ -491,7 +495,7 @@ function UpcomingSection({
                 <Link
                   key={`${task.id}-${task.href}`}
                   href={task.href}
-                  className="grid grid-cols-[auto_1fr] items-start gap-2 rounded-md py-1 text-sm hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className={taskRowInteraction + ' grid grid-cols-[auto_1fr] items-start gap-2 rounded-md py-1 text-sm'}
                 >
                   <SourceBadge source="TF" projectIcon={task.projectIcon} projectIconUrl={task.projectIconUrl} projectColor={task.projectColor} priority={task.priority} />
                   <span className="min-w-0">
@@ -516,7 +520,7 @@ function UpcomingSection({
   );
 }
 
-function TargetsSection({ tasks, tasksLoading, tasksError }: { tasks: DashboardTask[]; tasksLoading: boolean; tasksError: Error | null }) {
+function TargetsSection({ tasks, tasksLoading, tasksError, isSample }: { tasks: DashboardTask[]; tasksLoading: boolean; tasksError: Error | null; isSample:boolean }) {
   const { projects, isLoading, error } = useProjects();
   const { selectedProjectIds, hydrate } = useTargetProjectStore();
   useEffect(() => { hydrate(); }, [hydrate]);
@@ -525,10 +529,10 @@ function TargetsSection({ tasks, tasksLoading, tasksError }: { tasks: DashboardT
 
   return (
     <section className="overflow-hidden rounded-2xl border bg-white shadow-sm" aria-label="今月の的">
-      <SectionHeader icon={<Target className="h-4 w-4" />} title="今月の的" badge={selectedProjectIds === null ? '表示サンプル' : '自動おすすめ'}
+      <SectionHeader icon={<Target className="h-4 w-4" />} title="今月の的" badge={selectedProjectIds === null ? isSample ? '表示サンプル' : undefined : '自動おすすめ'}
         actions={<TargetProjectSettings projects={projects} isLoading={isLoading} hasError={Boolean(error)} />} />
       {selectedProjectIds !== null && <p className="border-b px-5 py-2 text-xs text-muted-foreground">期限・優先度・開始日・依存関係から各プロジェクト最大3件を自動抽出しています（AI接続前の暫定表示）。</p>}
-      {selectedProjectIds === null ? <div className="grid md:grid-cols-3">
+      {selectedProjectIds === null && !isSample ? <p className="px-5 py-3 text-xs text-muted-foreground">表示するプロジェクトを選べます。</p> : selectedProjectIds === null ? <div className="grid md:grid-cols-3">
         {targets.map((target, index) => (
           <div key={target.project} className={cn('px-5 py-4', index > 0 && 'border-t md:border-l md:border-t-0')}>
             <p className="mb-3 text-sm font-semibold">{target.project}</p>
@@ -604,12 +608,12 @@ function InboxSection({ settings, comments, isSample }: { settings: InboxDisplay
       <div className="divide-y">
         {groups.filter((group) => settings[group.key]).map((group) => (
           <DashboardRow key={group.key} label={group.label} icon={group.icon} tone={group.tone}>
-            <p className="text-xs text-muted-foreground">Gmailは表示サンプルです。実際のメールは未連携です。</p>
+            {isSample ? <><p className="text-xs text-muted-foreground">Gmailは表示サンプルです。実際のメールは未連携です。</p>
             {inboxItems.filter((item) => item.channel === group.key).map((item) => (
               <DashboardItem key={`${item.sender}-${item.context}`} source={group.source} title={item.body} singleLine
                 meta={`${item.sender} ／ ${item.context}`}
                 unavailableReason="Gmailは表示サンプルです。実際のメールは未連携のため開けません。" />
-            ))}
+            ))}</> : <GoogleInboxSource service="gmail" />}
           </DashboardRow>
         ))}
         {settings.comments && (
@@ -635,7 +639,7 @@ function InboxSection({ settings, comments, isSample }: { settings: InboxDisplay
         )}
         {settings.googleChat && (
           <DashboardRow label="Google Chat" icon={<MessageSquare className="h-4 w-4" />} tone="green">
-            <p className="text-sm text-muted-foreground">Google Chatは未連携です。メッセージはまだ取得していません。</p>
+            {isSample ? <p className="text-sm text-muted-foreground">Google Chatは未連携です。メッセージはまだ取得していません。</p> : <GoogleInboxSource service="chat" />}
           </DashboardRow>
         )}
         {!Object.values(settings).some(Boolean) && (
@@ -646,7 +650,15 @@ function InboxSection({ settings, comments, isSample }: { settings: InboxDisplay
   );
 }
 
-export function KozueDashboard({ displayName }: { displayName: string }) {
+function DashboardSections({ mode, onOpen, children }: { mode: 'combined' | 'overview'; onOpen: () => void; children: ReactNode }) {
+  if (mode === 'overview') return <>{children}</>;
+  return <details className="rounded-2xl border bg-white px-5 py-3" onToggle={event => { if (event.currentTarget.open) onOpen(); }}>
+    <summary className="cursor-pointer text-sm text-muted-foreground">従来の一覧・予定・表示設定</summary>{children}
+  </details>;
+}
+
+export function KozueDashboard({ displayName, mode = 'combined' }: { displayName: string; mode?: 'combined' | 'overview' }) {
+  const [legacyLoaded, setLegacyLoaded] = useState(mode === 'overview');
   const todayDate = new Date();
   const today = format(todayDate, 'yyyy.M.d EEEE', { locale: ja });
   const {
@@ -666,7 +678,7 @@ export function KozueDashboard({ displayName }: { displayName: string }) {
   useEffect(() => { hydrateBriefDisplay(); }, [hydrateBriefDisplay]);
   const { settings: inboxSettings, hydrate: hydrateInbox } = useInboxDisplayStore();
   useEffect(() => { hydrateInbox(); }, [hydrateInbox]);
-  const comments = useDashboardComments(allProjectTasks, areTasksLoading, tasksError, inboxSettings.comments && !isSample);
+  const comments = useDashboardComments(allProjectTasks, areTasksLoading, tasksError, legacyLoaded && inboxSettings.comments && !isSample);
   const displayedBriefRows = briefData?.rows ?? briefRows;
   const briefRowsWithInboxComments = displayedBriefRows.map((row) => row.label === '確認待ち'
     ? { ...row, items: row.items.map((item) => applyInboxCommentDisplay(item, comments)) }
@@ -689,6 +701,8 @@ export function KozueDashboard({ displayName }: { displayName: string }) {
         <SharedCountdown tasks={allProjectTasks} tasksLoading={areTasksLoading} tasksError={tasksError} />
       </header>
 
+      {mode === 'combined' && <SecretaryPanel />}
+      <DashboardSections mode={mode} onOpen={() => setLegacyLoaded(true)}>{legacyLoaded && <div className={mode === 'overview' ? 'space-y-4' : 'mt-4 space-y-4'}>
       <BriefSection
         rows={briefRowsWithInboxComments}
         isLoading={isBriefLoading}
@@ -705,11 +719,12 @@ export function KozueDashboard({ displayName }: { displayName: string }) {
         isLoading={areTasksLoading}
         isCalendarConnected={calendarStatus === 'connected'}
       />
-      <TargetsSection tasks={allProjectTasks} tasksLoading={areTasksLoading} tasksError={tasksError} />
+      <TargetsSection isSample={isSample} tasks={allProjectTasks} tasksLoading={areTasksLoading} tasksError={tasksError} />
       <TargetGoals tasks={allProjectTasks} tasksLoading={areTasksLoading} tasksError={tasksError} />
-      <ScoreSection />
+      {isSample && <ScoreSection />}
       <InboxSection settings={inboxSettings} comments={comments} isSample={isSample} />
-      <MeetingProposals tasks={allProjectTasks} tasksLoading={areTasksLoading} tasksError={tasksError} isSample={isSample} />
+      <details><summary className="cursor-pointer text-xs text-muted-foreground">以前の会議下書き</summary><Link href="/neo/meetings" className="my-2 block text-sm underline">会議から整理</Link><MeetingProposals tasks={allProjectTasks} tasksLoading={areTasksLoading} tasksError={tasksError} isSample={isSample} /></details>
+      </div>}</DashboardSections>
     </div>
   );
 }

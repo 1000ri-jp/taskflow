@@ -13,6 +13,14 @@ export type StreamChunk =
  * Options for sending messages
  */
 export interface SendMessageOptions {
+  // Trusted server-owned policy. Never accept this field from chat request JSON.
+  systemPrompt?: string;
+  // Owner-scoped presentation preferences loaded by the authenticated server.
+  supportInstructions?: string;
+  maxOutputTokens?: number;
+  // Optional latency control for bounded Gemini 3 extraction; not user-supplied JSON.
+  geminiThinkingLevel?: 'low';
+  signal?: AbortSignal;
   enableTools?: boolean;
   // When true, this is a continuation after tool execution - AI should interpret results
   isToolResultContinuation?: boolean;

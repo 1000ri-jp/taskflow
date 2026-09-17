@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render as baseRender, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MEETING_REVIEW_STORAGE_KEY, useMeetingProposalStore } from '@/stores/meetingProposalStore';
 import { MEETING_CHECKLIST_STORAGE_KEY, useMeetingChecklistStore } from '@/stores/meetingChecklistStore';
@@ -8,9 +8,11 @@ import { MeetingProposals } from './MeetingProposals';
 const projectState = vi.hoisted(() => ({ projects: [{ id: 'p', name: '展示会出展', memberIds: ['nao', 'ko', 'ka'], icon: '🎮', color: '#123456' }, { id: 'r', name: 'ウリャマ', icon: '🦙', color: '#654321' }], isLoading: false, error: null }));
 vi.mock('@/hooks/useProjects', () => ({ useProjects: () => projectState }));
 vi.mock('@/hooks/useMeetingMembers', () => ({ useMeetingMembers: () => ({ users: [{id:'nao', displayName:'Naofumi'}, {id:'ko', displayName:'Kozue'}, {id:'ka', displayName:'Kaori'}], isLoading:false, hasError:false, refresh:vi.fn() }) }));
-const expand = (title = '出展情報の準備・提出') => fireEvent.click(screen.getByRole('button', { name: title + 'の子タスクを表示' }));
+const expand = (title = '出展情報の準備・提出') => fireEvent.click(screen.getByRole('button', { name: title + 'のサブタスクを表示' }));
 // Any accidental task write through this module fails the test.
 vi.mock('@/lib/firebase/firestore', () => new Proxy({}, { get: (_, name) => { throw new Error(`Unexpected Firestore access: ${String(name)}`); } }));
+// Legacy review tests explicitly open the preserved v2 drafts.
+const render = (...args: Parameters<typeof baseRender>) => { const result = baseRender(...args); fireEvent.click(screen.getByText('以前の会議メモ v2・ブラウザ下書き')); return result; };
 const props = { tasks: [], tasksLoading: false, tasksError: null };
 const existing: DashboardTask = {
   id:'t',projectId:'p',projectName:'展示会出展',listId:'l',title:'出展情報提出',description:'',order:0,
@@ -27,9 +29,9 @@ describe('MeetingProposals review UI', () => {
   it('shows 13 collapsed bundles and expands all 35 children without adopting ideas', () => {
     render(<MeetingProposals {...props} />);
     expect(screen.queryAllByRole('article')).toHaveLength(0);
-    const toggles = screen.getAllByRole('button', { name: /の子タスクを表示$/ });
+    const toggles = screen.getAllByRole('button', { name: /のサブタスクを表示$/ });
     expect(toggles).toHaveLength(13);
-    const submissionToggle = screen.getByRole('button', { name: '出展情報の準備・提出の子タスクを表示' });
+    const submissionToggle = screen.getByRole('button', { name: '出展情報の準備・提出のサブタスクを表示' });
     act(() => toggles.forEach(button => fireEvent.click(button)));
     expect(screen.getAllByRole('article')).toHaveLength(35);
     expect(screen.getAllByRole('button', { name: '採用' })).toHaveLength(35);
@@ -118,14 +120,14 @@ describe('MeetingProposals review UI', () => {
     fireEvent.click(checks[0]);
     expect(checks[0]).toBeChecked();
     expect(checks[1]).not.toBeChecked();
-    fireEvent.input(row.getByLabelText('Naofumi Higashikawauchi：チケット購入の子タスク期限'),{target:{value:'2026-09-13'}});
+    fireEvent.input(row.getByLabelText('Naofumi Higashikawauchi：チケット購入のサブタスク期限'),{target:{value:'2026-09-13'}});
     expect(useMeetingProposalStore.getState().reviews['EX-9']).toBeUndefined();
     unmount(); render(<MeetingProposals {...props}/>);
     expand('参加登録・チケット購入');
     const restored = within(screen.getByRole('article',{name:/^EX-9 /}));
     expect(restored.getAllByRole('checkbox')[0]).toBeChecked();
-    expect(restored.getByLabelText('Naofumi Higashikawauchi：チケット購入の子タスク期限')).toHaveValue('2026-09-13');
-    expect(restored.getByLabelText('こずえ：チケット購入の子タスク期限')).toHaveValue('');
+    expect(restored.getByLabelText('Naofumi Higashikawauchi：チケット購入のサブタスク期限')).toHaveValue('2026-09-13');
+    expect(restored.getByLabelText('こずえ：チケット購入のサブタスク期限')).toHaveValue('');
   });
   it('selects a parent and checklist name without changing correspondence or source tasks', () => {
     const parent = {...existing,id:'parent',title:'東京ゲームダンジョン'};
@@ -146,7 +148,7 @@ describe('MeetingProposals review UI', () => {
     render(<MeetingProposals {...props}/>);
     expand();
     const row = within(screen.getByRole('article',{name:/^EX-3 /}));
-    fireEvent.change(row.getByLabelText(/の子タスク期限$/),{target:{value:'2026-09-13'}});
+    fireEvent.change(row.getByLabelText(/のサブタスク期限$/),{target:{value:'2026-09-13'}});
     expect(useMeetingProposalStore.getState().reviews['EX-3'].edits?.dueDate).toBe('2026-09-13');
     vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw new Error('quota');});
     fireEvent.click(row.getByRole('checkbox'));

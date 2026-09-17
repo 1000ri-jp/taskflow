@@ -1,3 +1,5 @@
+import { submitTaskCommentRecord } from '@/lib/task/commentSubmissionRepository';
+import { OrganizationError } from '@/lib/task/organizationEngine';
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest } from '@/lib/auth/authenticateRequest';
 import { getProjectAccess } from '@/lib/auth/projectAccess';
@@ -58,6 +60,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
 
     const body = await request.json();
+    if (body?.submission) {
+      if (body.submission.projectId !== projectId || body.submission.taskId !== taskId) throw new OrganizationError('投稿先が一致しません。');
+      return NextResponse.json(await submitTaskCommentRecord(auth.userId, body.submission));
+    }
     const commentInput = parseCreateCommentBody(body);
     let authorLabel: string | undefined;
     let authorIcon: string | null | undefined;
@@ -78,6 +84,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
+    if (error instanceof OrganizationError) return NextResponse.json({ error: error.message, rejected: true }, { status: error.status });
     const message = error instanceof Error ? error.message : 'Internal server error';
 
     if (message === 'FORBIDDEN') {

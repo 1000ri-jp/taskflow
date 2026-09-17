@@ -1,3 +1,4 @@
+import { taskResolutionPrompt } from '../taskResolutionPrompt';
 import { AIContext, AIMessage, DEFAULT_MODELS } from '@/types/ai';
 import { AIProvider, StreamChunk, SendMessageOptions } from './types';
 import { getAnthropicTools } from '../tools';
@@ -64,7 +65,7 @@ function convertMessagesToAnthropic(messages: AIMessage[]): Array<{
       // User or system message
       result.push({
         role: 'user',
-        content: msg.content,
+        content: msg.images?.length ? [{type:'text',text:msg.content},...msg.images.map(image=>({type:'image',source:{type:'base64',media_type:image.mimeType,data:image.data}}))] : msg.content,
       });
     }
   }
@@ -86,7 +87,7 @@ export class AnthropicProvider implements AIProvider {
     const resolvedProjectId = options?.projectId !== undefined
       ? options.projectId
       : (context.project?.id || null);
-    const systemPrompt = buildCompanionSystemPrompt(context, options?.enableTools && !options?.isToolResultContinuation, resolvedProjectId);
+    const systemPrompt = [options?.systemPrompt ?? buildCompanionSystemPrompt(context, options?.enableTools && !options?.isToolResultContinuation, resolvedProjectId), options?.supportInstructions].filter(Boolean).join('\n\n');
     const modelToUse = model || DEFAULT_MODELS.anthropic;
 
     // Convert messages to Anthropic format (handles tool_use and tool_result)
@@ -94,7 +95,7 @@ export class AnthropicProvider implements AIProvider {
 
     const requestBody: Record<string, unknown> = {
       model: modelToUse,
-      max_tokens: 4096,
+      max_tokens: options?.maxOutputTokens ?? 4096,
       system: systemPrompt,
       messages: anthropicMessages,
       stream: true,
@@ -110,6 +111,7 @@ export class AnthropicProvider implements AIProvider {
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: options?.signal,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
@@ -131,14 +133,16 @@ export class AnthropicProvider implements AIProvider {
     const decoder = new TextDecoder();
     const toolCalls: ToolCall[] = [];
     let currentToolUse: { id: string; name: string; input: string } | null = null;
+    let pending = '';
 
     try {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n').filter((line) => line.trim() !== '');
+        pending += decoder.decode(value, { stream: true });
+        const lines = pending.split('\n');
+        pending = lines.pop() ?? '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -390,5 +394,5 @@ ${getTimePeriodInstructions(currentHour)}
 ${!hasProject ? '- プロジェクト横断で優先順位や作業負荷を分析してください\n- 日報やサマリーを出力する際は、マークダウン形式で見やすく整形してください' : ''}
 `;
 
-  return prompt;
+  return prompt + taskResolutionPrompt(context);
 }

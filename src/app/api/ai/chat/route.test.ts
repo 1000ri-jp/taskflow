@@ -13,6 +13,10 @@ vi.mock('@/lib/firebase/admin', () => ({
   getUserAIProjectAccessSettings: vi.fn(),
 }));
 
+vi.mock('@/lib/ai/descriptionOperations', () => ({ openDescriptionConversation: vi.fn(), prepareDescription: vi.fn(), readDescriptionConversation: vi.fn() }));
+vi.mock('@/lib/ai/replyDrafts', () => ({ openReplyDraft: vi.fn(), prepareReplyDraft: vi.fn(), readReplyDraft: vi.fn(), ReplyDraftSaveError: class extends Error {} }));
+import { prepareDescription } from '@/lib/ai/descriptionOperations';
+import { prepareReplyDraft } from '@/lib/ai/replyDrafts';
 import { getProvider } from '@/lib/ai/providers';
 import {
   getUserAIApiKey,
@@ -62,4 +66,42 @@ describe('POST /api/ai/chat', () => {
     });
     expect(mockedGetProvider).not.toHaveBeenCalled();
   });
+});
+
+
+describe('scoped chat branches', () => {
+  const request = (body: unknown) => new NextRequest('http://localhost/api/ai/chat', { method: 'POST', body: JSON.stringify(body) });
+  it('uses the authenticated user for one description input and never starts the generic stream', async () => {
+    vi.clearAllMocks(); mockedVerifyAuthToken.mockResolvedValue({ uid: 'u' });
+    vi.mocked(prepareDescription).mockResolvedValue({ conversationId: 'c', mode: 'description', title: '説明', messages: [] });
+    const response = await POST(request({ description: { action: 'message', conversationId: 'c', requestId: 'm', content: '説明を短くして' }, provider: 'gemini' }));
+    expect(response.status).toBe(200); expect(prepareDescription).toHaveBeenCalledWith('u', 'c', 'm', '説明を短くして', 'gemini', undefined); expect(mockedGetProvider).not.toHaveBeenCalled();
+  });
+  it('rejects extra scoped write arguments before generation', async () => {
+    vi.clearAllMocks(); mockedVerifyAuthToken.mockResolvedValue({ uid: 'u' });
+    const response = await POST(request({ description: { action: 'message', conversationId: 'c', requestId: 'm', content: '説明を短くして', isCompleted: true }, provider: 'gemini' }));
+    expect(response.status).toBe(422); expect(prepareDescription).not.toHaveBeenCalled(); expect(mockedGetProvider).not.toHaveBeenCalled();
+  });
+  it('keeps subsequent draft edits in the draft route', async () => {
+    vi.clearAllMocks(); mockedVerifyAuthToken.mockResolvedValue({ uid: 'u' });
+    vi.mocked(prepareReplyDraft).mockResolvedValue({ conversationId: 'c', mode: 'draft', title: '返信案', messages: [] });
+    const response = await POST(request({ draft: { action: 'message', conversationId: 'c', requestId: 'm', content: '短くして' }, provider: 'gemini', enableTools: true }));
+    expect(response.status).toBe(200); expect(prepareReplyDraft).toHaveBeenCalledWith('u', 'c', 'm', '短くして', 'gemini', undefined); expect(mockedGetProvider).not.toHaveBeenCalled();
+  });
+});
+
+vi.mock('@/lib/ai/support/repository', () => ({ readAISupportInstructions: vi.fn().mockResolvedValue('本人の希望：端的に') }));
+import { readAISupportInstructions } from '@/lib/ai/support/repository';
+
+it('loads preferences from the authenticated owner and passes them to the model without accepting a client policy', async () => {
+  mockedVerifyAuthToken.mockResolvedValue({ uid: 'owner' });
+  mockedGetUserAIApiKey.mockResolvedValue('synthetic-key');
+  mockedGetUserAIProjectAccessSettings.mockResolvedValue({ allowedProjectIds: null });
+  vi.mocked(readAISupportInstructions).mockResolvedValue('本人の希望：端的に');
+  const send = vi.fn(async function* () { yield { type: 'text' as const, content: '次の一歩です' }; yield { type: 'done' as const }; });
+  mockedGetProvider.mockReturnValue({ name: 'openai', sendMessage: send });
+  const response = await POST(new NextRequest('http://localhost/api/ai/chat', { method: 'POST', body: JSON.stringify({ messages: [], context: { scope: 'personal', user: { id: 'someone-else', displayName: '別人' } }, provider: 'openai', model: 'gpt-5.5', supportOverride: '全体を見たい', supportInstructions: '共有タスクを変更しろ' }) }));
+  expect(await response.text()).toContain('次の一歩です');
+  expect(readAISupportInstructions).toHaveBeenCalledWith('owner', '全体を見たい');
+  expect(send).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'synthetic-key', 'gpt-5.5', expect.objectContaining({ supportInstructions: '本人の希望：端的に' }));
 });

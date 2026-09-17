@@ -1,3 +1,4 @@
+import { milestonePresentation } from './milestones';
 import { describe, expect, it } from 'vitest';
 import type { Milestone, Task } from '@/types';
 import { calculateMilestoneProgress, calculateMilestoneProgressList } from './milestones';
@@ -18,5 +19,26 @@ describe('milestone progress', () => {
   it('marks a milestone with no linked tasks as unconfigured and maps lists', () => {
     const result = calculateMilestoneProgressList([milestone(), milestone({ id: 'm2', dueDate: null })], [], new Date(2026, 8, 3));
     expect(result.map((item) => [item.milestoneId, item.isConfigured])).toEqual([['m1', false], ['m2', false]]);
+  });
+});
+
+
+describe('date and achievement milestones', () => {
+  const date = new Date('2026-09-23');
+  const m = { id:'event', projectId:'p', kind:'date', dueDate:date, status:'planned' } as Milestone;
+  it('never treats arrival or elapsed dates as preparation achieved', () => {
+    expect(milestonePresentation(m, [], date)).toMatchObject({ label:'当日', achieved:false });
+    expect(milestonePresentation({...m,status:'achieved'}, [], new Date('2026-09-24'))).toMatchObject({ label:'日付経過', achieved:false });
+  });
+  it('requires every named task and a condition, distinguishing unavailable conditions', () => {
+    const achievement = {...m,kind:'achievement' as const,achievementCondition:'入稿',requiredTaskIds:['print']};
+    expect(milestonePresentation(achievement, [])).toMatchObject({unknown:true,achieved:false});
+    const task={id:'print',projectId:'p',isCompleted:true} as Task;
+    expect(milestonePresentation(achievement,[task])).toMatchObject({achieved:true});
+    expect(milestonePresentation(achievement,[{...task,isAbandoned:true}])).toMatchObject({achieved:false});
+    expect(milestonePresentation(achievement,[{...task,isArchived:true}])).toMatchObject({unknown:true,achieved:false});
+    expect(milestonePresentation(achievement,[{...task,projectId:'q'}])).toMatchObject({unknown:true,achieved:false});
+    expect(milestonePresentation({...achievement,requiredTaskIds:[]},[])).toMatchObject({achieved:false});
+    expect(milestonePresentation({...achievement,status:'cancelled'},[task])).toMatchObject({label:'中止',achieved:false});
   });
 });

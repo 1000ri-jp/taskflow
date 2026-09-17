@@ -20,6 +20,7 @@ export const createTaskToolDefinition: AITool = {
   parameters: {
     type: 'object',
     properties: {
+      assigneeIds: { type: 'array', items: { type: 'string' }, description: '本人が明示した担当者IDだけ指定。候補や推測は省略しプロジェクト主担当を初期値にする。意図的な担当未設定だけ空配列。' },
       title: {
         type: 'string',
         description: 'タスクのタイトル（必須）',
@@ -79,6 +80,7 @@ export const createTasksToolDefinition: AITool = {
         items: {
           type: 'object',
           properties: {
+            assigneeIds: { type: 'array', items: { type: 'string' }, description: '本人が明示した担当者IDだけ指定。候補や推測は省略しプロジェクト主担当を初期値にする。意図的な担当未設定だけ空配列。' },
             title: {
               type: 'string',
               description: 'タスクのタイトル（必須）',
@@ -199,7 +201,8 @@ export const createTaskHandler: ToolHandler<CreateTaskArgs, CreateTaskResult> = 
     title,
     description: description || '',
     order: Date.now(), // Use timestamp for ordering new tasks at the end
-    assigneeIds: [],
+    ...(args.assigneeIds !== undefined ? { assigneeIds: args.assigneeIds } : {}),
+    aiSuggested: true,
     labelIds: [],
     tagIds: [],
     dependsOnTaskIds: dependsOnTaskIds || [],

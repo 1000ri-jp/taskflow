@@ -1,0 +1,53 @@
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
+import { useGoogleCalendarRange } from './useGoogleCalendarRange';
+import { useAuthStore } from '@/stores/authStore';
+import { emptyGoogleSource } from '@/lib/google/workspace/types';
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); useAuthStore.setState({ firebaseUser: null }); });
+describe('calendar range query', () => {
+  it('fetches just the selected period, caches it, and never presents one period as another', async () => {
+    const fetch = vi.fn().mockImplementation(async (input: string) => Response.json({ ...emptyGoogleSource(), connected: true, status: 'ready', items: [{ id: input }] }));
+    vi.stubGlobal('fetch', fetch);
+    useAuthStore.setState({ firebaseUser: { uid: 'user-a', getIdToken: async () => 'token' } as NonNullable<ReturnType<typeof useAuthStore.getState>['firebaseUser']> });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    const first = { start: new Date(2026, 8, 14), end: new Date(2026, 8, 21) };
+    const { result, rerender, unmount } = renderHook(({ start, end }) => useGoogleCalendarRange(start, end), { initialProps: first, wrapper });
+    await waitFor(() => expect(result.current.source?.status).toBe('ready'));
+    const url = new URL(fetch.mock.calls[0][0], 'http://localhost');
+    expect(url.pathname).toBe('/api/google/calendar');
+    expect(url.searchParams.get('start')).toBe(first.start.toISOString());
+    expect(url.searchParams.get('end')).toBe(first.end.toISOString());
+    expect(url.searchParams.get('refresh')).toBe('1');
+    expect(fetch).toHaveBeenCalledTimes(1);
+    rerender({ start: new Date(2026, 8, 21), end: new Date(2026, 8, 28) });
+    expect(result.current.source).toBeUndefined();
+    await waitFor(() => expect(result.current.source?.status).toBe('ready'));
+    rerender(first);
+    expect(result.current.source?.items[0].id).toBe(fetch.mock.calls[0][0]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    act(() => { useAuthStore.setState({ firebaseUser: { uid: 'user-b', getIdToken: async () => 'other-token' } as NonNullable<ReturnType<typeof useAuthStore.getState>['firebaseUser']> }); });
+    expect(result.current.source).toBeUndefined();
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+    unmount(); client.clear();
+  });
+
+  it('refetches at the next fixed Japan-time slot while the page is open', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-16T07:59:00+09:00'));
+    const fetch = vi.fn().mockResolvedValue(Response.json({ ...emptyGoogleSource(), connected: true, status: 'ready', items: [] }));
+    vi.stubGlobal('fetch', fetch);
+    useAuthStore.setState({ firebaseUser: { uid: 'scheduled-user', getIdToken: async () => 'token' } as NonNullable<ReturnType<typeof useAuthStore.getState>['firebaseUser']> });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    const { unmount } = renderHook(() => useGoogleCalendarRange(new Date('2026-09-16T00:00:00+09:00'), new Date('2026-09-17T00:00:00+09:00')), { wrapper });
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(new URL(fetch.mock.calls[1][0], 'http://localhost').searchParams.get('refresh')).toBe('1');
+    unmount(); client.clear();
+  });
+});

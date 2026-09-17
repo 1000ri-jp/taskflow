@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // OAuth callbacks contain a short-lived authorization code; keep it out of dev logs.
+  logging: { incomingRequests: { ignore: [/^\/api\/google\/callback(?:\?|$)/] } },
+  // Keep the real-data local server isolated from the mock secretary preview
+  // when both are opened from this checkout.
+  ...(process.env.NEXT_DEV_DIST_DIR ? { distDir: process.env.NEXT_DEV_DIST_DIR } : {}),
   env: {
     BASELINE_BROWSER_MAPPING_IGNORE_OLD_DATA: "true",
     BROWSERSLIST_IGNORE_OLD_DATA: "true",
@@ -60,6 +65,11 @@ const nextConfig: NextConfig = {
             value: "strict-origin-when-cross-origin",
           },
         ],
+      },
+      {
+        // Only fictitious UI specimens may be embedded, and only on this origin.
+        source: "/ui-guide/preview",
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
       },
     ];
   },

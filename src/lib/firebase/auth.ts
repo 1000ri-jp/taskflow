@@ -7,7 +7,7 @@ import {
   onAuthStateChanged,
   type User,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from './config';
 import type { User as AppUser } from '@/types';
 import { isFirebaseTestAuthEnabled } from './testMode';
@@ -188,36 +188,27 @@ export function getCurrentUser(): User | null {
 async function createOrUpdateUser(firebaseUser: User): Promise<void> {
   const db = getFirebaseDb();
   const userRef = doc(db, 'users', firebaseUser.uid);
-  const userDoc = await getDoc(userRef);
+  // Avoid replacing a profile created or edited by another login while this one is reading it.
+  await runTransaction(db, async (transaction) => {
+    const userDoc = await transaction.get(userRef);
 
-  if (!userDoc.exists()) {
-    // Create new user document
-    const newUser: Omit<AppUser, 'id'> = {
-      displayName: firebaseUser.displayName || 'Unknown User',
-      email: firebaseUser.email || '',
-      photoURL: firebaseUser.photoURL,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    await setDoc(userRef, {
-      ...newUser,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-  } else {
-    // Update existing user (last login)
-    await setDoc(
-      userRef,
-      {
-        displayName: firebaseUser.displayName || userDoc.data().displayName,
-        email: firebaseUser.email || userDoc.data().email,
+    if (!userDoc.exists()) {
+      // Provider profile values are defaults for initial registration only.
+      transaction.set(userRef, {
+        displayName: firebaseUser.displayName || 'Unknown User',
+        email: firebaseUser.email || '',
         photoURL: firebaseUser.photoURL,
+        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-  }
+      });
+    } else {
+      // TaskFlow owns the saved name and image, including intentionally empty values.
+      transaction.update(userRef, {
+        ...(firebaseUser.email ? { email: firebaseUser.email } : {}),
+        updatedAt: serverTimestamp(),
+      });
+    }
+  });
 }
 
 /**

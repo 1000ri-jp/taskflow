@@ -1,0 +1,24 @@
+import {beforeEach,it,expect,vi} from 'vitest';
+import {renderHook,waitFor} from '@testing-library/react';
+import {viewTask} from '@/test/taskViewFixtures';
+const read=vi.hoisted(()=>vi.fn());
+const moved=vi.hoisted(()=>({locate:vi.fn(),replace:vi.fn()}));
+const router={replace:moved.replace};
+vi.mock('next/navigation',()=>({useRouter:()=>router}));
+vi.mock('@/stores/authStore',()=>({useAuthStore:()=>({user:{id:'worker'}})}));
+vi.mock('@/lib/task/projectMoveClient',()=>({locateProjectMove:moved.locate}));
+vi.mock('firebase/firestore',()=>({doc:(_db:unknown,...parts:string[])=>parts.join('/'),getDoc:read}));
+vi.mock('@/lib/firebase/config',()=>({getFirebaseDb:()=>({})}));
+vi.mock('@/lib/firebase/testMode',()=>({isE2EMockAuthEnabled:()=>false}));
+import {resolveParentTask,useParentTaskLocation} from './useParentTaskLocation';
+const parent=viewTask({id:'p'}),child=viewTask({id:'c',parentTaskId:'p'});
+beforeEach(()=>{read.mockReset();moved.locate.mockReset().mockResolvedValue(null);moved.replace.mockReset();});
+it('routes a child to its parent while preserving the selected child ID',()=>{const {result}=renderHook(()=>useParentTaskLocation([parent,child],'project-1','c',false));expect(result.current).toMatchObject({task:parent,subtaskId:'c'});expect(read).not.toHaveBeenCalled();});
+it('recovers a deleted legacy review URL through the existing comment receipt',async()=>{read.mockResolvedValue({data:()=>({sourceTaskId:'p',commentId:'old'})});const {result}=renderHook(()=>useParentTaskLocation([parent],'project-1','review-old',false));await waitFor(()=>expect(result.current.task).toEqual(parent));expect(result.current.commentId).toBe('old');expect(read).toHaveBeenCalledWith('projects/project-1/activityLogs/comment-old');});
+it('keeps missing or inaccessible records explicit without guessing another parent',async()=>{read.mockRejectedValue(new Error('permission'));const {result}=renderHook(()=>useParentTaskLocation([parent],'project-1','review-old',false));await waitFor(()=>expect(result.current.missing).toBe(true));expect(result.current.task).toBeNull();expect(resolveParentTask([{...parent,parentTaskId:'c'},child],'project-1','c').task).toBeNull();});
+it('follows a moved comment to the destination while preserving the original query',async()=>{
+ window.history.replaceState({},'', '/?task=old&subtask=line');moved.locate.mockResolvedValue({projectId:'project-2',taskId:'p',commentId:'comment'});
+ renderHook(()=>useParentTaskLocation([],'project-1','old',false));
+ await waitFor(()=>expect(moved.replace).toHaveBeenCalledWith('/projects/project-2/board?task=p&subtask=line&comment=comment'));
+ window.history.replaceState({},'', '/');
+});

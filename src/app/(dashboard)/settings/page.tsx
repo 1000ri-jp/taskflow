@@ -1,22 +1,45 @@
 'use client';
+import { SettingsLayout } from '@/components/ui/screen-layouts';
+import { PageHeading } from '@/components/ui/typography';
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Bot, ChevronRight, Key } from 'lucide-react';
+import { BookOpen, Bot, ChevronRight, Key } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
+import { CommentStampSettings } from '@/components/task/CommentStampSettings';
+import { SecretaryRefreshSettings } from '@/components/secretary/SecretaryRefreshSettings';
+import { DashboardViewSettings } from '@/components/dashboard/DashboardViewSettings';
+import { AutoArchiveSettings } from '@/components/board/AutoArchiveSettings';
+import { CompanionScheduleSettings } from '@/components/ai/CompanionScheduleSettings';
 
 export default function SettingsPage() {
+  const userId = useAuthStore(state => state.user?.id);
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <SettingsLayout>
       <div>
-        <h1 className="text-2xl font-bold">設定</h1>
+        <PageHeading>設定</PageHeading>
         <p className="text-muted-foreground">アプリケーションの設定を管理します</p>
+        <Button asChild variant="outline" size="sm" className="mt-3"><Link href="/ui-guide"><BookOpen className="size-4" />TaskFlow UIガイド</Link></Button>
       </div>
 
-      <Card>
+      <Card density="compact" id="dashboard-view">
+        <CardHeader><CardTitle>ダッシュボード</CardTitle><CardDescription>旧版・新版・Neoを選びます。外観とカレンダーの選択は引き継ぎます。</CardDescription></CardHeader>
+        <CardContent><DashboardViewSettings /></CardContent>
+      </Card>
+
+      {userId && <CompanionScheduleSettings key={`companion-schedule:${userId}`} userId={userId} />}
+
+      {userId && <Card density="compact" id="comment-stamps">
+        <CardHeader><CardTitle>見たよのスタンプ</CardTitle></CardHeader>
+        <CardContent><CommentStampSettings key={userId} userId={userId} /></CardContent>
+      </Card>}
+
+      {userId && <AutoArchiveSettings key={`auto-archive:${userId}`} />}
+
+      <Card density="compact">
         <CardHeader>
           <CardTitle>ブラウザ保存データ</CardTitle>
           <CardDescription>このブラウザだけに保存した表示設定や下書きを、一覧・JSONに書き出します。</CardDescription>
@@ -31,8 +54,21 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {userId && <Card density="compact">
+        <CardHeader>
+          <CardTitle>AI秘書の取得設定</CardTitle>
+          <CardDescription>Neoでタスク・コメントを確認する間隔を変更します。</CardDescription>
+        </CardHeader>
+        <CardContent><SecretaryRefreshSettings userId={userId} /></CardContent>
+      </Card>}
+
+      <Card density="compact">
+        <CardHeader><CardTitle>Google連携</CardTitle><CardDescription>カレンダー・Gmail・Google Chatの接続と取得範囲を設定します。</CardDescription></CardHeader>
+        <CardContent><Link href="/settings/google"><Button variant="outline" className="w-full justify-between">Google連携を開く<ChevronRight className="h-4 w-4" /></Button></Link></CardContent>
+      </Card>
+
       {/* AI Settings */}
-      <Card>
+      <Card density="compact">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
@@ -53,7 +89,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* API Keys */}
-      <Card>
+      <Card density="compact">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="h-5 w-5" />
@@ -73,80 +109,8 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Notifications */}
-      <Card>
-        <CardHeader>
-          <CardTitle>通知設定</CardTitle>
-          <CardDescription>
-            通知の受信方法を設定します
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>メール通知</Label>
-              <p className="text-sm text-muted-foreground">
-                タスクの更新やコメントをメールで受け取る
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>期限リマインダー</Label>
-              <p className="text-sm text-muted-foreground">
-                タスクの期限が近づいたら通知する
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>メンション通知</Label>
-              <p className="text-sm text-muted-foreground">
-                コメントでメンションされたら通知する
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Display */}
-      <Card>
-        <CardHeader>
-          <CardTitle>表示設定</CardTitle>
-          <CardDescription>
-            画面の表示方法を設定します
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>コンパクト表示</Label>
-              <p className="text-sm text-muted-foreground">
-                タスクカードを小さく表示する
-              </p>
-            </div>
-            <Switch />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>完了タスクを非表示</Label>
-              <p className="text-sm text-muted-foreground">
-                完了したタスクをボードから隠す
-              </p>
-            </div>
-            <Switch />
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Language */}
-      <Card>
+      <Card density="compact">
         <CardHeader>
           <CardTitle>言語・地域</CardTitle>
           <CardDescription>
@@ -175,6 +139,6 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </SettingsLayout>
   );
 }

@@ -1,14 +1,15 @@
 'use client';
+import { SettingsLayout } from '@/components/ui/screen-layouts';
+import { PageHeading } from '@/components/ui/typography';
 
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { Camera, Save, X, Loader2 } from 'lucide-react';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase/config';
@@ -16,6 +17,7 @@ import { getFirebaseStorage } from '@/lib/firebase/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ImageCropperDialog } from '@/components/common/ImageCropperDialog';
 import { readFileAsDataURL } from '@/lib/utils/image';
+import { AISupportSettings } from '@/components/ai/AISupportSettings';
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
@@ -142,22 +144,21 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <SettingsLayout>
       <div>
-        <h1 className="text-2xl font-bold">マイアカウント</h1>
+        <PageHeading>マイアカウント</PageHeading>
         <p className="text-muted-foreground">プロフィール情報を管理します</p>
       </div>
 
-      {/* Profile Photo */}
-      <Card>
+      <AISupportSettings key={user.id} userId={user.id} />
+
+      {/* Profile identity */}
+      <Card density="compact" aria-label="基本プロフィール">
         <CardHeader>
-          <CardTitle>プロフィール画像</CardTitle>
-          <CardDescription>
-            プロジェクトボードやコメントに表示されるアイコンです
-          </CardDescription>
+          <CardTitle>プロフィール</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-6">
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-4">
             <div className="relative">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={user.photoURL || ''} alt={user.displayName} />
@@ -192,18 +193,8 @@ export default function ProfilePage() {
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Display Name */}
-      <Card>
-        <CardHeader>
-          <CardTitle>表示名</CardTitle>
-          <CardDescription>
-            ボード上やメンション時に表示される名前です
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          <section aria-label="表示名" className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2">
+          <h3 className="text-sm font-medium">表示名</h3>
           {isEditingName ? (
             <div className="space-y-4">
               <div className="space-y-2">
@@ -221,7 +212,7 @@ export default function ProfilePage() {
                   autoFocus
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button onClick={handleSaveName} disabled={isSaving || !displayName.trim()}>
                   {isSaving ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -237,42 +228,34 @@ export default function ProfilePage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between">
-              <span className="text-lg">{user.displayName}</span>
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <span className="min-w-0 break-words text-base">{user.displayName}</span>
               <Button variant="outline" onClick={() => setIsEditingName(true)}>
                 変更
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Email */}
-      <Card>
-        <CardHeader>
-          <CardTitle>メールアドレス</CardTitle>
-          <CardDescription>
-            ログインや通知の受信に使用されます
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <span className="text-lg">{user.email}</span>
+          </section>
+          <section aria-label="メールアドレス" className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2">
+          <h3 className="text-sm font-medium">メールアドレス</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="min-w-0 break-all text-base">{user.email}</span>
             <span className="text-sm text-muted-foreground">
-              {firebaseUser?.providerData[0]?.providerId === 'google.com' && (
+              {firebaseUser?.providerData?.[0]?.providerId === 'google.com' && (
                 'Googleアカウントで管理'
               )}
             </span>
           </div>
+          </section>
         </CardContent>
       </Card>
 
       {/* Account Info */}
-      <Card>
+      <Card density="compact">
         <CardHeader>
           <CardTitle>アカウント情報</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">アカウント作成日</span>
             <span>
@@ -283,11 +266,10 @@ export default function ProfilePage() {
               })}
             </span>
           </div>
-          <Separator />
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">認証方法</span>
             <span>
-              {firebaseUser?.providerData[0]?.providerId === 'google.com'
+              {firebaseUser?.providerData?.[0]?.providerId === 'google.com'
                 ? 'Google認証'
                 : 'メール/パスワード'}
             </span>
@@ -309,6 +291,6 @@ export default function ProfilePage() {
           outputSize={256}
         />
       )}
-    </div>
+    </SettingsLayout>
   );
 }

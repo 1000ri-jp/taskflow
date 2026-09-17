@@ -206,7 +206,7 @@ test.describe('Board/Kanban', () => {
     // Check modal elements are visible
     await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
     // Check for elements that are always present
-    await expect(page.locator('text=チェックリストの新規作成')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'チェックリスト', exact: true })).toBeVisible();
     await expect(page.locator('text=優先度')).toBeVisible();
   });
 

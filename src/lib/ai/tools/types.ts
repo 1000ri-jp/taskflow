@@ -57,6 +57,7 @@ export type AIScope = 'project' | 'personal' | 'companion';
  * Tool execution context
  */
 export interface ToolExecutionContext {
+  sourceUserMessage?: {id:string;content:string};
   scope: AIScope;
   projectId: string;      // For project scope (required for backward compatibility)
   projectIds?: string[];  // For personal scope (all user's project IDs)
@@ -88,6 +89,7 @@ export interface RegisteredTool {
 
 // Create task tool argument types
 export interface CreateTaskArgs {
+  assigneeIds?: string[];
   title: string;
   description?: string;
   priority?: 'high' | 'medium' | 'low';

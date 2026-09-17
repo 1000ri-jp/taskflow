@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import { useAuthStore } from '@/stores/authStore';
 import Link from 'next/link';
 
@@ -24,6 +25,14 @@ export function ProjectProgress() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (isE2EMockAuthEnabled()) {
+      Promise.resolve().then(() => {
+        setProjects([]);
+        setIsLoading(false);
+      });
+      return;
+    }
+
     const fetchProjectProgress = async () => {
       if (!user) {
         setIsLoading(false);

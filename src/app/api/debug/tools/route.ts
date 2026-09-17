@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAnthropicTools, getOpenAITools, getToolDefinitions } from '@/lib/ai/tools';
 
 export async function GET() {
+  if (process.env.NODE_ENV !== 'development') return new NextResponse(null, {status:404});
   const allTools = getToolDefinitions({ projectId: 'all' });
   const anthropicTools = getAnthropicTools({ projectId: 'all' });
   const openAITools = getOpenAITools({ projectId: 'all' });

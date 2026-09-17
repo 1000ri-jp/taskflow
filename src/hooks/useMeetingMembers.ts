@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import { getUsersByIds } from '@/lib/firebase/firestore';
 import type { MeetingMember } from '@/lib/dashboard/meeting-review';
 
@@ -12,7 +13,7 @@ export function useMeetingMembers(projects: { memberIds?: string[]; isArchived?:
     let active = true;
     const ids: string[] = JSON.parse(key);
     // Promise boundary keeps cleanup effective even if the set of IDs is empty.
-    Promise.resolve().then(() => ids.length ? getUsersByIds(ids) : []).then(users => {
+    Promise.resolve().then(() => !ids.length ? [] : isE2EMockAuthEnabled() ? import('@/lib/task/organizationMock').then(({getOrganizationMockUsers}) => getOrganizationMockUsers(ids)) : getUsersByIds(ids)).then(users => {
       if (active) setState({ key, users: users.filter(u => ids.includes(u.id)).map(u => {
         const member: MeetingMember = { id: u.id, displayName: u.displayName };
         if (u.photoURL) member.photoURL = u.photoURL;

@@ -1,21 +1,23 @@
 'use client';
 
 import Link from 'next/link';
+import { SettingsLayout } from '@/components/ui/screen-layouts';
+import { PageHeading } from '@/components/ui/typography';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AISettingsForm } from '@/components/ai/AISettingsForm';
 
 export default function AISettingsPage() {
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <SettingsLayout>
       <div className="flex items-center gap-4">
-        <Link href="/settings">
-          <Button variant="ghost" size="icon">
+        <Button asChild variant="ghost" size="icon">
+          <Link href="/settings" aria-label="設定に戻る" title="設定に戻る">
             <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div>
-          <h1 className="text-2xl font-bold">AI設定</h1>
+          <PageHeading>AI設定</PageHeading>
           <p className="text-muted-foreground">
             AIアシスタントの設定を管理します
           </p>
@@ -23,6 +25,6 @@ export default function AISettingsPage() {
       </div>
 
       <AISettingsForm />
-    </div>
+    </SettingsLayout>
   );
 }

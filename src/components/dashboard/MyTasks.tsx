@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { taskRowInteraction } from '@/components/ui/density';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +37,7 @@ export function MyTasks() {
             </p>
           </div>
         ) : (
-          <ScrollArea className="h-[280px] pr-4">
+          <ScrollArea className="h-[280px] pr-4 [&_[data-slot=scroll-area-viewport]>div]:!block">
             <div className="space-y-2">
               {tasks.map((task) => {
                 const overdue = isTaskOverdue(task);
@@ -44,9 +45,9 @@ export function MyTasks() {
                   <Link
                     key={task.id}
                     href={`/projects/${task.projectId}/board?task=${task.id}`}
-                    className="block"
+                    className="block rounded-lg focus-visible:outline-2 focus-visible:outline-ring"
                   >
-                    <div className="flex items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50">
+                    <div className={taskRowInteraction + ' flex items-start gap-3 rounded-lg border p-3'}>
                       {/* Project Icon */}
                       {task.projectIconUrl ? (
                         <Image

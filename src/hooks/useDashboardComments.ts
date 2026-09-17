@@ -7,7 +7,7 @@ import type { DashboardTask } from '@/lib/dashboard/brief';
 
 export function useDashboardComments(tasks: DashboardTask[], tasksLoading: boolean, tasksError: Error | null, enabled: boolean) {
   const userId = useAuthStore((state) => state.firebaseUser?.uid);
-  const taskRefs = tasks.filter((task) => !task.isArchived).map(({ id, projectId, listId }) => ({ id, projectId, listId }))
+  const taskRefs = tasks.filter((task) => !task.isArchived && !task.reviewRecordId).map(({ id, projectId, listId }) => ({ id, projectId, listId }))
     .sort((a, b) => commentTaskKey(a).localeCompare(commentTaskKey(b)));
   const taskKey = JSON.stringify(taskRefs);
   const scope = JSON.stringify([userId, taskKey]);

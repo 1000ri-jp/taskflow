@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import Link from 'next/link';
-import { Timer, Settings2 } from 'lucide-react';
+import { Timer, Settings2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -19,6 +18,7 @@ interface Controller {
   isLoading: boolean;
   error: Error | null;
   isSaving: boolean;
+  isRefreshing?: boolean;
   refresh: () => Promise<{ data?: SharedCountdownData; error?: Error | null }>;
   save: (input: { target: CountdownTarget | null; revision: number }) => Promise<void>;
   localOnly?: boolean;
@@ -29,15 +29,20 @@ const taskSummary = (task: DashboardTask): CountdownTask => ({ title: task.title
 
 function CountdownContent({ task, now }: { task: CountdownTask; now: Date }) {
   const summary = describeCountdown(task, now);
-  return <>
-    <span className={cn('mr-2 text-lg font-bold tabular-nums', summary.tone === 'red' ? 'text-rose-700' : summary.tone === 'green' ? 'text-emerald-700' : 'text-amber-900')}>{summary.label}</span>
-    <span className="font-medium">{task.title}</span>
-    <span className="mt-0.5 block text-xs text-muted-foreground">{task.projectName}{task.dueDate && !Number.isNaN(new Date(task.dueDate).getTime()) ? <span className="inline-block">・期限 {countdownDay(new Date(task.dueDate))}</span> : null}</span>
-  </>;
+  const remainingDays = summary.label.match(/^あと(\d+)日$/);
+  const dueDay = task.dueDate && !Number.isNaN(new Date(task.dueDate).getTime()) ? countdownDay(new Date(task.dueDate)) : null;
+  return <span className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-x-4">
+    <span className={cn('whitespace-nowrap text-lg font-bold tabular-nums', summary.tone === 'red' ? 'text-rose-700' : summary.tone === 'green' ? 'text-emerald-700' : 'text-amber-900')}>
+      {remainingDays ? <><span className="sr-only">{summary.label}</span><span aria-hidden="true" className="text-base">あと<span className="text-xl">{remainingDays[1]}</span>日</span></> : summary.label}
+    </span>
+    <span className="min-w-0 break-words font-medium leading-relaxed">
+      {task.title}{dueDay && <span className="ml-1 inline-block whitespace-nowrap text-xs font-normal text-muted-foreground">（{dueDay.split('-').map(Number).join('-')}）</span>}
+    </span>
+  </span>;
 }
 
 function CountdownPanel({ tasks, tasksLoading, tasksError, controller }: Props & { controller: Controller }) {
-  const { data, isLoading, error, refresh, save, isSaving, localOnly } = controller;
+  const { data, isLoading, error, refresh, save, isSaving, isRefreshing, localOnly } = controller;
   const [now, setNow] = useState(() => new Date());
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -45,10 +50,19 @@ function CountdownPanel({ tasks, tasksLoading, tasksError, controller }: Props &
   const [revision, setRevision] = useState<number | null>(null);
   const [saveError, setSaveError] = useState('');
   useEffect(() => {
-    const tick = () => setNow(new Date());
-    const timer = setInterval(tick, 30_000);
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      clearTimeout(timer);
+      if (document.visibilityState === 'hidden') return;
+      const current = new Date();
+      setNow(previous => countdownDay(previous) === countdownDay(current) ? previous : current);
+      const tomorrow = new Date(`${countdownDay(current)}T00:00:00+09:00`).getTime() + 86_400_000;
+      timer = setTimeout(tick, tomorrow - current.getTime() + 50);
+    };
+    tick();
     window.addEventListener('focus', tick);
-    return () => { clearInterval(timer); window.removeEventListener('focus', tick); };
+    document.addEventListener('visibilitychange', tick);
+    return () => { clearTimeout(timer); window.removeEventListener('focus', tick); document.removeEventListener('visibilitychange', tick); };
   }, []);
   const eligible = useMemo(() => tasks.filter((task) => task.dueDate && !Number.isNaN(task.dueDate.getTime()) && !task.isArchived && !task.isAbandoned && !task.isCompleted)
     .sort((a, b) => a.dueDate!.getTime() - b.dueDate!.getTime() || a.title.localeCompare(b.title, 'ja')), [tasks]);
@@ -65,21 +79,22 @@ function CountdownPanel({ tasks, tasksLoading, tasksError, controller }: Props &
     catch (error) { setSaveError(error instanceof Error ? error.message : '保存できませんでした。'); }
   };
 
-  return <section aria-label="共通カウントダウン" className="flex w-full min-w-0 max-w-[640px] flex-wrap items-center justify-self-end gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-amber-950 shadow-sm">
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-amber-700 shadow-sm"><Timer className="h-4 w-4" /></span>
-    <div className="min-w-0 flex-1">
-      <p className="text-xs font-semibold text-amber-800">カウントダウン <span className="ml-1 font-normal">{localOnly ? 'テスト用・このブラウザに保存' : '全員共通'}</span></p>
-      {error ? <p role="status" className="mt-1 text-sm">{localOnly ? error.message : '共有保存は準備中（認証・接続を確認してください）'}</p>
-        : isLoading ? <p className="mt-1 text-sm">設定を読み込み中…</p>
-        : currentTask && data?.target ? <Link className="mt-1 block text-sm hover:underline focus-visible:outline-2" href={`/projects/${encodeURIComponent(data.target.projectId)}/board?task=${encodeURIComponent(data.target.taskId)}`}><CountdownContent task={currentTask} now={now} /></Link>
-        : <p className="mt-1 text-sm">{data?.status === 'restricted' ? '共有タスクの閲覧権限がありません。' : data?.status === 'unavailable' ? '対象タスクが削除・アーカイブ済み、または閲覧できません。' : '期限まで数えるタスクを選んでください。'}</p>}
+  return <section aria-label="共通カウントダウン" className="grid w-full min-w-0 max-w-[640px] grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center justify-self-end gap-x-3 gap-y-2 rounded-2xl border border-amber-200 bg-amber-50 py-3 pl-3 pr-5 text-amber-950 shadow-sm">
+    <span className="row-start-1 flex h-9 w-9 items-center justify-center rounded-full bg-white text-amber-700 shadow-sm"><Timer className="h-4 w-4" /></span>
+    <div className="contents">
+      {localOnly && <p className="col-start-2 row-start-2 text-xs text-amber-800">テスト用・このブラウザに保存</p>}
+      {error ? <p role="status" className="col-start-2 row-start-1 text-sm">{localOnly ? error.message : '共有保存は準備中（認証・接続を確認してください）'}</p>
+        : isLoading ? <p className="col-start-2 row-start-1 text-sm">設定を読み込み中…</p>
+        : currentTask && data?.target ? <div className="col-start-2 row-start-1 min-w-0 text-sm"><CountdownContent task={currentTask} now={now} /></div>
+        : <p className="col-start-2 row-start-1 text-sm">{data?.status === 'restricted' ? '共有タスクの閲覧権限がありません。' : data?.status === 'unavailable' ? '対象タスクが削除・アーカイブ済み、または閲覧できません。' : '期限まで数えるタスクを選んでください。'}</p>}
     </div>
+    {!localOnly && <Button size="icon" variant="ghost" className="col-start-4 row-start-1 h-8 w-8" aria-label="カウントダウンを更新" title="カウントダウンを更新" disabled={isLoading || isRefreshing || isSaving} onClick={() => void refresh()}><RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} /></Button>}
     <Dialog open={open} onOpenChange={(next) => {
       if (isSaving) return;
       setOpen(next);
       if (next) { setDraft(data?.target ?? null); setRevision(data?.revision ?? null); setSearch(''); setSaveError(''); }
     }}>
-      <DialogTrigger asChild><Button size="sm" variant="outline" className="h-8 gap-1.5" aria-label="共通カウントダウンの設定"><Settings2 className="h-3.5 w-3.5" />タスクを選択</Button></DialogTrigger>
+      <DialogTrigger asChild><Button size="icon" variant="ghost" className="col-start-3 row-start-1 h-8 w-8" aria-label="共通カウントダウンの設定" title="共通カウントダウンの設定"><Settings2 className="h-4 w-4" aria-hidden="true" /></Button></DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>共通カウントダウンの設定</DialogTitle>
@@ -128,7 +143,7 @@ const serverModeSnapshot = () => null;
 export function SharedCountdown(props: Props) {
   const userId = useAuthStore((state) => state.firebaseUser?.uid);
   const localOnly = useSyncExternalStore(subscribeToOrigin, localModeSnapshot, serverModeSnapshot);
-  if (!userId) return <section aria-label="共通カウントダウン" className="w-full max-w-[640px] justify-self-end rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm">カウントダウンはログイン後に表示されます。</section>;
-  if (localOnly === null) return <section aria-label="共通カウントダウン" className="w-full max-w-[640px] justify-self-end rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm">カウントダウンを読み込み中…</section>;
+  if (!userId) return <section aria-label="共通カウントダウン" className="w-full max-w-[640px] justify-self-end rounded-2xl border border-amber-200 bg-amber-50 py-4 pl-6 pr-5 text-sm">カウントダウンはログイン後に表示されます。</section>;
+  if (localOnly === null) return <section aria-label="共通カウントダウン" className="w-full max-w-[640px] justify-self-end rounded-2xl border border-amber-200 bg-amber-50 py-4 pl-6 pr-5 text-sm">カウントダウンを読み込み中…</section>;
   return localOnly ? <LocalCountdown key={userId} {...props} /> : <RemoteCountdown key={userId} userId={userId} {...props} />;
 }

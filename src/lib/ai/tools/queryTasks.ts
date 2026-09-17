@@ -114,6 +114,7 @@ export const getTasksHandler: ToolHandler<GetTasksArgs, GetTasksResult> = async 
 // ============================================
 
 export interface GetTaskDetailsArgs {
+  projectId?: string;
   taskId: string;
 }
 
@@ -138,6 +139,9 @@ export interface EffectiveDatesInfo {
 }
 
 export interface TaskDetails {
+  parentTaskId: string | null;
+  automation: import('@/lib/task/automationTypes').TaskAutomationSummary | null;
+  recentReports: {content:string;authorId:string;createdAt:string}[];
   id: string;
   title: string;
   description: string;
@@ -173,10 +177,11 @@ export interface GetTaskDetailsResult {
 export const getTaskDetailsToolDefinition: AITool = {
   name: 'get_task_details',
   description:
-    'タスクの詳細情報を取得します。チェックリストやコメント数も含まれます。',
+    'タスクの詳細情報を取得します。親子関係、購入・発送・到着予定、最近の報告、チェックリストも含まれます。',
   parameters: {
     type: 'object',
     properties: {
+      projectId: {type:'string',description:'ダッシュボードでは対象のプロジェクトID'},
       taskId: {
         type: 'string',
         description: 'タスクのID（必須）',
@@ -191,7 +196,8 @@ export const getTaskDetailsHandler: ToolHandler<GetTaskDetailsArgs, GetTaskDetai
   context
 ) => {
   const { taskId } = args;
-  const { projectId } = context;
+  const projectId = context.projectId || args.projectId;
+  if(!projectId || !context.projectId && !context.projectIds?.includes(projectId))throw new Error('AIの対象プロジェクトを確認してください。');
 
   const task = await getTask(projectId, taskId);
   if (!task) {
@@ -237,6 +243,8 @@ export const getTaskDetailsHandler: ToolHandler<GetTaskDetailsArgs, GetTaskDetai
   const bottleneck = getBottleneckTask(task, allTasks);
 
   const taskDetails: TaskDetails = {
+    parentTaskId:task.parentTaskId??null,automation:task.automation??null,
+    recentReports:[...comments].sort((a,b)=>a.createdAt.getTime()-b.createdAt.getTime()).slice(-5).map(c=>({content:c.content,authorId:c.authorId,createdAt:c.createdAt.toISOString()})),
     id: task.id,
     title: task.title,
     description: task.description || '',

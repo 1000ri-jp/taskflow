@@ -8,13 +8,16 @@ import {
 } from 'date-fns';
 import type { Notification, Priority, Task } from '@/types';
 import { notificationTaskHref } from '@/lib/task/commentSubmission';
-import type { UpcomingRange } from './upcoming-range';
+import { DEFAULT_UPCOMING_DAYS, type UpcomingRange } from './upcoming-range';
 import type { BriefTaskScope } from '@/stores/briefDisplayStore';
 
 export type DashboardBriefSource = 'MAIL' | 'CAL' | 'ToDo' | 'TF' | 'CK';
 export type DashboardBriefTone = 'red' | 'blue' | 'green' | 'amber';
 
 export interface DashboardTask extends Task {
+  parentTitle?: string;
+  listName?: string;
+  listColor?: string;
   projectName: string;
   projectColor?: string;
   projectIcon?: string;
@@ -121,7 +124,7 @@ function staleMeta(task: DashboardTask, now: Date): string {
 export function buildTaskFlowUpcoming(
   allProjectTasks: DashboardTask[],
   now: Date = new Date(),
-  dayCount: UpcomingRange = 3
+  dayCount: UpcomingRange = DEFAULT_UPCOMING_DAYS
 ): DashboardUpcomingDay[] {
   const activeTasksWithDueDate = allProjectTasks.filter(
     (task): task is DashboardTask & { dueDate: Date } =>
@@ -175,7 +178,7 @@ export function buildTaskFlowBrief(
   const scopedTaskIds = scope === 'all' ? null : new Set(assignedTasks.map((task) => task.id));
   const activeTasks = taskPool.filter((task) => !task.isCompleted && !task.isAbandoned && !task.isArchived && (!scopedTaskIds || scopedTaskIds.has(task.id)));
   const importantNotifications = notifications
-    .filter((notification) => !notification.isRead && REPLY_NOTIFICATION_TYPES.has(notification.type))
+    .filter((notification) => (!notification.isRead || notification.data?.requiresResponse === true) && REPLY_NOTIFICATION_TYPES.has(notification.type))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   const dueTasks = activeTasks

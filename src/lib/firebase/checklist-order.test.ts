@@ -21,22 +21,22 @@ describe('checklist order', () => {
 
   it('moves only order, preserves checked/text/extra fields, and does not mutate input', () => {
     const original = structuredClone(items);
-    expect(sortedChecklistItems(items).map(item => item.id)).toEqual(['a', 'b', 'c']);
+    expect(sortedChecklistItems(items).map(item => item.id)).toEqual(['a', 'c', 'b']);
     const result = moveChecklistItem(items, 'a', 'c');
     expect(result.map(item => [item.id, item.order])).toEqual([['b', 0], ['c', 1], ['a', 2]]);
     expect(result[0]).toMatchObject({ text: '箱', isChecked: true });
-    expect(moveChecklistItem(result, 'a', 'b').map(item => item.id)).toEqual(['a', 'b', 'c']);
+    expect(moveChecklistItem(result, 'a', 'c').map(item => item.id)).toEqual(['b', 'a', 'c']);
     expect(items).toEqual(original);
   });
 
   it('updates only the requested checklist using its latest item contents', async () => {
     const latest = [...items, { id: 'd', text: '他の人が追加', isChecked: true, order: 40 }].map(item => item.id === 'a' ? { ...item, text: '最新のシール', isChecked: true } : item);
     mocks.get.mockResolvedValue({ exists: () => true, data: () => ({ title: 'そのまま', items: latest }) });
-    const saved = await reorderChecklistItem('project', 'task', 'list', 'a', 'c');
+    const saved = await reorderChecklistItem('project', 'task', 'list', 'a', 'b');
     expect(mocks.doc).toHaveBeenCalledWith('db', 'projects', 'project', 'tasks', 'task', 'checklists', 'list');
     expect(mocks.update).toHaveBeenCalledExactlyOnceWith('checklist-ref', { items: saved });
-    expect(saved.map(item => item.id)).toEqual(['b', 'c', 'a', 'd']);
-    expect(saved[2]).toMatchObject({ text: '最新のシール', isChecked: true });
+    expect(saved.map(item => item.id)).toEqual(['b', 'a', 'c', 'd']);
+    expect(saved[1]).toMatchObject({ text: '最新のシール', isChecked: true });
     expect(saved[3]).toMatchObject({ text: '他の人が追加', isChecked: true });
   });
 
@@ -47,8 +47,25 @@ describe('checklist order', () => {
       await callback({ get: mocks.get, update: mocks.update });
       return callback({ get: mocks.get, update: mocks.update });
     });
-    const result = await reorderChecklistItem('p', 't', 'c', 'a', 'b');
+    const result = await reorderChecklistItem('p', 't', 'c', 'a', 'c');
     expect(result.every(item => item.isChecked)).toBe(true);
+  });
+
+  it('rejects a completion-boundary move using the latest state without writing', async () => {
+    await expect(reorderChecklistItem('p', 't', 'c', 'a', 'b')).rejects.toThrow('同じ状態');
+    const latest = items.map(item => item.id === 'c' ? { ...item, isChecked: true } : item);
+    mocks.get.mockResolvedValue({ exists: () => true, data: () => ({ items: latest }) });
+    await expect(reorderChecklistItem('p', 't', 'c', 'a', 'c')).rejects.toThrow('同じ状態');
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  it('groups by completion without changing manual order or data, including equal-order items', () => {
+    const sameOrder = [...items, { id: 'd', text: '追加済み', isChecked: true, order: 20 }, { id: 'e', text: '追加予定', isChecked: false, order: 30 }];
+    const original = structuredClone(sameOrder);
+    expect(sortedChecklistItems(sameOrder).map(item => item.id)).toEqual(['a', 'c', 'e', 'b', 'd']);
+    const moved = moveChecklistItem(sameOrder, 'd', 'b');
+    expect(sortedChecklistItems(moved).map(item => item.id)).toEqual(['a', 'c', 'e', 'd', 'b']);
+    expect(sameOrder).toEqual(original);
   });
 
   it('skips same-position writes and rejects stale or duplicate IDs without dropping items', async () => {
