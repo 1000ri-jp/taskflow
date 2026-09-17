@@ -1,4 +1,4 @@
 interface:
   display_name: "PR Review"
-  short_description: "Review a PR for bugs, regressions, and missing checks"
-  default_prompt: "Use $taskflow-github-delivery pr-review to inspect a PR, call out risks, and decide whether it is ready to merge."
+  short_description: "Review a PR for bugs and missing verification"
+  default_prompt: "Use $taskflow-github-delivery pr-review to inspect the PR and report findings and merge readiness. A review does not authorize merging."
