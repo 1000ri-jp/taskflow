@@ -145,6 +145,7 @@ describe('useSecretary live reads', () => {
 
   it('uses a changed interval immediately, persists manual only mode, and isolates accounts', async () => {
     vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-18T09:00:00+09:00'));
     fetchMock.mockImplementation(async () => response(view));
     const first = renderHook(() => ({ secretary: useSecretary('a'), settings: useSecretaryRefreshSettings('a') }));
     await act(async () => {});
