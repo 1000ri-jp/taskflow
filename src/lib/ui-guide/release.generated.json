@@ -3,11 +3,11 @@
   "files": [
     {
       "path": "AGENTS.md",
-      "sha256": "6e12d92735c5e1a311085338f84425f6f6628cadaa334a24e0dec750ab6f75b1"
+      "sha256": "b67c74418b949e93dbfc83dde172ab02152d0872d4f77b84680e7c155a6c2c40"
     },
     {
       "path": "docs/TASKFLOW_DESIGN_STANDARD_2026-09-13.md",
-      "sha256": "35b293078648dfc094d8c94ee17b8c64158b9fc3e51654556be7aa963ee9702c"
+      "sha256": "6e024b62fdcbc35896fd52c5ddaf0fdb07858befd2b1e9d263d5158eee1e5f4c"
     },
     {
       "path": "next.config.ts",
@@ -1691,7 +1691,7 @@
     },
     {
       "path": "src/lib/ui-guide/verification.json",
-      "sha256": "0fd2a8b64d388450cc3a27ecbd54efa30f8f15deb6c5b7b1c08618809875bbac"
+      "sha256": "1fa16c5e92701be23b5c7f82acd90c76a63a414b580f0e39de6dbf75d83e32c7"
     },
     {
       "path": "src/lib/utils.ts",
