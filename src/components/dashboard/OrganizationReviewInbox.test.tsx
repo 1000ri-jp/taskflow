@@ -22,7 +22,7 @@ beforeEach(()=>{
   return {...record,status:body.action==='apply'?'applied':body.action==='hold'?'held':'skipped'};
  });
 });
-afterEach(cleanup);
+afterEach(()=>{cleanup();vi.useRealTimers();});
 it('shows reason, source and actual changes without opening another screen; adopts once and retires the proposal',async()=>{
  render(<OrganizationReviewInbox {...props} />);
  const card=screen.getByRole('article',{name:'提案: 仕事1'});
@@ -109,6 +109,8 @@ it('shows the proposed destination by name and omits empty defaults from a new t
 });
 
 it('moves through proposal records without deciding and can show the whole round', async () => {
+ vi.useFakeTimers({toFake:['Date']});
+ vi.setSystemTime(new Date('2026-09-18T09:00:00+09:00'));
  state.records = [
   { ...state.records[1], id: 'first', status: 'pending', createdAt: '2026-09-16T01:00:00Z', changes: [{ taskId: 'first-task', title: '最初の仕事', summary: '確認', fields: [{ field: 'dueDate', before: null, after: new Date().toISOString().slice(0,10) }] }] },
   { ...state.records[1], id: 'second', status: 'pending', createdAt: '2026-09-16T02:00:00Z', changes: [{ taskId: 'second-task', title: '次の仕事', summary: '確認', fields: [{ field: 'dueDate', before: null, after: '2026-09-18' }] }] },
