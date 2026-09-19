@@ -1,7 +1,9 @@
+import { taskResolutionPrompt } from '../taskResolutionPrompt';
 import { AIContext, AIMessage, DEFAULT_MODELS } from '@/types/ai';
 import { AIProvider, StreamChunk, SendMessageOptions } from './types';
 import { getOpenAITools } from '../tools';
 import { ToolCall } from '../tools/types';
+import { AIProviderError } from './errors';
 
 /**
  * Convert AIMessage array to OpenAI message format
@@ -44,7 +46,7 @@ function convertMessagesToOpenAI(messages: AIMessage[]): Array<Record<string, un
       // User or system message
       result.push({
         role: msg.role,
-        content: msg.content,
+        content: msg.images?.length ? [{type:'text',text:msg.content},...msg.images.map(image=>({type:'image_url',image_url:{url:`data:${image.mimeType};base64,${image.data}`}}))] : msg.content,
       });
     }
   }
@@ -66,7 +68,7 @@ export class OpenAIProvider implements AIProvider {
     const resolvedProjectId = options?.projectId !== undefined
       ? options.projectId
       : (context.project?.id || null);
-    const systemPrompt = buildCompanionSystemPrompt(context, options?.enableTools && !options?.isToolResultContinuation, resolvedProjectId);
+    const systemPrompt = [options?.systemPrompt ?? buildCompanionSystemPrompt(context, options?.enableTools && !options?.isToolResultContinuation, resolvedProjectId), options?.supportInstructions].filter(Boolean).join('\n\n');
     const modelToUse = model || DEFAULT_MODELS.openai;
 
     // Convert messages to OpenAI format (handles tool_calls and tool results)
@@ -80,6 +82,9 @@ export class OpenAIProvider implements AIProvider {
       ],
       stream: true,
     };
+    if (options?.maxOutputTokens !== undefined) {
+      requestBody.max_completion_tokens = options.maxOutputTokens;
+    }
 
     // Add tools if enabled - allow chained tool calls for multi-step operations
     if (options?.enableTools) {
@@ -89,6 +94,7 @@ export class OpenAIProvider implements AIProvider {
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
+      signal: options?.signal,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
@@ -97,8 +103,8 @@ export class OpenAIProvider implements AIProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'OpenAI API error');
+      const error = await response.json().catch(() => null);
+      throw new AIProviderError('openai', response.status, error?.error?.code);
     }
 
     const reader = response.body?.getReader();
@@ -109,14 +115,16 @@ export class OpenAIProvider implements AIProvider {
     const decoder = new TextDecoder();
     const toolCallsInProgress: Map<number, { id: string; name: string; arguments: string }> =
       new Map();
+    let pending = '';
 
     try {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n').filter((line) => line.trim() !== '');
+        pending += decoder.decode(value, { stream: true });
+        const lines = pending.split('\n');
+        pending = lines.pop() ?? '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -219,7 +227,17 @@ function buildCompanionSystemPrompt(context: AIContext, enableTools?: boolean, p
   const todayISO = today.toISOString().split('T')[0];
   const hasProject = !!projectId;
 
-  let prompt = `あなたは「相棒」— ${context.user.displayName}さんのタスク管理パートナーです。
+  let prompt = `あなたは「モアイ（AIアシスタント）」— ${context.user.displayName}さんのタスク管理パートナーです。
+
+## 仕事を進める判断基準
+- 目的は本人の確認・判断・管理の手間を減らすこと。回答は「分かったこと、行ったこと、本人に必要な一問」を短く。長い励ましや管理項目を増やさない。
+- 相談・仮定・アイデアは相談として返す。勝手にタスク化・共有・通知しない。
+- 「やっておいて」の対象と変更が明確なら既存の操作を実行する。対象が複数なら必要な一点だけ聞く。対象IDを推測しない。
+- 本人の仕事の報告は record_task_report で同じ親タスクに原文を残す。説明の上書きや段階ごとの新タスク作成で代用しない。別のタスクの変更は必要性と明示された範囲を確認する。
+- 実行結果を受け取ってから「記録した・変更した」と答える。失敗・未取得・検討中は完了と呼ばない。
+- 注文成立、支払、印刷中、発送、到着予定、受取は別。発送メールで仕事を完了にしない。到着予定をタスク期限に転記しない。購入画像は入力欄の添付から購入報告へ案内する。
+- ショップ名だけで注文を結び付けない。注文番号と店名を根拠にし、曖昧なものは照合候補にとどめる。タグは任意の分類で、手動の進捗管理を増やさない。
+- 見た・既読・スタンプは受信確認。返答、承認、仕事の完了とは別。至急は依頼者が明示したときだけ。
 
 ## あなたの性格
 - 親しみやすく温かい口調（丁寧なカジュアル体）
@@ -385,5 +403,5 @@ ${getTimePeriodInstructions(currentHour)}
 ${!hasProject ? '- プロジェクト横断で優先順位や作業負荷を分析してください\n- 日報やサマリーを出力する際は、マークダウン形式で見やすく整形してください' : ''}
 `;
 
-  return prompt;
+  return prompt + taskResolutionPrompt(context);
 }

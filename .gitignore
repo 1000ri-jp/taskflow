@@ -18,6 +18,9 @@
 
 # next.js
 /.next/
+/.next-real/
+/.next-qa-sep16/
+/.next-implementation-validation/
 /out/
 
 # production

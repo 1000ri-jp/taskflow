@@ -22,11 +22,12 @@ describe('TaskViewSwitcher', () => {
     expect(defaultProps.onChange).toHaveBeenCalledWith('table');
   });
 
-  it('keeps the browser-only primary view action available', () => {
+  it.each(['calendar', 'gantt', 'progress'] as const)('keeps the browser-only primary view action available for %s', (view) => {
     const onSetDefault = vi.fn();
-    render(<TaskViewSwitcher {...defaultProps} view="calendar" primaryView="board" onSetDefault={onSetDefault} />);
+    render(<TaskViewSwitcher {...defaultProps} view={view} primaryView="board" onSetDefault={onSetDefault} />);
 
-    const button = screen.getByRole('button', { name: 'この表示を主表示にする' });
+    expect(screen.getByRole('combobox')).toHaveValue(view);
+    const button = screen.getByRole('button', { name: '自分の主表示にする' });
     expect(button).toBeEnabled();
     fireEvent.click(button);
     expect(onSetDefault).toHaveBeenCalledOnce();

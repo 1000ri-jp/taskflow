@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAuthHeaders } from '@/lib/firebase/authToken';
 import type { CountdownTarget, SharedCountdownData } from '@/lib/dashboard/countdown';
+import { useSecretaryRefreshSettings } from './useSecretaryRefreshSettings';
 
 async function requestCountdown(signal?: AbortSignal): Promise<SharedCountdownData> {
   const response = await fetch('/api/dashboard/countdown', { headers: await getAuthHeaders(), cache: 'no-store', signal });
@@ -13,10 +14,16 @@ async function requestCountdown(signal?: AbortSignal): Promise<SharedCountdownDa
 
 export function useSharedCountdown(userId: string) {
   const client = useQueryClient();
+  const { refreshMinutes } = useSecretaryRefreshSettings(userId);
+  const intervalMs = refreshMinutes * 60_000;
   const queryKey = ['shared-countdown', userId];
   const query = useQuery({
     queryKey, queryFn: ({ signal }) => requestCountdown(signal),
-    staleTime: 15_000, refetchInterval: (query) => query.state.error ? false : 30_000, refetchOnWindowFocus: true, retry: false,
+    enabled: Boolean(userId),
+    staleTime: intervalMs || Infinity,
+    refetchInterval: (query) => query.state.error || !intervalMs ? false : intervalMs,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: Boolean(intervalMs), refetchOnReconnect: Boolean(intervalMs), retry: false,
   });
   const mutation = useMutation({
     mutationFn: async ({ target, revision }: { target: CountdownTarget | null; revision: number }) => {
@@ -31,5 +38,5 @@ export function useSharedCountdown(userId: string) {
       await client.invalidateQueries({ queryKey });
     },
   });
-  return { data: query.data, isLoading: query.isPending, error: query.error, refresh: query.refetch, save: mutation.mutateAsync, isSaving: mutation.isPending };
+  return { data: query.data, isLoading: query.isPending, isRefreshing: query.isFetching, error: query.error, refresh: query.refetch, save: mutation.mutateAsync, isSaving: mutation.isPending };
 }

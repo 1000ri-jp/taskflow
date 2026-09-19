@@ -1,9 +1,12 @@
 import { format, isSameDay } from 'date-fns';
+import { reviewOutcome } from '@/lib/task/workflow';
+import { TASK_STATUSES, taskStatus } from '@/lib/task/status';
 import type { List, Task } from '@/types';
 import { sortBoardTasks, type BoardSort } from './sort';
 
 export const TASK_VIEWS = [
   { id: 'board', label: 'カンバン' },
+  { id: 'progress', label: 'カンバン進捗' },
   { id: 'outline', label: '計画リスト' },
   { id: 'table', label: 'テーブル' },
   { id: 'calendar', label: 'カレンダー' },
@@ -34,23 +37,23 @@ export function assigneeLabel(ids: readonly string[], names: Record<string, stri
   if (!ids.length) return '未割当';
   return ids.map(id => names[id] || '名前未取得').join('・');
 }
-export function taskReviewState(task: Pick<Task, 'id' | 'taskKind' | 'isCompleted' | 'isArchived' | 'isAbandoned' | 'parentTaskId'>, tasks: readonly Task[]) {
+export function taskReviewState(task: Pick<Task, 'id' | 'taskKind' | 'isCompleted' | 'isArchived' | 'isAbandoned' | 'parentTaskId'> & Partial<Pick<Task, 'review' | 'assigneeIds'>>, tasks: readonly Task[]) {
   const requests = task.taskKind === 'review_request'
     ? [task]
     : tasks.filter(candidate => candidate.parentTaskId === task.id && candidate.taskKind === 'review_request' && !candidate.isArchived && !candidate.isAbandoned);
   if (!requests.length) return null;
   const pendingCount = requests.filter(request => !request.isCompleted).length;
   return {
-    label: pendingCount ? `確認依頼中${requests.length > 1 ? ` ${pendingCount}/${requests.length}` : ''}` : '確認済み',
+    label: requests.some(r => !r.isCompleted && r.review && reviewOutcome({ review: r.review, assigneeIds: r.assigneeIds ?? [] }) === 'changes_requested') ? '修正待ち' : pendingCount ? `確認依頼中${requests.length > 1 ? ` ${pendingCount}/${requests.length}` : ''}` : '確認済み',
     completed: pendingCount === 0,
   };
 }
-export function sortTaskTable(tasks: readonly Task[], lists: readonly List[], names: Record<string, string>, sort: TaskTableSort) {
+export function sortTaskTable(tasks: readonly Task[], lists: readonly List[], names: Record<string, string>, sort: TaskTableSort, allTasks: readonly Task[] = tasks) {
   const value = (task: Task): string | number | null => {
     switch (sort.field) {
       case 'title': return task.title;
       case 'list': return lists.find(list => list.id === task.listId)?.name ?? null;
-      case 'status': return task.isCompleted ? 1 : 0;
+      case 'status': return TASK_STATUSES.findIndex(status => status.id === taskStatus(task, allTasks));
       case 'assignee': return task.assigneeIds.length ? assigneeLabel(task.assigneeIds, names) : null;
       case 'startDate': case 'dueDate': {
         const date = task[sort.field];

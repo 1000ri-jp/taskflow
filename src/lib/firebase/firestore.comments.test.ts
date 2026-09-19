@@ -6,26 +6,32 @@ const {
   serverTimestampMock,
   getFirebaseDbMock,
   getDocsMock,
+  getDocsFromServerMock,
   orderByMock,
   limitMock,
+  parentGetMock,
 } = vi.hoisted(() => ({
   addDocMock: vi.fn(),
   collectionMock: vi.fn(),
   serverTimestampMock: vi.fn(() => 'SERVER_TIMESTAMP'),
   getFirebaseDbMock: vi.fn(() => 'DB'),
   getDocsMock: vi.fn(),
+  getDocsFromServerMock: vi.fn(),
   orderByMock: vi.fn(),
   limitMock: vi.fn(),
+  parentGetMock: vi.fn(),
 }));
 
 vi.mock('firebase/firestore', () => ({
   collection: collectionMock,
-  doc: vi.fn(),
+  doc: vi.fn((...args) => args.length === 1 ? { id: 'comment-1' } : 'PARENT'),
+  runTransaction: vi.fn(async (_db, fn) => fn({ get: parentGetMock, set: (_ref: unknown, data: unknown) => addDocMock('COMMENTS_COLLECTION', data) })),
   addDoc: addDocMock,
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
   getDoc: vi.fn(),
   getDocs: getDocsMock,
+  getDocsFromServer: getDocsFromServerMock,
   setDoc: vi.fn(),
   query: vi.fn(),
   where: vi.fn(),
@@ -42,13 +48,22 @@ vi.mock('./config', () => ({
   getFirebaseDb: getFirebaseDbMock,
 }));
 
-import { createComment, getRecentTaskComments } from './firestore';
+import { createAttachment, createChecklist, createComment, getRecentTaskComments, taskHasComments } from './firestore';
 
 describe('createComment', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     collectionMock.mockReturnValue('COMMENTS_COLLECTION');
+    parentGetMock.mockResolvedValue({ exists: () => true, data: () => ({projectId:'project-1'}) });
     addDocMock.mockResolvedValue({ id: 'comment-1' });
+  });
+
+  it('rejects all new child records when a stale tab refers to a moved task', async () => {
+    parentGetMock.mockResolvedValue({ exists: () => false });
+    await expect(createComment('project-1','task-1',{content:'保存前の内容',authorId:'user-1',mentions:[]})).rejects.toThrow('移動・削除');
+    await expect(createChecklist('project-1','task-1',{title:'手順',order:0,items:[]})).rejects.toThrow('移動・削除');
+    await expect(createAttachment('project-1','task-1',{name:'原本',url:'https://example.test/file',type:'text/plain',size:1,uploadedBy:'user-1'})).rejects.toThrow('移動・削除');
+    expect(addDocMock).not.toHaveBeenCalled();
   });
 
   it('omits undefined optional fields from the Firestore payload', async () => {
@@ -112,4 +127,16 @@ describe('createComment', () => {
     expect(comments[0]).toMatchObject({ id: 'comment-1', content: '実コメント', createdAt: new Date(2026, 8, 3) });
     expect(addDocMock).not.toHaveBeenCalled();
   });
+});
+
+it('checks only one server comment without a timestamp filter and distinguishes offline from zero', async () => {
+  vi.clearAllMocks();
+  getDocsFromServerMock.mockResolvedValueOnce({ empty: false }).mockResolvedValueOnce({ empty: true }).mockRejectedValueOnce(new Error('offline'));
+  await expect(taskHasComments('project', 'task')).resolves.toBe(true);
+  expect(limitMock).toHaveBeenCalledWith(1);
+  expect(orderByMock).not.toHaveBeenCalled();
+  expect(getDocsMock).not.toHaveBeenCalled();
+  await expect(taskHasComments('project', 'task')).resolves.toBe(false);
+  await expect(taskHasComments('project', 'task')).rejects.toThrow('offline');
+  expect(addDocMock).not.toHaveBeenCalled();
 });

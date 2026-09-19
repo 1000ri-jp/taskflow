@@ -65,7 +65,7 @@ describe('useDashboardComments', () => {
     expect(result.current.items).toEqual([]);
   });
   it('excludes archived tasks and reports task-source failures', async () => {
-    const { result } = renderHook(() => useDashboardComments([task, { ...task, id: 'archived', isArchived: true }], false, new Error('denied'), true));
+    const { result } = renderHook(() => useDashboardComments([task, { ...task, id: 'archived', isArchived: true }, { ...task, id: 'projected-review', reviewRecordId: 'review' }], false, new Error('denied'), true));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(loadDashboardComments).toHaveBeenCalledWith([{ id: 'task', projectId: 'p1', listId: 'l1' }], expect.any(Function));
     expect(result.current.hasError).toBe(true);

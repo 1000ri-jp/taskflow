@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
-  Bot,
+  Bell,
   X,
   Settings,
   AlertCircle,
@@ -11,6 +11,8 @@ import {
   FileText,
   BarChart3,
   MessageCircle,
+  MessageSquareText,
+  MessageSquarePlus,
   Loader2,
   Trash2,
   Plus,
@@ -30,11 +32,24 @@ import { getAuthHeaders } from '@/lib/firebase/authToken';
 import { filterProjectsForAI, isAIProjectAllowed } from '@/lib/ai/projectAccess';
 import { fitPanelBounds, resizePanelBounds, type PanelBounds, type PanelResizeCorner } from '@/lib/ai/panelResize';
 import { ChatInput } from './ChatInput';
+import { CompanionLauncher } from './CompanionLauncher';
+import { CompanionTaskChecks } from './CompanionTaskChecks';
+import { CompanionAvatar } from './CompanionAvatar';
+import { NotificationList } from '@/components/common/NotificationList';
+import { HistoryPane } from '@/components/common/HistoryPane';
+import { CompanionComments } from './CompanionComments';
+import { useNotifications } from '@/hooks/useNotifications';
 import { ChatMessage } from './ChatMessage';
 import { ToolConfirmDialog } from './ToolConfirmDialog';
 import { AIContext, PROVIDER_DISPLAY_NAMES } from '@/types/ai';
 import { ToolCall } from '@/lib/ai/tools/types';
 import { useRouter } from 'next/navigation';
+import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
+import { ScopedConversation } from './ScopedConversation';
+import { AISupportAdjust } from './AISupportAdjust';
+import { FeatureRequestDialog } from './FeatureRequestDialog';
+import PurchaseReportDialog from './PurchaseReportDialog';
+import MeetingIntakeDialog from '@/components/dashboard/MeetingIntakeDialog';
 
 // Quick action button types
 interface QuickAction {
@@ -46,15 +61,17 @@ interface QuickAction {
 
 interface CompanionAIProps {
   projectId: string | null;
+  autoGreeting?: boolean;
+  quickCheckEnabled?: boolean;
 }
 
-export function CompanionAI({ projectId }: CompanionAIProps) {
+export function CompanionAI({ projectId, autoGreeting = true, quickCheckEnabled = true }: CompanionAIProps) {
   const router = useRouter();
   const { user, firebaseUser } = useAuth();
   // Derive userId/displayName with firebaseUser fallback (when Firestore is inaccessible)
   const userId = user?.id || firebaseUser?.uid || '';
   const displayName = user?.displayName || firebaseUser?.displayName || '';
-  const { projects, isLoading: projectsLoading } = useProjects();
+  const { projects, isLoading: projectsLoading, error: projectsError } = useProjects();
   const {
     provider,
     isConfigured,
@@ -70,7 +87,6 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
     shouldShowEveningReport,
     markMorningGreeted,
     markEveningReported,
-    hasBadge,
   } = useCompanionState();
 
   const [isOpen, setIsOpen] = useState(() => {
@@ -79,8 +95,39 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
     }
     return localStorage.getItem('companionAIPanelOpen') === 'true';
   });
+  const [purchaseSession,setPurchaseSession] = useState<{userId:string;open:boolean;file:File|null;text:string;id:string}|null>(null);
+  const [purchaseSent,setPurchaseSent] = useState<{id:string;content:string}|undefined>();
+  const [showFeatureRequest, setShowFeatureRequest] = useState(false);
+  const [meetingSession, setMeetingSession] = useState<{ userId: string; open: boolean } | null>(null);
+  const [supportOnce, setSupportOnce] = useState<{ userId: string; conversationId: string | null; instruction: string } | null>(null);
+  const [activePanel, setActivePanel] = useState<'chat' | 'notifications' | 'comments'>('chat');
+  const [commentsOwner, setCommentsOwner] = useState<string | null>(null);
+  const { unreadCount, isLoading: notificationsLoading, error: notificationsError } = useNotifications();
+  const suppressAutoGreetingRef = useRef(false);
+  const openNotifications = useCallback(() => {
+    suppressAutoGreetingRef.current = true;
+    setActivePanel('notifications');
+    setIsOpen(true);
+  }, []);
+  useEffect(() => {
+    const openAssistant = () => { suppressAutoGreetingRef.current = true; setActivePanel('chat'); setIsOpen(true); };
+    window.addEventListener('taskflow-open-assistant', openAssistant);
+    return () => window.removeEventListener('taskflow-open-assistant', openAssistant);
+  }, []);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
-  const [showConversations, setShowConversations] = useState(false);
+  const [scopedMode, setScopedMode] = useState<'description' | 'draft' | null>(null);
+  const scopedModeRef = useRef<'description' | 'draft' | null>(null);
+  useEffect(() => { scopedModeRef.current = scopedMode; }, [scopedMode]);
+  useEffect(() => {
+    const open = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail?.userId !== userId || typeof detail.conversationId !== 'string' || !['description', 'draft'].includes(detail.mode)) return;
+      scopedModeRef.current = detail.mode;
+      setSelectedConversationId(detail.conversationId); setScopedMode(detail.mode); setActivePanel('chat'); setIsOpen(true);
+    };
+    window.addEventListener('taskflow-open-conversation', open);
+    return () => window.removeEventListener('taskflow-open-conversation', open);
+  }, [userId]);
   const [showToolConfirm, setShowToolConfirm] = useState(false);
   const [pendingTools, setPendingTools] = useState<ToolCall[] | null>(null);
   const [projectAccessError, setProjectAccessError] = useState<string | null>(null);
@@ -399,6 +446,12 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
 
   // Dynamic quick actions based on context
   const quickActions: QuickAction[] = useMemo(() => {
+    const overdueAction: QuickAction = {
+      id: 'overdue',
+      label: '期限切れ確認',
+      icon: <Clock className="h-4 w-4" />,
+      message: '期限切れのタスクはありますか？',
+    };
     if (projectId) {
       // Project page actions
       return [
@@ -414,12 +467,7 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
           icon: <Search className="h-4 w-4" />,
           message: 'このプロジェクトの概要を教えてください',
         },
-        {
-          id: 'overdue',
-          label: '期限切れ確認',
-          icon: <Clock className="h-4 w-4" />,
-          message: '期限切れのタスクはありますか？',
-        },
+        overdueAction,
         {
           id: 'report',
           label: '日報生成',
@@ -456,9 +504,9 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
     };
 
     if (timePeriod === 'morning' || timePeriod === 'afternoon') {
-      return [planAction, priorityAction, workloadAction, reportAction];
+      return [planAction, priorityAction, workloadAction, overdueAction, reportAction];
     }
-    return [reportAction, priorityAction, workloadAction, planAction];
+    return [reportAction, priorityAction, workloadAction, overdueAction, planAction];
   }, [projectId, timePeriod]);
 
   // Conversations list (filtered by projectId context)
@@ -467,7 +515,7 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
     isLoading: conversationsLoading,
     deleteConversationById,
   } = useUnifiedConversations({
-    userId: effectiveUserId || null,
+    userId: (isE2EMockAuthEnabled() ? userId : effectiveUserId) || null,
     projectId: projectId ?? null,
   });
 
@@ -481,32 +529,39 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
     cancelToolExecution,
     clearMessages,
   } = useUnifiedConversation({
-    userId: effectiveUserId,
+    userId: scopedMode ? '' : effectiveUserId,
     projectId: isProjectAccessBlocked ? null : projectId,
     projectIds,
     context: companionContext,
-    conversationId: selectedConversationId,
-    onConversationCreated: (id) => setSelectedConversationId(id),
+    conversationId: scopedMode ? null : selectedConversationId,
+    onConversationCreated: (id) => { if (!scopedModeRef.current) setSelectedConversationId(id); },
     onToolConfirmRequired: (toolCalls) => {
+      if (scopedModeRef.current) return;
       setPendingTools(toolCalls);
       setShowToolConfirm(true);
     },
   });
 
+  useEffect(() => {
+    if (scopedMode) { cancelToolExecution(); queueMicrotask(() => { setPendingTools(null); setShowToolConfirm(false); }); }
+  }, [scopedMode, cancelToolExecution]);
+
   // Reset conversation when projectId changes
   useEffect(() => {
     queueMicrotask(() => {
       setSelectedConversationId(null);
+      setScopedMode(null);
       clearMessages();
     });
-  }, [projectId, clearMessages]);
+  }, [projectId, userId, clearMessages]);
 
   // Close panel on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        if ((e.target as Element).closest?.('[data-companion-toggle], [data-companion-greeting]')) return;
         const dialog = document.querySelector('[role="dialog"]');
-        if (dialog && dialog.contains(e.target as Node)) {
+        if (dialog) {
           return;
         }
         setIsOpen(false);
@@ -525,7 +580,7 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
   // Close panel on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape' && isOpen && !e.defaultPrevented && !document.querySelector('[role="dialog"]')) {
         setIsOpen(false);
       }
     };
@@ -546,8 +601,11 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
   // Handle sending a message
   const handleSendMessage = useCallback(async (content: string) => {
     if (!effectiveUserId || isProjectAccessBlocked || !projectAccessLoaded) return;
-    await sendMessage(content);
-  }, [effectiveUserId, isProjectAccessBlocked, projectAccessLoaded, sendMessage]);
+    const instruction = supportOnce?.userId === userId && supportOnce.conversationId === selectedConversationId ? supportOnce.instruction : '';
+    if (instruction) await sendMessage(content, instruction);
+    else await sendMessage(content);
+    setSupportOnce(null);
+  }, [effectiveUserId, isProjectAccessBlocked, projectAccessLoaded, sendMessage, supportOnce, userId, selectedConversationId]);
 
   // Handle quick action
   const handleQuickAction = useCallback((action: QuickAction) => {
@@ -556,20 +614,23 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
 
   // Handle new conversation
   const handleNewConversation = useCallback(() => {
+    setScopedMode(null);
     setSelectedConversationId(null);
     clearMessages();
   }, [clearMessages]);
 
   // Handle selecting a conversation
   const handleSelectConversation = useCallback((id: string) => {
+    setScopedMode(conversations.find(c => c.id === id)?.mode ?? null);
     setSelectedConversationId(id);
-  }, []);
+  }, [conversations]);
 
   // Handle deleting a conversation
   const handleDeleteConversation = useCallback(async (id: string) => {
     await deleteConversationById(id);
     if (selectedConversationId === id) {
       setSelectedConversationId(null);
+      setScopedMode(null);
       clearMessages();
     }
   }, [deleteConversationById, selectedConversationId, clearMessages]);
@@ -643,6 +704,9 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
   useEffect(() => {
     if (
       isOpen &&
+      activePanel === 'chat' &&
+      autoGreeting &&
+      !suppressAutoGreetingRef.current &&
       !projectId &&
       messages.length === 0 &&
       !selectedConversationId &&
@@ -672,6 +736,8 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
       autoGreetSentRef.current = false;
     }
   }, [
+    activePanel,
+    autoGreeting,
     isApiConfigured,
     isOpen,
     isProjectAccessBlocked,
@@ -687,39 +753,24 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
     shouldShowMorningGreeting,
   ]);
 
+  const supportAdjust = <AISupportAdjust key={`support:${userId}:${selectedConversationId ?? 'new'}`} inline userId={userId} disabled={isLoading || isDisabled}
+    pendingInstruction={supportOnce?.userId === userId && supportOnce.conversationId === selectedConversationId ? supportOnce.instruction : undefined}
+    onApplyOnce={instruction => setSupportOnce(instruction ? { userId, conversationId: selectedConversationId, instruction } : null)} />;
+  const renderQuickActions = (compact: boolean) => <div role="group" aria-label="相棒の操作" className={compact ? 'flex flex-wrap items-center gap-2 border-t px-3 py-2' : 'mt-4 flex flex-wrap items-center justify-center gap-2'}>
+    {quickActions.map(action => <button key={action.id} onClick={() => handleQuickAction(action)} disabled={isLoading || projectsLoading || isDisabled}
+      className="flex h-8 items-center gap-1.5 rounded-full border bg-background px-3 text-xs transition-colors hover:bg-muted disabled:opacity-50">
+      <span aria-hidden="true" className="shrink-0">{action.icon}</span>{action.label}
+    </button>)}
+  </div>;
+
   if (!firebaseUser) return null;
 
   return (
     <>
-      {/* Floating Button */}
-      <button
-        data-testid="companion-ai-toggle"
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          'fixed bottom-24 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all hover:scale-105',
-          isOpen
-            ? 'bg-muted text-muted-foreground'
-            : projectId
-              ? 'bg-primary text-primary-foreground'
-              : timePeriod === 'morning'
-                ? 'bg-amber-600 text-white'
-                : timePeriod === 'evening'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-primary text-primary-foreground'
-        )}
-      >
-        {isOpen ? (
-          <X className="h-6 w-6" />
-        ) : (
-          <Bot className="h-6 w-6" />
-        )}
-        {hasBadge && !isOpen && !projectId && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-            <span className="relative inline-flex h-4 w-4 rounded-full bg-red-500" />
-          </span>
-        )}
-      </button>
+      <CompanionTaskChecks userId={userId} enabled={quickCheckEnabled}>{quickCheck => <CompanionLauncher key={userId} userId={userId} isOpen={isOpen} busy={isLoading} quickCheck={quickCheck} onOpenNotifications={openNotifications} onToggle={() => {
+        suppressAutoGreetingRef.current = true;
+        setIsOpen(value => !value);
+      }} />}</CompanionTaskChecks>
 
       {/* Chat Panel */}
       {isOpen && (
@@ -728,13 +779,14 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
           data-testid="companion-ai-panel"
           className={cn(
             'fixed z-50 flex flex-col overflow-hidden rounded-lg border bg-background shadow-xl',
-            !panelPosition && 'bottom-24 right-6'
+            !panelPosition && 'bottom-[200px] right-6'
           )}
           style={{
             width: panelSize.width,
             height: panelSize.height,
+            maxHeight: panelPosition ? 'calc(100dvh - 72px)' : 'calc(100dvh - 272px)',
             ...(panelPosition
-              ? { left: panelPosition.x, top: panelPosition.y }
+              ? { left: panelPosition.x, top: Math.max(64, panelPosition.y) }
               : {}),
           }}
         >
@@ -744,35 +796,88 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
             onMouseDown={handlePanelDragStart}
           >
             <div className="flex items-center gap-2 min-w-0">
-              <MessageCircle className="h-5 w-5 shrink-0" />
+              <CompanionAvatar className="h-6 w-6" />
               <span className="truncate font-medium">
-                {headerTitle}
+                {activePanel === 'notifications' ? '相棒 - 通知' : activePanel === 'comments' ? '相棒 - コメント' : headerTitle}
               </span>
               <span className="shrink-0 text-xs text-muted-foreground">
-                ({PROVIDER_DISPLAY_NAMES[provider]})
+                {activePanel === 'chat' && panelSize.width >= 480 && `(${PROVIDER_DISPLAY_NAMES[provider]})`}
               </span>
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <Button
                 variant="ghost"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => setShowConversations(!showConversations)}
-              >
-                {showConversations ? '履歴を隠す' : '履歴'}
-              </Button>
-              <Button
-                variant="ghost"
                 size="icon"
                 className="h-8 w-8"
+                aria-label="AI設定を開く"
                 onClick={handleGoToSettings}
               >
                 <Settings className="h-4 w-4" />
               </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="AIアシスタントを閉じる" title="AIアシスタントを閉じる" onClick={() => {
+                setIsOpen(false);
+                requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-companion-toggle]')?.focus({ preventScroll: true }));
+              }}><X className="h-4 w-4" aria-hidden="true" /></Button>
             </div>
           </div>
 
-          {!isApiConfigured ? (
+          <div role="group" aria-label="相棒の表示" className="flex shrink-0 flex-wrap items-center gap-1 border-b px-2 py-2">
+            <Button variant={activePanel === 'chat' ? 'secondary' : 'ghost'} size="sm" className="h-8 gap-1.5 px-2 text-xs has-[>svg]:px-2" aria-pressed={activePanel === 'chat'} onClick={() => setActivePanel('chat')}><MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />会話</Button>
+            <Button variant={activePanel === 'comments' ? 'secondary' : 'ghost'} size="sm" className="h-8 gap-1.5 px-2 text-xs has-[>svg]:px-2" aria-pressed={activePanel === 'comments'} onClick={() => { setCommentsOwner(userId); setActivePanel('comments'); }}><MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" />コメント</Button>
+            {supportAdjust}
+            <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs has-[>svg]:px-2" disabled={!userId} onClick={() => setShowFeatureRequest(true)}><MessageSquarePlus aria-hidden="true" className="h-3.5 w-3.5" />要望を送る</Button>
+            <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs has-[>svg]:px-2" disabled={!userId} onClick={() => setMeetingSession({ userId, open: true })}><ClipboardList aria-hidden="true" className="h-3.5 w-3.5" />メモから整理</Button>
+            <Button variant={activePanel === 'notifications' ? 'secondary' : 'ghost'} size="icon" aria-label={notificationsError ? '通知：取得エラー' : notificationsLoading ? '通知：読み込み中' : unreadCount > 0 ? `通知：未読${unreadCount}件` : '通知'} title="通知" className={cn('relative ml-auto h-8 w-8 shrink-0', !notificationsLoading && !notificationsError && unreadCount > 0 && 'font-semibold text-red-700 bg-red-50 hover:bg-red-100')} aria-pressed={activePanel === 'notifications'} onClick={openNotifications}>
+              <Bell className="h-4 w-4" aria-hidden="true" />
+              {!notificationsLoading && !notificationsError && unreadCount > 0 && <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold tabular-nums text-white" aria-label={`未読${unreadCount}件`}>{unreadCount > 99 ? '99+' : unreadCount}</span>}
+              {notificationsError && <span aria-label="通知の取得エラー" className="absolute -top-1 right-0 text-xs font-bold text-destructive">!</span>}
+            </Button>
+          </div>
+          {commentsOwner === userId && <div hidden={activePanel !== 'comments'} className={cn('flex min-h-0 min-w-0 flex-1', activePanel !== 'comments' && 'hidden')}>
+            <CompanionComments key={`comments:${userId}`} onNavigate={() => setIsOpen(false)} />
+          </div>}
+          <section aria-label="相棒の通知" hidden={activePanel !== 'notifications'} className={cn('flex min-h-0 min-w-0 flex-1', activePanel !== 'notifications' && 'hidden')}>
+            <NotificationList key={`notices:${userId}`} asHistory onNavigate={() => setIsOpen(false)} />
+          </section>
+          <div hidden={activePanel !== 'chat'} className={cn('flex min-h-0 min-w-0 flex-1', activePanel !== 'chat' && 'hidden')}>
+            {/* Keep each reading area mounted so changing tabs retains the selected item and drafts. */}
+            <HistoryPane label="会話履歴" actions={<Button variant="ghost" size="icon" className="h-6 w-6" aria-label="新しい会話" onClick={handleNewConversation}><Plus className="h-4 w-4" /></Button>} list={<>
+{conversationsLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </div>
+                    ) : conversations.length === 0 ? (
+                      <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                        会話履歴はありません
+                      </div>
+                    ) : (
+                      conversations.map((conv) => (
+                        <div
+                          key={conv.id}
+                          className={cn(
+                            'group flex items-center justify-between gap-1 border-b px-2 py-2 text-xs hover:bg-muted',
+                            selectedConversationId === conv.id && 'bg-muted'
+                          )}
+                        >
+                          <button type="button" className="min-w-0 flex-1 truncate rounded text-left focus-visible:outline-2 focus-visible:outline-ring" title={conv.title} aria-current={selectedConversationId === conv.id ? 'true' : undefined} onClick={() => handleSelectConversation(conv.id)}>{conv.title}</button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+                            aria-label={`会話を削除: ${conv.title}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteConversation(conv.id);
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+            </>}>
+
+          {scopedMode && selectedConversationId ? <ScopedConversation key={`${userId}:${selectedConversationId}`} userId={userId} mode={scopedMode} conversationId={selectedConversationId} onBack={handleNewConversation} /> : !isApiConfigured ? (
             /* API Key Not Configured */
             <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
               <AlertCircle className="h-12 w-12 text-muted-foreground" />
@@ -782,6 +887,7 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
                   AI機能を使用するには、設定画面でAPIキーを設定してください。
                 </p>
               </div>
+              {isE2EMockAuthEnabled() && <Button onClick={()=>setPurchaseSession({userId,open:true,file:null,text:'',id:crypto.randomUUID()})}>購入報告を隔離テスト</Button>}
               <Button onClick={handleGoToSettings}>
                 <Settings className="mr-2 h-4 w-4" />
                 設定画面へ
@@ -806,67 +912,16 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
                   {accessStateCopy.description}
                 </p>
               </div>
+              {isE2EMockAuthEnabled() && <Button onClick={()=>setPurchaseSession({userId,open:true,file:null,text:'',id:crypto.randomUUID()})}>購入報告を隔離テスト</Button>}
               <Button onClick={handleGoToSettings}>
                 <Settings className="mr-2 h-4 w-4" />
                 設定画面へ
               </Button>
             </div>
           ) : (
-            <div className="flex min-h-0 flex-1">
-              {/* Conversation List (collapsible) */}
-              {showConversations && (
-                <div className="flex w-44 shrink-0 flex-col border-r">
-                  <div className="flex items-center justify-between border-b px-2 py-2">
-                    <span className="text-xs font-medium text-muted-foreground">会話履歴</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={handleNewConversation}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto">
-                    {conversationsLoading ? (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      </div>
-                    ) : conversations.length === 0 ? (
-                      <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-                        会話履歴はありません
-                      </div>
-                    ) : (
-                      conversations.map((conv) => (
-                        <div
-                          key={conv.id}
-                          className={cn(
-                            'group flex cursor-pointer items-center justify-between gap-1 border-b px-2 py-2 text-xs hover:bg-muted',
-                            selectedConversationId === conv.id && 'bg-muted'
-                          )}
-                          onClick={() => handleSelectConversation(conv.id)}
-                        >
-                          <span className="flex-1 truncate">{conv.title}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-5 w-5 opacity-0 group-hover:opacity-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteConversation(conv.id);
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-
+            <div className="flex min-h-0 min-w-0 flex-1">
               {/* Main Chat Area */}
-              <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                 {/* Context Preview (project page with task selected) */}
                 {projectId && companionContext.task && companionContext.project && (
                   <div className="border-b bg-muted/30 px-4 py-2">
@@ -882,9 +937,9 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto">
                   {messages.length === 0 ? (
-                    <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-                      <div className="mb-4 rounded-full bg-muted p-4">
-                        <Bot className="h-8 w-8 text-muted-foreground" />
+                    <div className="flex min-h-full flex-col items-center justify-center p-6 text-center">
+                      <div className="mb-4 p-4">
+                        <CompanionAvatar className="h-40 w-40" label="相棒" />
                       </div>
                       <h3 className="font-medium">
                         {projectId
@@ -908,19 +963,7 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
                       </p>
 
                       {/* Quick Actions */}
-                      <div className="mt-4 flex flex-wrap justify-center gap-2">
-                        {quickActions.map((action) => (
-                          <button
-                            key={action.id}
-                            onClick={() => handleQuickAction(action)}
-                            disabled={projectsLoading || isDisabled}
-                            className="flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs transition-colors hover:bg-muted disabled:opacity-50"
-                          >
-                            {action.icon}
-                            {action.label}
-                          </button>
-                        ))}
-                      </div>
+                      {renderQuickActions(false)}
 
                       {isDisabled && !projectsLoading && (
                         <p className="mt-4 text-xs text-muted-foreground">
@@ -963,36 +1006,28 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
                 )}
 
                 {/* Quick Actions Bar (visible when messages exist) */}
-                {messages.length > 0 && (
-                  <div className="flex flex-wrap gap-1 border-t px-3 py-2">
-                    {quickActions.map((action) => (
-                      <button
-                        key={action.id}
-                        onClick={() => handleQuickAction(action)}
-                        disabled={isLoading || isDisabled}
-                        className="flex items-center gap-1 rounded-full border bg-background px-2 py-1 text-xs transition-colors hover:bg-muted disabled:opacity-50"
-                      >
-                        {action.icon}
-                        <span className="hidden sm:inline">{action.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {messages.length > 0 && renderQuickActions(true)}
 
                 {/* Input */}
                 <ChatInput
-                  onSend={handleSendMessage}
+                  key={`${userId}:${selectedConversationId ?? 'new'}`}
+                  draftKey={`${userId}:${selectedConversationId ?? 'new'}`}
+                  onImage={(file,text)=>setPurchaseSession({userId,open:true,file,text,id:crypto.randomUUID()})}
+                  sentInput={purchaseSent}
+                  onSend={message=>{if(/(?:注文|購入|発送|受け取).*(?:したよ|しました|済み|ったよ)/.test(message)&&!/[?？]|どう|方法|したら/.test(message)){setPurchaseSession({userId,open:true,file:null,text:message,id:crypto.randomUUID()});return Promise.resolve(false);}return handleSendMessage(message);}}
                   isLoading={isLoading}
                   disabled={isDisabled}
                   placeholder={
                     projectId
                       ? 'プロジェクトについて質問...'
-                      : '何でも聞いてください...'
+                      : '相談、報告、これやっといて。画像も貼れます。'
                   }
                 />
               </div>
             </div>
           )}
+            </HistoryPane>
+          </div>
           <div
             role="separator"
             aria-label="AIパネルのサイズを左上から変更"
@@ -1015,6 +1050,10 @@ export function CompanionAI({ projectId }: CompanionAIProps) {
           </div>
         </div>
       )}
+
+      {purchaseSession?.userId===userId&&<PurchaseReportDialog key={purchaseSession.id} userId={userId} open={purchaseSession.open} initialFile={purchaseSession.file} initialText={purchaseSession.text} onOpenChange={open=>setPurchaseSession({...purchaseSession,open})} onRecorded={()=>setPurchaseSent({id:purchaseSession.id,content:purchaseSession.text})}/>}
+      {meetingSession?.userId === userId && <MeetingIntakeDialog key={`meeting:${userId}`} open={meetingSession.open} onOpenChange={open => setMeetingSession({ userId, open })} />}
+      <FeatureRequestDialog key={`request:${userId}`} open={showFeatureRequest} onOpenChange={setShowFeatureRequest} userId={userId} projects={projects} projectsLoading={projectsLoading} projectsFailed={!!projectsError} />
 
       {/* Tool Confirmation Dialog */}
       <ToolConfirmDialog

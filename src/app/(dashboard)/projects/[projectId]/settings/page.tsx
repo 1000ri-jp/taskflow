@@ -1,9 +1,17 @@
 'use client';
+import { SettingsLayout } from '@/components/ui/screen-layouts';
 
+import { ProjectDefaultAssignee } from '@/components/project/ProjectDefaultAssignee';
+import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
+import { getOrganizationMockUsers } from '@/lib/task/organizationMock';
+import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
+import { acknowledgeArchive, hasAcknowledgedArchive } from '@/lib/archiveNotice';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useProject } from '@/hooks/useProjects';
+import { useArchivedTasks } from '@/hooks/useArchivedTasks';
+import { AsyncState } from '@/components/ui/async-state';
 import { AutoArchivePreviewSettings } from '@/components/board/AutoArchivePreviewSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,9 +24,8 @@ import { Badge } from '@/components/ui/badge';
 import { LIST_COLORS } from '@/types';
 import type { User, ProjectRole, ProjectUrl } from '@/types';
 import { cn } from '@/lib/utils';
-import { Loader2, Trash2, UserPlus, X, Upload, Link as LinkIcon, Plus, ExternalLink, Archive, RotateCcw } from 'lucide-react';
-import { getUsersByIds, getAllUsers, subscribeToArchivedTasks, restoreTask, deleteTask } from '@/lib/firebase/firestore';
-import type { Task } from '@/types';
+import { Loader2, Trash2, UserPlus, Upload, Link as LinkIcon, Plus, ExternalLink, Archive, RotateCcw } from 'lucide-react';
+import { getUsersByIds, getAllUsers, restoreTask, deleteTask } from '@/lib/firebase/firestore';
 import { deleteProjectIcon, uploadProjectIconBlob, uploadProjectHeaderImageBlob, deleteProjectHeaderImage } from '@/lib/firebase/storage';
 import { ImageCropperDialog } from '@/components/common/ImageCropperDialog';
 import { readFileAsDataURL, readImageUrlAsDataURL } from '@/lib/utils/image';
@@ -46,6 +53,7 @@ import {
 const PROJECT_ICONS = ['📁', '🦙', '🚀', '💼', '🎯', '📊', '🔧', '💡', '🎨', '📱', '🌐'];
 
 export default function ProjectSettingsPage() {
+  const user = useAuthStore(state => state.user);
   const params = useParams();
   const router = useRouter();
   const projectId = params.projectId as string;
@@ -87,13 +95,17 @@ export default function ProjectSettingsPage() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   // Archived tasks state
-  const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
+  const { tasks: archivedTasks, isLoading: archivesLoading, error: archivesError, retry: retryArchives } = useArchivedTasks(projectId);
   const [restoringTaskId, setRestoringTaskId] = useState<string | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
 
-  // Initialize form when project loads
+  // Saving only the creation default must not erase other unsaved basic fields.
+  const basicSnapshot = useRef('');
   useEffect(() => {
     if (project) {
+      const key = JSON.stringify([project.id, project.name, project.description, project.color, project.icon, project.iconUrl, project.headerImageUrl, project.urls]);
+      if (key === basicSnapshot.current) return;
+      basicSnapshot.current = key;
       setName(project.name);
       setDescription(project.description);
       setColor(project.color);
@@ -104,25 +116,19 @@ export default function ProjectSettingsPage() {
     }
   }, [project]);
 
-  // Fetch member user details
+  // Depend on IDs, not an array rebuilt by the isolated workbench.
+  const memberKey = JSON.stringify(members.map(member => member.userId));
   useEffect(() => {
-    if (members.length > 0) {
-      const userIds = members.map((m) => m.userId);
-      getUsersByIds(userIds).then(setMemberUsers);
+    const userIds: string[] = JSON.parse(memberKey);
+    if (userIds.length > 0) {
+      (isE2EMockAuthEnabled() ? Promise.resolve(getOrganizationMockUsers(userIds)) : getUsersByIds(userIds)).then(setMemberUsers).catch(() => setMemberUsers([]));
     }
-  }, [members]);
+  }, [memberKey]);
 
   // Fetch all users for invite dialog
   useEffect(() => {
-    getAllUsers().then(setAllUsers);
+    if (!isE2EMockAuthEnabled()) getAllUsers().then(setAllUsers).catch(() => setAllUsers([]));
   }, []);
-
-  // Subscribe to archived tasks
-  useEffect(() => {
-    if (!projectId) return;
-    const unsubscribe = subscribeToArchivedTasks(projectId, setArchivedTasks);
-    return unsubscribe;
-  }, [projectId]);
 
   if (isLoading) {
     return (
@@ -373,11 +379,12 @@ export default function ProjectSettingsPage() {
   };
 
   const handleArchiveProject = async () => {
-    if (!confirm('このプロジェクトをアーカイブしますか？')) return;
+    if (!hasAcknowledgedArchive(user?.id, 'project') && !confirm('このプロジェクトをアーカイブしますか？一覧から非表示になりますが、アーカイブ済みプロジェクトから復元できます。この確認は初回のみです（このブラウザ）。')) return;
 
     setIsArchiving(true);
     try {
       await archive();
+      acknowledgeArchive(user?.id, 'project');
       router.push('/projects');
     } catch (error) {
       console.error('Failed to archive project:', error);
@@ -410,9 +417,9 @@ export default function ProjectSettingsPage() {
 
   return (
     <div>
-      <div className="max-w-2xl space-y-6 pb-8">
+      <SettingsLayout align="start" className="pb-8">
         {/* General Settings */}
-        <Card>
+        <Card density="compact">
           <CardHeader>
             <CardTitle>基本設定</CardTitle>
             <CardDescription>プロジェクトの基本情報を編集します</CardDescription>
@@ -436,9 +443,10 @@ export default function ProjectSettingsPage() {
                     <button
                       type="button"
                       onClick={handleRemoveIcon}
+                    aria-label="プロジェクト画像を削除"
                       className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
                     >
-                      <X className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 ) : (
@@ -545,6 +553,8 @@ export default function ProjectSettingsPage() {
               />
             </div>
 
+            <ProjectDefaultAssignee key={project.id} project={project} canEdit={!!user && (project.ownerId === user.id || members.some(member => member.userId === user.id && ['admin', 'editor'].includes(member.role)))} onSave={update} />
+
             {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description">説明</Label>
@@ -565,7 +575,7 @@ export default function ProjectSettingsPage() {
         </Card>
 
         {/* Header Image */}
-        <Card>
+        <Card density="compact">
           <CardHeader>
             <CardTitle>ヘッダー画像</CardTitle>
             <CardDescription>
@@ -597,9 +607,10 @@ export default function ProjectSettingsPage() {
                     <button
                       type="button"
                       onClick={handleRemoveHeaderImage}
+                    aria-label="ヘッダー画像を削除"
                       className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
                     >
-                      <X className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -645,7 +656,7 @@ export default function ProjectSettingsPage() {
         </Card>
 
         {/* Members */}
-        <Card>
+        <Card density="compact">
           <CardHeader>
             <CardTitle>メンバー</CardTitle>
             <CardDescription>
@@ -653,14 +664,14 @@ export default function ProjectSettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="divide-y rounded-lg border">
               {members.map((member) => {
                 const user = memberUsers.find((u) => u.id === member.userId);
                 const isOwner = member.role === 'admin';
                 return (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
+                    className="flex items-center justify-between p-3"
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
@@ -696,8 +707,9 @@ export default function ProjectSettingsPage() {
                             size="icon"
                             className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
                             onClick={() => handleRemoveMember(member.id, member.userId)}
+                        aria-label={`${user?.displayName || 'メンバー'}をプロジェクトから削除`}
                           >
-                            <X className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </>
                       )}
@@ -770,7 +782,7 @@ export default function ProjectSettingsPage() {
         </Card>
 
         {/* Project URLs */}
-        <Card>
+        <Card density="compact">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <LinkIcon className="h-5 w-5" />
@@ -806,8 +818,9 @@ export default function ProjectSettingsPage() {
                     size="icon"
                     className="h-8 w-8 flex-shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700"
                     onClick={() => handleRemoveUrl(urlItem.id)}
+                        aria-label={`${urlItem.title}を削除`}
                   >
-                    <X className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
@@ -864,30 +877,32 @@ export default function ProjectSettingsPage() {
         <AutoArchivePreviewSettings key={projectId} projectId={projectId} />
 
         {/* Archived Tasks */}
-        <Card>
+        <Card density="compact">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Archive className="h-5 w-5" />
               アーカイブ済みタスク
             </CardTitle>
             <CardDescription>
-              アーカイブしたタスクをここから復元できます（{archivedTasks.length}件）
+              アーカイブしたタスクをここから復元できます{!archivesLoading && !archivesError && `（${archivedTasks.length}件）`}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {archivedTasks.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">
-                アーカイブ済みのタスクはありません
-              </p>
+            {archivesLoading ? (
+              <AsyncState state="loading" message="アーカイブ済みタスクを取得中…" />
+            ) : archivesError ? (
+              <AsyncState state="error" message="アーカイブ済みタスクを取得できませんでした。" onRetry={retryArchives} />
+            ) : archivedTasks.length === 0 ? (
+              <AsyncState state="empty" message="アーカイブ済みのタスクはありません" />
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {archivedTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
+                    className="flex flex-wrap items-center justify-between rounded-lg border p-3 sm:flex-nowrap"
                   >
-                    <div className="overflow-hidden flex-1">
-                      <p className="truncate text-sm font-medium">{task.title}</p>
+                    <div className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
+                      <p className="break-words text-sm font-medium sm:truncate">{task.title}</p>
                       <p className="text-xs text-muted-foreground">
                         アーカイブ日: {task.archivedAt?.toLocaleDateString('ja-JP', {
                           year: 'numeric',
@@ -989,7 +1004,7 @@ export default function ProjectSettingsPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </SettingsLayout>
 
       {/* Image Cropper Dialog for Icon */}
       {selectedImageSrc && (

@@ -5,8 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthStore } from '@/stores/authStore';
 import { subscribeToUserMemo, updateUserMemo } from '@/lib/firebase/firestore';
+import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import { StickyNote, Loader2 } from 'lucide-react';
 import debounce from 'lodash/debounce';
+
+const mockMemos = new Map<string, string>();
 
 export function PersonalMemo() {
   const { user } = useAuthStore();
@@ -37,6 +40,14 @@ export function PersonalMemo() {
       return;
     }
 
+    if (isE2EMockAuthEnabled()) {
+      Promise.resolve().then(() => {
+        setMemo(mockMemos.get(user.id) ?? '');
+        setIsLoading(false);
+      });
+      return;
+    }
+
     const unsubscribe = subscribeToUserMemo(user.id, (content) => {
       setMemo(content);
       setIsLoading(false);
@@ -50,7 +61,11 @@ export function PersonalMemo() {
     setMemo(newValue);
 
     if (user?.id) {
-      debouncedSave(user.id, newValue);
+      if (isE2EMockAuthEnabled()) {
+        mockMemos.set(user.id, newValue);
+      } else {
+        debouncedSave(user.id, newValue);
+      }
     }
   };
 

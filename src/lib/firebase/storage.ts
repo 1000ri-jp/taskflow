@@ -194,7 +194,8 @@ const MAX_COMMENT_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 export async function uploadCommentAttachment(
   projectId: string,
   taskId: string,
-  file: File
+  file: File,
+  operationId?: string
 ): Promise<{ id: string; url: string; name: string; type: string; size: number }> {
   // Validate file size
   if (file.size > MAX_COMMENT_ATTACHMENT_SIZE) {
@@ -203,7 +204,8 @@ export async function uploadCommentAttachment(
 
   const storage = getFirebaseStorage();
   const { attachmentId, storageFileName } = createCommentAttachmentUploadDescriptor(file.name);
-  const fileName = storageFileName;
+  if (operationId && !/^[a-zA-Z0-9_-]{1,100}$/.test(operationId)) throw new Error('添付の受付番号を確認してください。');
+  const fileName = operationId ? `${operationId}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-80)}` : storageFileName;
   const filePath = `projects/${projectId}/tasks/${taskId}/comment_attachments/${fileName}`;
   const fileRef = ref(storage, filePath);
 

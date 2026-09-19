@@ -1,18 +1,15 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
-  rectIntersection,
-  pointerWithin,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   type DragStartEvent,
   type DragEndEvent,
-  type DragOverEvent,
   type CollisionDetection,
 } from '@dnd-kit/core';
 import {
@@ -40,23 +37,30 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { BoardList } from './BoardList';
+import { boardColumnScope, useBoardColumnStore } from '@/stores/boardColumnStore';
 import { TaskCard } from './TaskCard';
 import { useBoard } from '@/hooks/useBoard';
 import { useAuthStore } from '@/stores/authStore';
 import type { Task, List } from '@/types';
 import { LIST_COLORS } from '@/types';
 import { cn } from '@/lib/utils';
+import { boardDragCollision } from '@/lib/board/dragCollision';
 import { taskMatchesBoardFilters, type BoardFilters } from '@/lib/board/filters';
+import { groupTaskFamilies, tasksInList } from '@/lib/board/taskHierarchy';
+import { useMeetingMembers } from '@/hooks/useMeetingMembers';
+import { useProject } from '@/hooks/useProjects';
+import { TaskChildrenSummary } from './TaskChildrenSummary';
 import { BOARD_SORT_STORAGE_KEY, useBoardSortStore } from '@/stores/boardSortStore';
 
 interface BoardViewProps {
   projectId: string;
   onTaskClick: (taskId: string) => void;
   filters?: BoardFilters;
+  listId?: string | null;
 }
 
-export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
-  const sortMode = useBoardSortStore(state => state.byProject[projectId] ?? 'manual');
+export function BoardView({ projectId, onTaskClick, filters, listId = null }: BoardViewProps) {
+  const sortMode = useBoardSortStore(state => state.byProject[projectId] ?? 'due-asc');
   const hydrateSort = useBoardSortStore(state => state.hydrate);
   useEffect(() => {
     hydrateSort();
@@ -64,13 +68,16 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
     window.addEventListener('storage', sync);
     return () => window.removeEventListener('storage', sync);
   }, [hydrateSort]);
-  const { firebaseUser } = useAuthStore();
+  const { firebaseUser, user } = useAuthStore();
+  const { project } = useProject(projectId);
+  const columns = useBoardColumnStore(state => state.byScope);
   const {
     lists,
     tasks,
     labels,
     tags,
     isLoading,
+    error,
     getTasksByListId,
     addList,
     editList,
@@ -87,15 +94,17 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
     return taskMatchesBoardFilters(task, filters);
   }, [filters]);
 
-  // Get filtered tasks for a specific list
-  const getFilteredTasksByListId = useCallback(
-    (listId: string) => {
-      return getTasksByListId(listId).filter(filterTask);
-    },
-    [getTasksByListId, filterTask]
-  );
+  const families = useMemo(() => groupTaskFamilies(tasksInList(tasks, listId).filter(filterTask), tasks), [tasks, listId, filterTask]);
+  const childrenByParent = useMemo(() => new Map(families.map(family => [family.task.id, family.children])), [families]);
+  const contextIds = useMemo(() => new Set(families.filter(family => family.isContext).map(family => family.task.id)), [families]);
+  const projectMemberIds = project?.memberIds ?? [];
+  const childMembers = useMeetingMembers([{ memberIds: [...projectMemberIds, ...families.flatMap(family => family.children.flatMap(child => child.assigneeIds))] }], !!project || families.some(family => family.children.length > 0));
+  const childMemberDetails = Object.fromEntries(childMembers.users.map(member => [member.id, member]));
+  const childNames = Object.fromEntries(childMembers.users.map(member => [member.id, member.displayName]));
+  const getFilteredTasksByListId = (id: string) => families.filter(family => family.task.listId === id).map(family => family.task);
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [dragError, setDragError] = useState<string | null>(null);
   const [activeList, setActiveList] = useState<List | null>(null);
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListName, setNewListName] = useState('');
@@ -124,32 +133,10 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
   const [targetListId, setTargetListId] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Custom collision detection: use pointerWithin for lists, rectIntersection for tasks
-  const customCollisionDetection: CollisionDetection = useCallback((args) => {
-    const { active } = args;
-    const activeData = active.data.current;
-
-    // For list dragging, use pointerWithin (more precise)
-    if (activeData?.type === 'list') {
-      // Only consider other lists (exclude droppable areas like "list-xxx")
-      const listCollisions = pointerWithin({
-        ...args,
-        droppableContainers: args.droppableContainers.filter(
-          (container) => {
-            const id = String(container.id);
-            // Only match list IDs, not droppable "list-xxx" IDs
-            return !id.startsWith('list-') && displayLists.some((l) => l.id === id);
-          }
-        ),
-      });
-      if (listCollisions.length > 0) {
-        return listCollisions;
-      }
-    }
-
-    // For tasks or fallback, use rectIntersection
-    return rectIntersection(args);
-  }, [displayLists]);
+  const customCollisionDetection: CollisionDetection = useCallback(
+    args => boardDragCollision(args, displayLists.map(list => list.id)),
+    [displayLists]
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -162,17 +149,23 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
     })
   );
 
+  const taskSortMode = useCallback((taskId: string | number) => {
+    const listId = tasks.find(task => task.id === taskId)?.listId;
+    return listId ? columns[boardColumnScope(user?.id ?? '', projectId, listId)]?.sort ?? sortMode : sortMode;
+  }, [tasks, columns, user?.id, projectId, sortMode]);
+
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const { active } = event;
       const activeData = active.data.current;
+      setDragError(null);
 
       if (activeData?.type === 'list') {
         isDraggingList.current = true;
         setActiveList(activeData.list);
         setActiveTask(null);
       } else {
-        if (sortMode !== 'manual') return;
+        if (contextIds.has(String(active.id))) return;
         const task = tasks.find((t) => t.id === active.id);
         if (task) {
           setActiveTask(task);
@@ -180,65 +173,11 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
         }
       }
     },
-    [tasks, sortMode]
-  );
-
-  const handleDragOver = useCallback(
-    (event: DragOverEvent) => {
-      const { active, over } = event;
-      if (!over) return;
-
-      // Skip if dragging a list
-      const activeData = active.data.current;
-      if (activeData?.type === 'list') return;
-      if (sortMode !== 'manual') return;
-
-      const activeId = active.id as string;
-      const overId = over.id as string;
-
-      // Find the active task
-      const activeTask = tasks.find((t) => t.id === activeId);
-      if (!activeTask) return;
-
-      // Check if dropping over a list's droppable container (id: "list-xxx")
-      if (overId.startsWith('list-')) {
-        const newListId = overId.replace('list-', '');
-        if (activeTask.listId !== newListId) {
-          // Move to new list
-          const tasksInNewList = getTasksByListId(newListId);
-          moveTask(activeId, newListId, tasksInNewList.length);
-        }
-        return;
-      }
-
-      // Check if dropping over a list's sortable container (id: list.id)
-      // This happens when rectIntersection picks the larger list container
-      // instead of the smaller droppable area (e.g., when the list has few/no tasks)
-      const overList = displayLists.find((l) => l.id === overId);
-      if (overList) {
-        if (activeTask.listId !== overList.id) {
-          const tasksInNewList = getTasksByListId(overList.id);
-          moveTask(activeId, overList.id, tasksInNewList.length);
-        }
-        return;
-      }
-
-      // Dropping over another task
-      const overTask = tasks.find((t) => t.id === overId);
-      if (!overTask) return;
-
-      if (activeTask.listId !== overTask.listId) {
-        // Move to different list
-        const tasksInNewList = getTasksByListId(overTask.listId);
-        const overIndex = tasksInNewList.findIndex((t) => t.id === overId);
-        moveTask(activeId, overTask.listId, overIndex);
-      }
-    },
-    [tasks, displayLists, getTasksByListId, moveTask, sortMode]
+    [tasks, contextIds]
   );
 
   const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
+    async (event: DragEndEvent) => {
       const { active, over } = event;
       setActiveTask(null);
       setActiveList(null);
@@ -273,46 +212,44 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
         return;
       }
 
-      // Handle task reordering
-      if (sortMode !== 'manual') return;
-      const activeTaskItem = tasks.find((t) => t.id === activeId);
-      const overTask = tasks.find((t) => t.id === overId);
+      // Date sorting controls presentation, not whether a task can change lists.
+      // Persist only the final drop so hovered lists do not trigger their automation.
+      if (!activeTask || activeTask.id !== activeId || contextIds.has(activeId)) return;
+      const activeTaskItem = tasks.find((task) => task.id === activeId);
+      const overTask = tasks.find((task) => task.id === overId);
+      const targetListId = overTask?.listId ?? displayLists.find(
+        (list) => list.id === overId || `list-${list.id}` === overId
+      )?.id;
+      if (!activeTaskItem || !targetListId || !displayLists.some((list) => list.id === targetListId)) return;
 
-      if (!activeTaskItem) return;
-
-      // Check if dropping onto a list container (fallback for handleDragOver)
-      if (!overTask) {
-        let targetListId: string | null = null;
-        if (overId.startsWith('list-')) {
-          targetListId = overId.replace('list-', '');
-        } else {
-          const overList = displayLists.find((l) => l.id === overId);
-          if (overList) targetListId = overList.id;
+      try {
+        if (activeTaskItem.listId !== targetListId) {
+          const targetTasks = getTasksByListId(targetListId);
+          const overIndex = overTask ? targetTasks.findIndex((task) => task.id === overId) : -1;
+          await moveTask(activeId, targetListId, overIndex >= 0 ? overIndex : targetTasks.length);
+          return;
         }
-        if (targetListId && activeTaskItem.listId !== targetListId) {
-          const tasksInNewList = getTasksByListId(targetListId);
-          moveTask(activeId, targetListId, tasksInNewList.length);
-        }
-        return;
-      }
 
-      // If both tasks are in the same list, reorder
-      if (activeTaskItem.listId === overTask.listId) {
+        // Within a date-sorted list, keep the selected date order.
+        if (taskSortMode(activeId) !== 'manual' || !overTask) return;
         const listTasks = getTasksByListId(activeTaskItem.listId);
-        const activeIndex = listTasks.findIndex((t) => t.id === activeId);
-        const overIndex = listTasks.findIndex((t) => t.id === overId);
-
-        if (activeIndex !== overIndex) {
-          const reordered = arrayMove(listTasks, activeIndex, overIndex);
-          reorderTasks(
-            activeTaskItem.listId,
-            reordered.map((t) => t.id)
-          );
+        const activeIndex = listTasks.findIndex((task) => task.id === activeId);
+        const overIndex = listTasks.findIndex((task) => task.id === overId);
+        if (activeIndex >= 0 && overIndex >= 0 && activeIndex !== overIndex) {
+          await reorderTasks(activeTaskItem.listId, arrayMove(listTasks, activeIndex, overIndex).map((task) => task.id));
         }
+      } catch {
+        setDragError('タスクを移動できませんでした。接続・権限を確認して、もう一度お試しください。');
       }
     },
-    [tasks, displayLists, getTasksByListId, reorderTasks, reorderLists, moveTask, sortMode]
+    [activeTask, contextIds, tasks, displayLists, getTasksByListId, reorderTasks, reorderLists, moveTask, taskSortMode]
   );
+
+  const handleDragCancel = useCallback(() => {
+    isDraggingList.current = false;
+    setActiveTask(null);
+    setActiveList(null);
+  }, []);
 
   const handleAddList = () => {
     if (newListName.trim()) {
@@ -323,10 +260,9 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
     }
   };
 
-  const handleAddTask = (listId: string) => (title: string, position: 'top' | 'bottom') => {
-    if (firebaseUser) {
-      addTask(listId, title, firebaseUser.uid, position);
-    }
+  const handleAddTask = (listId: string) => async (title: string, position: 'top' | 'bottom', assigneeIds?: string[]) => {
+    if (!firebaseUser) throw new Error('ログイン状態を確認してください。入力は保持しています。');
+    return await addTask(listId, title, firebaseUser.uid, position, { assigneeIds });
   };
 
   const handleTaskMove = useCallback(
@@ -370,6 +306,7 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
     }
   };
 
+  if (error) return <p role="alert" className="p-4 text-sm text-destructive">タスクを取得できませんでした。接続・権限を確認してください。</p>;
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -383,22 +320,31 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
       sensors={sensors}
       collisionDetection={customCollisionDetection}
       onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       <div className="pb-4" data-testid="board-view">
+        {dragError && <p role="alert" className="mb-3 text-sm text-destructive">{dragError}</p>}
         <div className="flex w-fit gap-4">
           <SortableContext
             items={displayLists.map((l) => l.id)}
             strategy={horizontalListSortingStrategy}
           >
-            {displayLists.map((list) => (
+            {displayLists.filter(list => !listId || list.id === listId || families.some(family => family.task.listId === list.id)).map((list) => (
               <BoardList
-                key={list.id}
+                key={`${user?.id ?? ''}:${list.id}`}
                 projectId={projectId}
                 list={list}
                 tasks={getFilteredTasksByListId(list.id)}
                 allTasks={tasks}
+                childrenByParent={childrenByParent}
+                contextIds={contextIds}
+                viewerId={user?.id ?? ''}
+                childNames={childNames} childMemberDetails={childMemberDetails}
+                projectMemberIds={projectMemberIds}
+                projectMembers={childMembers.users}
+                projectMembersLoading={childMembers.isLoading}
+                projectMembersError={childMembers.hasError}
                 labels={labels}
                 tags={tags}
                 onAddTask={handleAddTask(list.id)}
@@ -410,6 +356,11 @@ export function BoardView({ projectId, onTaskClick, filters }: BoardViewProps) {
               />
             ))}
           </SortableContext>
+
+          {families.some(family => !lists.some(list => list.id === family.task.listId)) && <section className="w-72 shrink-0 space-y-2 rounded-lg bg-muted p-3" aria-label="分類不明のタスク">
+            <h3 className="text-sm font-medium">分類不明（元のリストが見つかりません）</h3>
+            {families.filter(family => !lists.some(list => list.id === family.task.listId)).map(family => <TaskCard key={family.task.id} projectId={projectId} task={family.task} listName="分類不明" listColor="#94a3b8" labels={labels} tags={tags} allTasks={tasks} disableDragging onClick={() => onTaskClick(family.task.id)} footer={<TaskChildrenSummary task={family.task} childrenTasks={family.children} allTasks={tasks} viewerId={user?.id ?? ''} names={childNames} members={childMemberDetails} lists={lists} onTaskClick={onTaskClick} rowLayout="single-line" />} />)}
+          </section>}
 
           {/* Add List */}
           <div className="flex w-72 flex-shrink-0 self-start">

@@ -1,3 +1,4 @@
+import {recordReportToolDefinition,recordReportHandler} from './recordReport';
 import { AITool, RegisteredTool, ToolHandler } from './types';
 import {
   createTaskToolDefinition,
@@ -76,6 +77,7 @@ import {
  * Unified registry of all available AI tools (project + personal)
  */
 export const unifiedToolRegistry: Map<string, RegisteredTool> = new Map();
+unifiedToolRegistry.set(recordReportToolDefinition.name,{definition:recordReportToolDefinition,handler:recordReportHandler,scope:'both'});
 
 // ============================================
 // Project-scope Tools
@@ -147,7 +149,7 @@ unifiedToolRegistry.set('get_tasks', {
 unifiedToolRegistry.set('get_task_details', {
   definition: getTaskDetailsToolDefinition,
   handler: getTaskDetailsHandler as unknown as ToolHandler,
-  scope: 'project',
+  scope: 'both',
 });
 
 unifiedToolRegistry.set('get_project_summary', {

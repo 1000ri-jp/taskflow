@@ -20,6 +20,7 @@ interface ToolConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   isExecuting?: boolean;
+  descriptionChange?: { before: string; after: string };
 }
 
 // Get appropriate title and description based on tool types
@@ -73,6 +74,7 @@ export function ToolConfirmDialog({
   onConfirm,
   onCancel,
   isExecuting = false,
+  descriptionChange,
 }: ToolConfirmDialogProps) {
   const descriptions = getToolCallsDescription(toolCalls);
   const { icon: Icon, title, description, confirmText, executingText } = getDialogContent(toolCalls);
@@ -83,15 +85,16 @@ export function ToolConfirmDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Icon className="h-5 w-5" />
-            {title}
+            {descriptionChange ? '説明を保存しますか？' : title}
           </DialogTitle>
           <DialogDescription>
-            {description}
+            {descriptionChange ? toolCalls[0]?.arguments.taskTitle as string : description}
           </DialogDescription>
         </DialogHeader>
 
         <div className="max-h-64 overflow-y-auto">
-          <ul className="space-y-2">
+          {descriptionChange && <div className="mb-3 space-y-3 text-sm"><div><p className="font-medium">変更前</p><p className="whitespace-pre-wrap break-words">{descriptionChange.before || '（説明なし）'}</p></div><div><p className="font-medium">変更後</p><p className="whitespace-pre-wrap break-words">{descriptionChange.after || '（説明なし）'}</p></div></div>}
+          {!descriptionChange && <ul className="space-y-2">
             {descriptions.map((desc, index) => (
               <li
                 key={index}
@@ -102,7 +105,7 @@ export function ToolConfirmDialog({
                 <span>{desc}</span>
               </li>
             ))}
-          </ul>
+          </ul>}
         </div>
 
         <DialogFooter>
@@ -125,7 +128,7 @@ export function ToolConfirmDialog({
                 {executingText}
               </>
             ) : (
-              <>{confirmText}</>
+              <>{descriptionChange ? '保存する' : confirmText}</>
             )}
           </Button>
         </DialogFooter>

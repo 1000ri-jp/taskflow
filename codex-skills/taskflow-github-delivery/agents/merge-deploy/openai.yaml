@@ -1,4 +1,4 @@
 interface:
   display_name: "Merge and Deploy"
-  short_description: "Merge an approved PR and verify main plus deploy"
-  default_prompt: "Use $taskflow-github-delivery merge-deploy to merge an accepted PR, watch main, and confirm the deploy result."
+  short_description: "Perform authorized merge and verify deployment"
+  default_prompt: "Use $taskflow-github-delivery merge-deploy to perform the authorized merge or release, retain required CI gates, and verify the actual result. Review approval alone does not authorize either action."

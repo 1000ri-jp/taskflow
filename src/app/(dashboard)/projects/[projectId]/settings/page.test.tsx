@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { subscribeToArchivedTasks } from '@/lib/firebase/firestore';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ProjectSettingsPage from './page';
 
@@ -22,6 +23,8 @@ const mocks = vi.hoisted(() => ({
   members: [],
 }));
 
+vi.mock('@/components/board/AutoArchivePreviewSettings', () => ({ AutoArchivePreviewSettings: ({ projectId }: { projectId: string }) => <div data-testid="auto-archive-settings" data-project-id={projectId} /> }));
+vi.mock('@/stores/authStore', () => ({ useAuthStore: (selector: (state: { user: { id: string } }) => unknown) => selector({ user: { id: 'u' } }) }));
 vi.mock('next/navigation', () => ({
   useParams: () => ({ projectId: 'project-1' }),
   useRouter: () => ({ push: mocks.push }),
@@ -58,7 +61,7 @@ vi.mock('@/lib/firebase/storage', () => ({
 
 describe('ProjectSettingsPage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.clearAllMocks(); localStorage.clear();
     vi.stubGlobal('confirm', vi.fn(() => true));
     vi.stubGlobal('alert', vi.fn());
     mocks.project.isArchived = false;
@@ -67,12 +70,26 @@ describe('ProjectSettingsPage', () => {
   it('archives the project and returns to the projects page', async () => {
     mocks.archive.mockResolvedValue(undefined);
     render(<ProjectSettingsPage />);
+    expect(screen.getByTestId('auto-archive-settings')).toHaveAttribute('data-project-id', 'project-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'アーカイブ' }));
 
-    expect(confirm).toHaveBeenCalledWith('このプロジェクトをアーカイブしますか？');
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('この確認は初回のみ'));
     await waitFor(() => expect(mocks.archive).toHaveBeenCalledOnce());
     expect(mocks.push).toHaveBeenCalledWith('/projects');
+  });
+
+  it('skips the notice after the first successful project archive', async () => {
+    mocks.archive.mockResolvedValue(undefined);
+    const { unmount } = render(<ProjectSettingsPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'アーカイブ' }));
+    await waitFor(() => expect(mocks.push).toHaveBeenCalled());
+    unmount();
+    vi.mocked(confirm).mockClear();
+    render(<ProjectSettingsPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'アーカイブ' }));
+    await waitFor(() => expect(mocks.archive).toHaveBeenCalledTimes(2));
+    expect(confirm).not.toHaveBeenCalled();
   });
 
   it('does not archive when confirmation is cancelled', () => {
@@ -105,4 +122,25 @@ describe('ProjectSettingsPage', () => {
     await waitFor(() => expect(mocks.remove).toHaveBeenCalledOnce());
     expect(mocks.push).toHaveBeenCalledWith('/projects');
   });
+});
+
+it('shows archive failure instead of zero, retains basic input and retries without writing', async () => {
+  vi.clearAllMocks(); mocks.project.isArchived = false;
+  let receive!: Parameters<typeof subscribeToArchivedTasks>[1];
+  let fail!: NonNullable<Parameters<typeof subscribeToArchivedTasks>[2]>;
+  vi.mocked(subscribeToArchivedTasks).mockImplementation((_id, next, error) => { receive = next; fail = error!; return vi.fn(); });
+  render(<ProjectSettingsPage />);
+  expect(screen.queryByText('アーカイブ済みのタスクはありません')).not.toBeInTheDocument();
+  await waitFor(() => expect(fail).toBeDefined());
+  const input = screen.getByDisplayValue('テストプロジェクト');
+  fireEvent.change(input, { target: { value: '未保存の長い日本語のプロジェクト名' } });
+  act(() => fail(new Error('missing-index')));
+  expect(screen.getByRole('alert')).toHaveTextContent('アーカイブ済みタスクを取得できませんでした');
+  expect(screen.queryByText(/復元できます（0件）/)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '再取得' }));
+  await waitFor(() => expect(subscribeToArchivedTasks).toHaveBeenCalledTimes(2));
+  act(() => receive([]));
+  expect(screen.getByText('アーカイブ済みのタスクはありません')).toBeInTheDocument();
+  expect(input).toHaveValue('未保存の長い日本語のプロジェクト名');
+  expect(mocks.update).not.toHaveBeenCalled();
 });

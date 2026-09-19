@@ -1,0 +1,19 @@
+.avatar {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Remove only the transparent margins in the display; keep the original PNG intact. */
+.image {
+  position: absolute;
+  width: calc(100% * 1500 / 1050);
+  height: calc(100% * 1500 / 1050);
+  max-width: none;
+  left: calc(100% * -225 / 1050);
+  top: calc(100% * -180 / 1050);
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}

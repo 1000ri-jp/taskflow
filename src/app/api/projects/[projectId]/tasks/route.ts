@@ -1,3 +1,4 @@
+import { TaskDateValidationError } from '@/lib/task/dateValidation';
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest } from '@/lib/auth/authenticateRequest';
 import { getProjectAccess } from '@/lib/auth/projectAccess';
@@ -141,6 +142,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const result = await createProjectTask(projectId, auth.userId, taskInput);
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
+    if (error instanceof TaskDateValidationError) return NextResponse.json({ error: error.message }, { status: 422 });
     const message = error instanceof Error ? error.message : 'Internal server error';
 
     if (message === 'FORBIDDEN') {

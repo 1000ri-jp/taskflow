@@ -8,8 +8,8 @@ import {
   subscribeToProjectLists,
   createTask,
   updateTask,
-  deleteTask,
-  getProjectTasks,
+  archiveTask,
+  restoreTask,
   subscribeToProjectTasks,
   subscribeToProjectLabels,
   subscribeToProjectTags,
@@ -21,10 +21,14 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUndoStore } from '@/stores/undoStore';
 import type { List, Task, Label, Tag } from '@/types';
 import { calculateEffectiveStartDate, recalculateDates } from '@/lib/utils/task';
+import { updateTaskParent } from '@/lib/firebase/taskParent';
+import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
+import { useOrganizationLabBoard } from './useOrganizationLabBoard';
 
 interface BoardState {
   lists: List[];
   tasks: Task[];
+  allTasks: Task[];
   labels: Label[];
   tags: Tag[];
   isLoading: boolean;
@@ -32,10 +36,13 @@ interface BoardState {
 }
 
 export function useBoard(projectId: string | null) {
+  const mock = isE2EMockAuthEnabled();
+  const lab = useOrganizationLabBoard(mock, projectId);
   const { firebaseUser, user: authUser } = useAuthStore();
   const [state, setState] = useState<BoardState>({
     lists: [],
     tasks: [],
+    allTasks: [],
     labels: [],
     tags: [],
     isLoading: true,
@@ -44,6 +51,7 @@ export function useBoard(projectId: string | null) {
 
   // Subscribe to lists, tasks, and labels
   useEffect(() => {
+    if (isE2EMockAuthEnabled()) return;
     if (!projectId) {
       Promise.resolve().then(() => {
         setState((prev) => ({ ...prev, isLoading: false }));
@@ -60,10 +68,10 @@ export function useBoard(projectId: string | null) {
     });
 
     const unsubscribeTasks = subscribeToProjectTasks(projectId, (tasks) => {
-      setState((prev) => ({ ...prev, tasks, isLoading: false, error: null }));
+      setState((prev) => ({ ...prev, tasks: tasks.filter(task => !task.isArchived), allTasks: tasks, isLoading: false, error: null }));
     }, (error) => {
-      setState((prev) => ({ ...prev, tasks: [], isLoading: false, error }));
-    });
+      setState((prev) => ({ ...prev, tasks: [], allTasks: [], isLoading: false, error }));
+    }, true);
 
     const unsubscribeLabels = subscribeToProjectLabels(projectId, (labels) => {
       setState((prev) => ({ ...prev, labels }));
@@ -95,7 +103,7 @@ export function useBoard(projectId: string | null) {
   const logActivity = useCallback(
     (params: Parameters<typeof createActivityLog>[1]) => {
       if (!projectId) return;
-      createActivityLog(projectId, params).catch(() => {});
+      createActivityLog(projectId, params).then(() => window.dispatchEvent(new Event('taskflow-work-updated'))).catch(() => {});
     },
     [projectId]
   );
@@ -163,10 +171,10 @@ export function useBoard(projectId: string | null) {
           };
 
           // Apply auto-complete logic
-          if (targetList?.autoCompleteOnEnter && !task.isCompleted) {
+          if (task.taskKind !== 'review_request' && targetList?.autoCompleteOnEnter && !task.isCompleted) {
             updateData.isCompleted = true;
             updateData.completedAt = new Date();
-          } else if (oldList?.autoUncompleteOnExit && task.isCompleted) {
+          } else if (task.taskKind !== 'review_request' && oldList?.autoUncompleteOnExit && task.isCompleted) {
             updateData.isCompleted = false;
             updateData.completedAt = null;
           }
@@ -201,7 +209,7 @@ export function useBoard(projectId: string | null) {
 
   // Create task
   const addTask = useCallback(
-    async (listId: string, title: string, createdBy: string, position: 'top' | 'bottom' = 'bottom', options?: { startDate?: Date | null; dueDate?: Date | null }) => {
+    async (listId: string, title: string, createdBy: string, position: 'top' | 'bottom' = 'bottom', options?: { startDate?: Date | null; dueDate?: Date | null; parentTaskId?: string; assigneeIds?: string[] }) => {
       if (!projectId) return;
       const tasksInList = state.tasks.filter((t) => t.listId === listId);
       const orders = tasksInList.map((t) => t.order);
@@ -210,15 +218,16 @@ export function useBoard(projectId: string | null) {
 
       // Check if the target list has auto-complete enabled
       const targetList = state.lists.find((l) => l.id === listId);
-      const shouldAutoComplete = targetList?.autoCompleteOnEnter ?? false;
-      const shouldSetStartDate = targetList?.autoSetStartDateOnEnter ?? false;
+      const shouldAutoComplete = !options?.parentTaskId && (targetList?.autoCompleteOnEnter ?? false);
+      const shouldSetStartDate = !options?.parentTaskId && (targetList?.autoSetStartDateOnEnter ?? false);
 
-      await createTask(projectId, {
+      const taskId = await createTask(projectId, {
         listId,
         title,
         description: '',
+        ...(options?.parentTaskId ? { parentTaskId: options.parentTaskId } : {}),
         order,
-        assigneeIds: [],
+        ...(options?.assigneeIds !== undefined ? { assigneeIds: options.assigneeIds } : {}),
         labelIds: [],
         tagIds: [],
         dependsOnTaskIds: [],
@@ -238,11 +247,12 @@ export function useBoard(projectId: string | null) {
       logActivity({
         projectId,
         targetType: 'task',
-        targetId: '',
+        targetId: taskId,
         targetName: title,
         action: 'create',
         ...getActivityUser(),
       });
+      return taskId;
     },
     [projectId, state.tasks, state.lists, logActivity, getActivityUser]
   );
@@ -302,6 +312,8 @@ export function useBoard(projectId: string | null) {
         'startDate' in data || 'dueDate' in data ||
         'title' in data || 'isAbandoned' in data;
 
+      await updateTask(projectId, taskId, data);
+
       if (task && isSignificant) {
         const oldData: Partial<Task> = {};
         for (const key of Object.keys(data) as Array<keyof typeof data>) {
@@ -326,7 +338,7 @@ export function useBoard(projectId: string | null) {
         });
       }
 
-      await updateTask(projectId, taskId, data);
+
 
       // Cascade: if dates or completion changed, update dependent tasks
       const dateOrCompletionChanged =
@@ -349,45 +361,16 @@ export function useBoard(projectId: string | null) {
     async (taskId: string) => {
       if (!projectId) return;
       const task = state.tasks.find((t) => t.id === taskId);
-      await deleteTask(projectId, taskId);
+      const userId = firebaseUser?.uid;
+      if (!task || !userId) throw new Error('ログイン状態とタスクを確認してください。');
+      await archiveTask(projectId, taskId, userId);
       if (task) {
-        // Push undo action to recreate the task
         const pid = projectId;
         useUndoStore.getState().pushAction({
           id: `delete-${taskId}-${Date.now()}`,
           description: `「${task.title}」を削除`,
-          undo: async () => {
-            await createTask(pid, {
-              listId: task.listId,
-              title: task.title,
-              description: task.description,
-              order: task.order,
-              assigneeIds: [...task.assigneeIds],
-              labelIds: [...task.labelIds],
-              tagIds: [...task.tagIds],
-              dependsOnTaskIds: [...task.dependsOnTaskIds],
-              priority: task.priority,
-              startDate: task.startDate,
-              dueDate: task.dueDate,
-              durationDays: task.durationDays,
-              isDueDateFixed: task.isDueDateFixed,
-              isCompleted: task.isCompleted,
-              completedAt: task.completedAt,
-              isAbandoned: task.isAbandoned,
-              isArchived: false,
-              archivedAt: null,
-              archivedBy: null,
-              createdBy: task.createdBy,
-            });
-          },
-          redo: async () => {
-            // Re-delete: find the task by title+listId since ID changed after undo
-            const currentTasks = await getProjectTasks(pid);
-            const match = currentTasks.find(
-              (t) => t.title === task.title && t.listId === task.listId
-            );
-            if (match) await deleteTask(pid, match.id);
-          },
+          undo: async () => { await restoreTask(pid, taskId); },
+          redo: async () => { await archiveTask(pid, taskId, userId); },
         });
 
         logActivity({
@@ -400,7 +383,7 @@ export function useBoard(projectId: string | null) {
         });
       }
     },
-    [projectId, state.tasks, logActivity, getActivityUser]
+    [projectId, state.tasks, logActivity, getActivityUser, firebaseUser]
   );
 
   // Move task to different list
@@ -429,12 +412,12 @@ export function useBoard(projectId: string | null) {
       // Only apply auto-complete logic when moving to a different list
       if (task && task.listId !== newListId) {
         // Check if new list auto-completes tasks
-        if (newList?.autoCompleteOnEnter && !task.isCompleted) {
+        if (task.taskKind !== 'review_request' && newList?.autoCompleteOnEnter && !task.isCompleted) {
           updateData.isCompleted = true;
           updateData.completedAt = new Date();
         }
         // Check if old list auto-uncompletes tasks on exit
-        else if (oldList?.autoUncompleteOnExit && task.isCompleted) {
+        else if (task.taskKind !== 'review_request' && oldList?.autoUncompleteOnExit && task.isCompleted) {
           updateData.isCompleted = false;
           updateData.completedAt = null;
         }
@@ -499,6 +482,21 @@ export function useBoard(projectId: string | null) {
     [projectId]
   );
 
+  const changeTaskParent = useCallback(async (taskId: string, parentId: string | null) => {
+    if (!projectId || !firebaseUser) throw new Error('ログイン状態を確認してください。');
+    const result = await updateTaskParent(projectId, taskId, parentId);
+    if (result.changed) logActivity({
+      projectId, targetType: 'task', targetId: taskId,
+      targetName: state.tasks.find(task => task.id === taskId)?.title ?? '',
+      action: 'update', ...getActivityUser(),
+      changes: [{
+        field: '親タスク',
+        oldValue: result.previousParentId ? state.tasks.find(task => task.id === result.previousParentId)?.title || '不明なタスク' : '親なし',
+        newValue: parentId ? state.tasks.find(task => task.id === parentId)?.title || '名称未設定のタスク' : '親なし',
+      }],
+    });
+  }, [projectId, firebaseUser, state.tasks, logActivity, getActivityUser]);
+
   // Duplicate task
   const duplicateTask = useCallback(
     async (taskId: string, createdBy: string): Promise<string | null> => {
@@ -558,9 +556,10 @@ export function useBoard(projectId: string | null) {
     [projectId, state.tasks]
   );
 
-  return {
+  return mock ? lab : {
     lists: state.lists,
     tasks: state.tasks,
+    allTasks: state.allTasks,
     labels: state.labels,
     tags: state.tags,
     isLoading: state.isLoading,
@@ -576,5 +575,6 @@ export function useBoard(projectId: string | null) {
     moveTask,
     reorderTasks,
     duplicateTask,
+    changeTaskParent,
   };
 }

@@ -1,0 +1,21 @@
+import { act, renderHook } from '@testing-library/react';
+import { expect, it, vi } from 'vitest';
+import type { HistoryEntry } from '@/lib/task/history/types';
+const mock = vi.hoisted(() => ({ subscribe: vi.fn() }));
+vi.mock('@/lib/firebase/latestTaskActivity', () => ({ subscribeToLatestTaskActivity: mock.subscribe }));
+vi.mock('@/lib/firebase/testMode', () => ({ isE2EMockAuthEnabled: () => false }));
+import { useLatestTaskActivity } from './useLatestTaskActivity';
+it('clears data when the task or account changes, ignores stale callbacks, and unsubscribes', () => {
+  const callbacks: ((entry: HistoryEntry | null) => void)[] = [], errors: (() => void)[] = [];
+  const stop = vi.fn();
+  mock.subscribe.mockImplementation((_p, _t, receive, fail) => { callbacks.push(receive); errors.push(fail); return stop; });
+  const { result, rerender, unmount } = renderHook(({task, user}) => useLatestTaskActivity('p', task, user), {initialProps:{task:'a', user:'first' as string | null}});
+  const entry: HistoryEntry = {id:'a', kind:'activity', title:'完了', text:'', actor:'本人', at:null, private:false};
+  act(() => callbacks[0](entry)); expect(result.current.entry).toEqual(entry);
+  rerender({task:'b',user:'second'}); expect(stop).toHaveBeenCalledTimes(1); expect(result.current.status).toBe('loading'); expect(result.current.entry).toBeNull();
+  act(() => callbacks[0](entry)); expect(result.current.entry).toBeNull();
+  act(() => callbacks[1]({...entry,id:'b'})); expect(result.current.entry?.id).toBe('b');
+  act(() => errors[1]()); expect(result.current.status).toBe('error'); expect(result.current.entry).toBeNull();
+  rerender({task:'b',user:null}); expect(result.current.entry).toBeNull(); expect(mock.subscribe).toHaveBeenCalledTimes(2);
+  unmount(); expect(stop).toHaveBeenCalledTimes(2);
+});

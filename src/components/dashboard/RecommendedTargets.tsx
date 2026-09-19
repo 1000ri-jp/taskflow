@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import type { DashboardTask } from '@/lib/dashboard/brief';
 import { recommendMonthlyTargets } from '@/lib/dashboard/target-recommendations';
 import { cn } from '@/lib/utils';
+import { taskRowInteraction } from '@/components/ui/density';
 
 export function RecommendedTargets({ projectId, tasks, isLoading, error }: {
   projectId: string;
@@ -28,7 +29,7 @@ export function RecommendedTargets({ projectId, tasks, isLoading, error }: {
     {recommendations.map(({ task, reason, isBlocked }, index) => {
       const due = task.dueDate && isValid(task.dueDate) ? task.dueDate : null;
       const overdue = due && startOfDay(due) < startOfDay(now);
-      return <Link key={task.id} href={`/projects/${encodeURIComponent(projectId)}/board?task=${encodeURIComponent(task.id)}`} className="flex items-start gap-2 rounded py-1 hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-blue-600">
+      return <Link key={task.id} href={`/projects/${encodeURIComponent(projectId)}/board?task=${encodeURIComponent(task.id)}`} className={taskRowInteraction + ' flex items-start gap-2 rounded py-1'}>
         <span aria-hidden="true" className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[10px] font-semibold text-blue-700">{index + 1}</span>
         <span className="min-w-0 space-y-1">
           <span className="block break-words text-sm font-medium">{task.title}</span>

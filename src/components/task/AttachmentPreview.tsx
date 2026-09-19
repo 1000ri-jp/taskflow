@@ -5,6 +5,8 @@ import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import {
   FileIcon,
@@ -26,6 +28,7 @@ interface AttachmentPreviewProps {
   type: string;
   size: number;
   compact?: boolean;
+  imageFit?: 'cover' | 'contain';
 }
 
 // Get file icon based on MIME type or extension
@@ -144,12 +147,13 @@ export function AttachmentPreview({ name, url, type, size, compact = false }: At
       {/* Preview Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+          <DialogDescription className="sr-only">添付ファイルのプレビュー</DialogDescription>
           <div className="flex flex-col h-full">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-2 min-w-0">
                 {icon && <div className="flex-shrink-0">{icon}</div>}
-                <span className="truncate font-medium">{name}</span>
+                <DialogTitle className="truncate text-base font-medium">{name}</DialogTitle>
                 <span className="text-sm text-muted-foreground flex-shrink-0">
                   ({formatFileSize(size)})
                 </span>
@@ -209,7 +213,7 @@ export function AttachmentPreview({ name, url, type, size, compact = false }: At
 }
 
 // Compact version for comment attachments - Slack/Jooto style
-export function AttachmentPreviewCompact({ name, url, type, size }: AttachmentPreviewProps) {
+export function AttachmentPreviewCompact({ name, url, type, size, imageFit = 'cover' }: AttachmentPreviewProps) {
   const [isOpen, setIsOpen] = useState(false);
   const previewType = canPreview(type, name);
   const icon = getFileIcon(type, name);
@@ -227,15 +231,16 @@ export function AttachmentPreviewCompact({ name, url, type, size }: AttachmentPr
       <>
         <button
           onClick={handleClick}
-          className="block rounded-lg overflow-hidden border hover:opacity-90 transition-opacity cursor-pointer"
+          type="button"
+          className="block max-w-full rounded-lg overflow-hidden border hover:opacity-90 transition-opacity cursor-pointer focus-visible:outline-2 focus-visible:outline-ring"
         >
-          <div className="relative h-[150px] w-[200px] max-w-[200px]">
+          <div className={cn("relative", imageFit === 'contain' ? "aspect-[4/3] w-72 max-w-full bg-background/60" : "h-[150px] w-[200px] max-w-[200px]")}>
             <Image
               src={url}
               alt={name}
               fill
-              sizes="200px"
-              className="object-cover"
+              sizes={imageFit === 'contain' ? "288px" : "200px"}
+              className={imageFit === 'contain' ? "object-contain" : "object-cover"}
             />
           </div>
         </button>
@@ -243,10 +248,11 @@ export function AttachmentPreviewCompact({ name, url, type, size }: AttachmentPr
         {/* Preview Dialog */}
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+            <DialogDescription className="sr-only">添付ファイルのプレビュー</DialogDescription>
             <div className="flex flex-col h-full">
               <div className="flex items-center justify-between p-4 border-b">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="truncate font-medium">{name}</span>
+                  <DialogTitle className="truncate text-base font-medium">{name}</DialogTitle>
                   <span className="text-sm text-muted-foreground flex-shrink-0">
                     ({formatFileSize(size)})
                   </span>
@@ -299,12 +305,13 @@ export function AttachmentPreviewCompact({ name, url, type, size }: AttachmentPr
       {/* Preview Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+          <DialogDescription className="sr-only">添付ファイルのプレビュー</DialogDescription>
           <div className="flex flex-col h-full">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-2 min-w-0">
                 {icon && <div className="flex-shrink-0">{icon}</div>}
-                <span className="truncate font-medium">{name}</span>
+                <DialogTitle className="truncate text-base font-medium">{name}</DialogTitle>
                 <span className="text-sm text-muted-foreground flex-shrink-0">
                   ({formatFileSize(size)})
                 </span>

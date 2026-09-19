@@ -20,151 +20,83 @@ export interface SearchResult {
   listId?: string;
 }
 
-interface UseGlobalSearchReturn {
-  query: string;
-  setQuery: (query: string) => void;
-  results: SearchResult[];
-  isSearching: boolean;
-  projectResults: SearchResult[];
-  taskResults: SearchResult[];
+interface SearchSnapshot {
+  projects: Project[];
+  tasks: Map<string, Task[]>;
 }
 
-export function useGlobalSearch(): UseGlobalSearchReturn {
-  const { projects } = useProjects();
+export function useGlobalSearch() {
+  const { projects, isLoading: projectsLoading, error: projectsError } = useProjects();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const taskCacheRef = useRef<Map<string, Task[]>>(new Map());
-  const abortRef = useRef(0);
-
-  // Fetch tasks for all projects on first search
-  const fetchAllTasks = useCallback(async (signal: number): Promise<Map<string, Task[]>> => {
-    const cache = taskCacheRef.current;
-    const unfetched = projects.filter((p) => !cache.has(p.id));
-
-    if (unfetched.length === 0) return cache;
-
-    const results = await Promise.allSettled(
-      unfetched.map(async (project) => {
-        const tasks = await getProjectTasks(project.id);
-        return { projectId: project.id, tasks };
-      })
-    );
-
-    // Check if search was cancelled
-    if (signal !== abortRef.current) return cache;
-
-    for (const result of results) {
-      if (result.status === 'fulfilled') {
-        cache.set(result.value.projectId, result.value.tasks);
-      }
-    }
-
-    return cache;
-  }, [projects]);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const cacheRef = useRef<SearchSnapshot | null>(null);
+  const retry = useCallback(() => setAttempt(value => value + 1), []);
 
   useEffect(() => {
+    let active = true;
     const trimmed = query.trim().toLowerCase();
-
-    if (!trimmed) {
-      queueMicrotask(() => {
+    // Publish project results before awaiting cached or network task results.
+    // A queued project update after a cache hit used to erase matching tasks.
+    Promise.resolve().then(async () => {
+      if (!active) return;
+      setError(null);
+      if (!trimmed) {
+        cacheRef.current = null;
         setResults([]);
         setIsSearching(false);
-      });
-      return;
-    }
-
-    const signal = ++abortRef.current;
-    queueMicrotask(() => {
-      setIsSearching(true);
-    });
-
-    // Build project map for quick lookup
-    const projectMap = new Map<string, Project>();
-    for (const p of projects) {
-      projectMap.set(p.id, p);
-    }
-
-    // Immediately filter projects
-    const projectResults: SearchResult[] = projects
-      .filter(
-        (p) =>
-          p.name.toLowerCase().includes(trimmed) ||
-          p.description.toLowerCase().includes(trimmed)
-      )
-      .map((p) => ({
-        type: 'project' as const,
-        id: p.id,
-        title: p.name,
-        description: p.description,
-        projectId: p.id,
-        projectName: p.name,
-        projectIcon: p.icon,
-        projectColor: p.color,
-      }));
-
-    // Fetch and filter tasks
-    fetchAllTasks(signal).then((cache) => {
-      if (signal !== abortRef.current) return;
-
-      const taskResults: SearchResult[] = [];
-
-      for (const [projectId, tasks] of cache) {
-        const project = projectMap.get(projectId);
-        if (!project) continue;
-
-        for (const task of tasks) {
-          if (
-            task.title.toLowerCase().includes(trimmed) ||
-            task.description.toLowerCase().includes(trimmed)
-          ) {
-            taskResults.push({
-              type: 'task',
-              id: task.id,
-              title: task.title,
-              description: task.description,
-              projectId: task.projectId,
-              projectName: project.name,
-              projectIcon: project.icon,
-              projectColor: project.color,
-              isCompleted: task.isCompleted,
-              priority: task.priority,
-              listId: task.listId,
-            });
-          }
+        return;
+      }
+      const matchingProjects: SearchResult[] = projects
+        .filter(project => project.name.toLowerCase().includes(trimmed) || (project.description ?? '').toLowerCase().includes(trimmed))
+        .map(project => ({ type: 'project', id: project.id, title: project.name, description: project.description ?? '',
+          projectId: project.id, projectName: project.name, projectIcon: project.icon, projectColor: project.color }));
+      setResults(matchingProjects);
+      setIsSearching(projectsLoading || !projectsError);
+      if (projectsError) {
+        setError('プロジェクトを取得できず、検索できませんでした。画面を開き直してください。');
+        return;
+      }
+      if (projectsLoading) return;
+      if (cacheRef.current?.projects !== projects) cacheRef.current = { projects, tasks: new Map() };
+      const snapshot = cacheRef.current;
+      const missing = projects.filter(project => !snapshot.tasks.has(project.id));
+      const fetched = await Promise.allSettled(missing.map(async project => ({
+        id: project.id, tasks: await getProjectTasks(project.id),
+      })));
+      // Closing, changing query/account, or unmounting invalidates late results.
+      if (!active || cacheRef.current !== snapshot) return;
+      let failed = 0;
+      for (const result of fetched) {
+        if (result.status === 'fulfilled') snapshot.tasks.set(result.value.id, result.value.tasks);
+        else failed += 1;
+      }
+      const matchingTasks: SearchResult[] = [];
+      for (const project of projects) {
+        for (const task of snapshot.tasks.get(project.id) ?? []) {
+          if (task.isArchived || !(task.title.toLowerCase().includes(trimmed) || (task.description ?? '').toLowerCase().includes(trimmed))) continue;
+          matchingTasks.push({ type: 'task', id: task.id, title: task.title, description: task.description ?? '',
+            projectId: project.id, projectName: project.name, projectIcon: project.icon, projectColor: project.color,
+            isCompleted: task.isCompleted, priority: task.priority, listId: task.listId });
         }
       }
-
-      // Sort: incomplete tasks first, then by title
-      taskResults.sort((a, b) => {
-        if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
-        return a.title.localeCompare(b.title);
-      });
-
-      setResults([...projectResults, ...taskResults]);
+      matchingTasks.sort((a, b) => a.isCompleted !== b.isCompleted ? (a.isCompleted ? 1 : -1) : a.title.localeCompare(b.title));
+      setResults([...matchingProjects, ...matchingTasks]);
+      setError(failed ? `${failed}件のプロジェクトのタスクを取得できませんでした。取得できた範囲だけ表示しています。` : null);
+      setIsSearching(false);
+    }).catch(() => {
+      if (!active) return;
+      setError('検索できませんでした。もう一度取得してください。');
       setIsSearching(false);
     });
-
-    // Set project-only results immediately while tasks load
-    queueMicrotask(() => {
-      setResults(projectResults);
-    });
-  }, [query, projects, fetchAllTasks]);
-
-  // Clear cache when projects change
-  useEffect(() => {
-    taskCacheRef.current.clear();
-  }, [projects]);
-
-  const projectResults = results.filter((r) => r.type === 'project');
-  const taskResults = results.filter((r) => r.type === 'task');
+    return () => { active = false; };
+  }, [query, projects, projectsLoading, projectsError, attempt]);
 
   return {
-    query,
-    setQuery,
-    results,
-    isSearching,
-    projectResults,
-    taskResults,
+    query, setQuery, results, isSearching, error, retry: projectsError ? undefined : retry,
+    projectResults: results.filter(result => result.type === 'project'),
+    taskResults: results.filter(result => result.type === 'task'),
   };
 }

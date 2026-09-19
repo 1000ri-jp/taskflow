@@ -1,3 +1,7 @@
+import { taskEditChanges } from '@/lib/task/history/recentChanges';
+import { ensureMoaiLabel } from './moaiLabel';
+import { expandTaskReviews } from '@/lib/task/reviews';
+import { assertTaskDates, hasTaskDateChange } from '@/lib/task/dateValidation';
 import {
   collection,
   doc,
@@ -6,6 +10,7 @@ import {
   deleteDoc,
   getDoc,
   getDocs,
+  getDocsFromServer,
   setDoc,
   query,
   where,
@@ -13,12 +18,13 @@ import {
   onSnapshot,
   serverTimestamp,
   writeBatch,
+  runTransaction,
   Timestamp,
   documentId,
   limit as firestoreLimit,
   type DocumentData,
 } from 'firebase/firestore';
-import { getFirebaseDb } from './config';
+import { getFirebaseAuth, getFirebaseDb } from './config';
 import type {
   Project,
   ProjectMember,
@@ -35,7 +41,6 @@ import type {
   Milestone,
   MilestoneStatus,
 } from '@/types';
-import { DEFAULT_TAGS } from '@/types';
 
 // Helper to convert Firestore timestamp to Date
 function toDate(timestamp: Timestamp | null | undefined): Date {
@@ -57,6 +62,7 @@ function convertDoc<T>(doc: DocumentData, id: string): T {
     autoSetStartDateOnEnter: data.autoSetStartDateOnEnter ?? false,
     // Default values for Task fields (for backward compatibility)
     completedAt: data.completedAt ? toDate(data.completedAt) : null,
+    ...(data.autoArchiveCompletedAt ? { autoArchiveCompletedAt: toDate(data.autoArchiveCompletedAt) } : {}),
     isAbandoned: data.isAbandoned ?? false,
     dependsOnTaskIds: data.dependsOnTaskIds ?? [],
     isDueDateFixed: data.isDueDateFixed ?? false, // Default: duration優先
@@ -96,36 +102,7 @@ export async function createProject(
     joinedAt: serverTimestamp(),
   });
 
-  // Create default labels
-  const defaultLabels = [
-    { name: '高優先', color: '#ef4444' },
-    { name: '中優先', color: '#f59e0b' },
-    { name: '低優先', color: '#6b7280' },
-    { name: 'バグ', color: '#dc2626' },
-    { name: '機能', color: '#3b82f6' },
-  ];
-
-  const batch = writeBatch(db);
-  defaultLabels.forEach((label) => {
-    const labelRef = doc(collection(db, 'projects', projectRef.id, 'labels'));
-    batch.set(labelRef, {
-      ...label,
-      createdAt: serverTimestamp(),
-    });
-  });
-
-  // Create default tags
-  DEFAULT_TAGS.forEach((tag, index) => {
-    const tagRef = doc(collection(db, 'projects', projectRef.id, 'tags'));
-    batch.set(tagRef, {
-      ...tag,
-      order: index,
-      createdAt: serverTimestamp(),
-    });
-  });
-
-  await batch.commit();
-
+  // Priority and progress use the task fields. Classifications are added only when needed.
   return projectRef.id;
 }
 
@@ -177,12 +154,16 @@ export async function updateProject(
   data: ProjectUpdateData
 ): Promise<void> {
   const db = getFirebaseDb();
+  if (data.defaultAssigneeId) {
+    const current = await getProject(projectId);
+    if (!current?.memberIds.includes(data.defaultAssigneeId)) throw new Error('主担当はプロジェクトのメンバーから選んでください。');
+  }
   // Convert null values to empty string for iconUrl (more reliable than deleteField)
   const processedData: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(data)) {
     if (value === null) {
       // Use empty string instead of deleteField for better compatibility
-      processedData[key] = '';
+      processedData[key] = key === 'defaultAssigneeId' ? null : '';
     } else if (value !== undefined) {
       processedData[key] = value;
     }
@@ -238,21 +219,46 @@ export function subscribeToUserProjects(
     where('isArchived', '==', false)
   );
 
-  return onSnapshot(
-    q,
-    (snapshot) => {
-      const projects = snapshot.docs
-        .map((doc) => convertDoc<Project>(doc.data(), doc.id))
-        .sort((a, b) => a.order - b.order); // Sort by order
-      callback(projects);
-    },
-    (error) => {
-      console.error('[Firestore] subscribeToUserProjects error:', error);
-      if (onError) {
-        onError(error);
-      }
-    }
-  );
+  let active = true;
+  let projects: Project[] | null = null;
+  let personalOrder: string[] | null = null;
+  let projectError: Error | null = null;
+  let orderError: Error | null = null;
+  const emit = () => {
+    if (!active || !projects || personalOrder === null) return;
+    const positions = new Map(personalOrder.map((id, index) => [id, index]));
+    callback([...projects].sort((a, b) => {
+      const aIndex = positions.get(a.id) ?? Infinity;
+      const bIndex = positions.get(b.id) ?? Infinity;
+      return aIndex === bIndex ? a.order - b.order : aIndex - bIndex;
+    }));
+    if (projectError || orderError) onError?.((projectError || orderError)!);
+  };
+  const stopProjects = onSnapshot(q, snapshot => {
+    if (!active) return;
+    projects = snapshot.docs.map(doc => convertDoc<Project>(doc.data(), doc.id));
+    projectError = null;
+    emit();
+  }, error => {
+    if (!active) return;
+    projectError = error;
+    onError?.(error);
+  });
+  // Reuse the user's existing document. Shared project.order is only a legacy default.
+  const stopOrder = onSnapshot(doc(db, 'users', userId), snapshot => {
+    if (!active) return;
+    const saved: unknown = snapshot.data()?.projectOrder;
+    personalOrder = Array.isArray(saved) ? [...new Set(saved.filter((id): id is string => typeof id === 'string'))] : [];
+    orderError = null;
+    emit();
+  }, error => {
+    if (!active) return;
+    personalOrder ??= [];
+    orderError = error;
+    emit();
+    if (!projects) onError?.(error);
+  });
+  return () => { active = false; stopProjects(); stopOrder(); };
 }
 
 export function subscribeToArchivedUserProjects(
@@ -284,24 +290,13 @@ export function subscribeToArchivedUserProjects(
   );
 }
 
-export async function updateProjectOrder(projectId: string, order: number): Promise<void> {
-  const db = getFirebaseDb();
-  await updateDoc(doc(db, 'projects', projectId), {
-    order,
-    updatedAt: serverTimestamp(),
-  });
-}
-
-export async function reorderProjects(projectIds: string[]): Promise<void> {
-  const db = getFirebaseDb();
-  const batch = writeBatch(db);
-
-  projectIds.forEach((projectId, index) => {
-    const projectRef = doc(db, 'projects', projectId);
-    batch.update(projectRef, { order: index });
-  });
-
-  await batch.commit();
+/** Change only the signed-in user's order, without updating any shared project. */
+export async function reorderUserProjects(userId: string, projectIds: string[]): Promise<void> {
+  if (!userId || getFirebaseAuth().currentUser?.uid !== userId) throw new Error('ログイン状態を確認してください。');
+  if (!Array.isArray(projectIds) || projectIds.some(id => typeof id !== 'string' || !id || id.includes('/')) || new Set(projectIds).size !== projectIds.length) {
+    throw new Error('プロジェクトの一覧を確認してください。');
+  }
+  await updateDoc(doc(getFirebaseDb(), 'users', userId), { projectOrder: projectIds });
 }
 
 // ==================== Project Members ====================
@@ -399,6 +394,10 @@ export async function updateList(
   data: Partial<Omit<List, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>>
 ): Promise<void> {
   const db = getFirebaseDb();
+  if (data.defaultAssigneeId) {
+    const project = await getProject(projectId);
+    if (!project?.memberIds.includes(data.defaultAssigneeId)) throw new Error('主担当はプロジェクトのメンバーから選んでください。');
+  }
   await updateDoc(doc(db, 'projects', projectId, 'lists', listId), {
     ...data,
     updatedAt: serverTimestamp(),
@@ -426,7 +425,8 @@ export async function getProjectLists(projectId: string): Promise<List[]> {
 
 export function subscribeToProjectLists(
   projectId: string,
-  callback: (lists: List[]) => void
+  callback: (lists: List[]) => void,
+  onError?: (error: Error) => void
 ): () => void {
   const db = getFirebaseDb();
   const q = query(
@@ -439,18 +439,48 @@ export function subscribeToProjectLists(
       convertDoc<List>(doc.data(), doc.id)
     );
     callback(lists);
-  });
+  }, onError);
 }
+
+import { resolveTaskAssignees } from '@/lib/task/assigneeDefaults';
 
 // ==================== Tasks ====================
 
 export async function createTask(
   projectId: string,
-  data: Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>
+  data: Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt' | 'assigneeIds'> & { assigneeIds?: string[] }
 ): Promise<string> {
+  assertTaskDates(data);
+  const taskData = data.aiSuggested ? { ...data, labelIds: [...new Set([...data.labelIds, await ensureMoaiLabel(projectId)])] } : data;
   const db = getFirebaseDb();
+  // A subtask is created with its parent in one write, after checking the current destination.
+  if (data.parentTaskId) {
+    if ([projectId, data.parentTaskId, data.listId].some(id => !id || id.includes('/'))) throw new Error('追加先の指定が正しくありません。');
+    const taskRef = doc(collection(db, 'projects', projectId, 'tasks'));
+    await runTransaction(db, async tx => {
+      const [project, parent, list] = await Promise.all([
+        tx.get(doc(db, 'projects', projectId)),
+        tx.get(doc(db, 'projects', projectId, 'tasks', data.parentTaskId!)),
+        tx.get(doc(db, 'projects', projectId, 'lists', data.listId)),
+      ]);
+      if (!project.exists() || project.data().isArchived || !list.exists()) throw new Error('追加先のプロジェクトまたはリストを確認してください。');
+      if (!parent.exists() || parent.data().parentTaskId || parent.data().taskKind === 'review_request' || parent.data().isArchived || parent.data().isAbandoned || parent.data().listId !== data.listId || (parent.data().projectId && parent.data().projectId !== projectId)) throw new Error('親タスクが変更されました。タスクを開き直してください。');
+      const assigneeIds = resolveTaskAssignees({ explicit: data.assigneeIds, parent: { assigneeIds: parent.data().assigneeIds ?? [] } });
+      if (assigneeIds.some(id => !project.data().memberIds?.includes(id))) throw new Error('担当者がプロジェクトのメンバーに含まれていません。');
+      tx.set(taskRef, { ...taskData, assigneeIds, projectId, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    });
+    return taskRef.id;
+  }
+  const [project, list] = await Promise.all([
+    getProject(projectId),
+    getDoc(doc(db, 'projects', projectId, 'lists', data.listId)),
+  ]);
+  if (!project || project.isArchived) throw new Error('追加先のプロジェクトを確認できません。');
+  const listDefaultAssigneeId = list.exists() && typeof list.data().defaultAssigneeId === 'string' ? list.data().defaultAssigneeId : null;
+  const assigneeIds = resolveTaskAssignees({ explicit: data.assigneeIds, defaultAssigneeId: project.defaultAssigneeId, listDefaultAssigneeId, memberIds: project.memberIds });
+  if (assigneeIds.some(id => !project.memberIds.includes(id))) throw new Error('担当者がプロジェクトのメンバーに含まれていません。');
   const taskRef = await addDoc(collection(db, 'projects', projectId, 'tasks'), {
-    ...data,
+    ...taskData, assigneeIds,
     projectId,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -463,10 +493,30 @@ export async function updateTask(
   taskId: string,
   data: Partial<Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>>
 ): Promise<void> {
+  if ('parentTaskId' in data) throw new Error('親の変更は親タスクの選択から操作してください。');
+  if (data.isCompleted === true) {
+    const { recurrenceRequest } = await import('@/lib/task/recurrenceClient');
+    await recurrenceRequest(projectId, taskId, { action:'complete', patch:data });
+    return;
+  }
   const db = getFirebaseDb();
-  await updateDoc(doc(db, 'projects', projectId, 'tasks', taskId), {
-    ...data,
-    updatedAt: serverTimestamp(),
+  const actor = getFirebaseAuth().currentUser;
+  if (!actor) throw new Error('ログイン状態を確認してください。');
+  const ref = doc(db, 'projects', projectId, 'tasks', taskId);
+  const logRef = doc(collection(db, 'projects', projectId, 'activityLogs'));
+  await runTransaction(db, async tx => {
+    const current = await tx.get(ref);
+    if (!current.exists()) throw new Error('タスクが見つかりません。開き直してください。');
+    const before = current.data();
+    const patch = omitUndefinedFields(data);
+    if (hasTaskDateChange(patch)) assertTaskDates({ ...before, ...patch });
+    const changes = taskEditChanges(before, patch);
+    if (!changes.length) return;
+    const at = serverTimestamp();
+    tx.update(ref, { ...patch, updatedAt: at });
+    tx.set(logRef, { projectId, targetType: 'task', targetId: taskId,
+      targetName: String(patch.title ?? before.title ?? ''), action: 'update',
+      userId: actor.uid, userName: actor.displayName || '操作者不明', changes, createdAt: at });
   });
 }
 
@@ -556,7 +606,8 @@ export async function getProjectTasks(projectId: string): Promise<Task[]> {
 export function subscribeToProjectTasks(
   projectId: string,
   callback: (tasks: Task[]) => void,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
+  includeArchived = false
 ): () => void {
   const db = getFirebaseDb();
 
@@ -572,8 +623,8 @@ export function subscribeToProjectTasks(
             dueDate: data.dueDate ? toDate(data.dueDate) : null,
           };
         })
-        .filter((task) => !task.isArchived); // Filter out archived tasks
-      callback(tasks);
+        .filter((task) => includeArchived || !task.isArchived);
+      callback(expandTaskReviews(tasks));
     },
     onError
   );
@@ -672,16 +723,18 @@ export async function getArchivedTasks(projectId: string): Promise<Task[]> {
  */
 export function subscribeToArchivedTasks(
   projectId: string,
-  callback: (tasks: Task[]) => void
+  callback: (tasks: Task[]) => void,
+  onError?: (error: Error) => void
 ): () => void {
   const db = getFirebaseDb();
   const q = query(
     collection(db, 'projects', projectId, 'tasks'),
-    where('isArchived', '==', true),
-    orderBy('archivedAt', 'desc')
+    where('isArchived', '==', true)
   );
 
   return onSnapshot(q, (snapshot) => {
+    // This archive is unpaginated: sort the fetched subset locally so it works
+    // without requiring a separately deployed composite index.
     const tasks = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
@@ -690,9 +743,9 @@ export function subscribeToArchivedTasks(
         dueDate: data.dueDate ? toDate(data.dueDate) : null,
         archivedAt: data.archivedAt ? toDate(data.archivedAt) : null,
       };
-    });
+    }).sort((a, b) => (b.archivedAt?.getTime() ?? 0) - (a.archivedAt?.getTime() ?? 0));
     callback(tasks);
-  });
+  }, onError);
 }
 
 // ==================== Labels ====================
@@ -836,6 +889,19 @@ export function subscribeToProjectTags(
   });
 }
 
+// A stale tab must not append new records beneath a task that has moved away.
+async function createTaskChild(projectId: string, taskId: string, kind: 'comments' | 'checklists' | 'attachments', data: DocumentData): Promise<string> {
+  const db = getFirebaseDb();
+  const parentRef = doc(db, 'projects', projectId, 'tasks', taskId);
+  const childRef = doc(collection(db, 'projects', projectId, 'tasks', taskId, kind));
+  await runTransaction(db, async tx => {
+    const parent = await tx.get(parentRef);
+    if (!parent.exists() || parent.data().projectId && parent.data().projectId !== projectId) throw new Error('タスクが移動・削除されています。開き直してから追加してください。');
+    tx.set(childRef, data);
+  });
+  return childRef.id;
+}
+
 // ==================== Comments ====================
 
 export async function createComment(
@@ -843,9 +909,7 @@ export async function createComment(
   taskId: string,
   data: Omit<Comment, 'id' | 'taskId' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
-  const db = getFirebaseDb();
-  const commentRef = await addDoc(
-    collection(db, 'projects', projectId, 'tasks', taskId, 'comments'),
+  return createTaskChild(projectId, taskId, 'comments',
     omitUndefinedFields({
       content: data.content,
       authorId: data.authorId,
@@ -858,7 +922,6 @@ export async function createComment(
       updatedAt: serverTimestamp(),
     })
   );
-  return commentRef.id;
 }
 
 export async function getTaskComments(
@@ -886,10 +949,21 @@ export async function getRecentTaskComments(projectId: string, taskId: string, c
   return snapshot.docs.map((doc) => convertDoc<Comment>(doc.data(), doc.id));
 }
 
+// Presence does not require content or a createdAt field, and an offline empty
+// cache cannot establish that a task has no comments.
+export async function taskHasComments(projectId: string, taskId: string): Promise<boolean> {
+  const snapshot = await getDocsFromServer(query(
+    collection(getFirebaseDb(), 'projects', projectId, 'tasks', taskId, 'comments'),
+    firestoreLimit(1)
+  ));
+  return !snapshot.empty;
+}
+
 export function subscribeToTaskComments(
   projectId: string,
   taskId: string,
-  callback: (comments: Comment[]) => void
+  callback: (comments: Comment[], source?: { fromCache: boolean }) => void,
+  onError?: (error: Error) => void
 ): () => void {
   const db = getFirebaseDb();
   const q = query(
@@ -901,8 +975,8 @@ export function subscribeToTaskComments(
     const comments = snapshot.docs.map((doc) =>
       convertDoc<Comment>(doc.data(), doc.id)
     );
-    callback(comments);
-  });
+    callback(comments, { fromCache: snapshot.metadata.fromCache });
+  }, onError);
 }
 
 export async function deleteComment(
@@ -911,7 +985,8 @@ export async function deleteComment(
   commentId: string
 ): Promise<void> {
   const db = getFirebaseDb();
-  await deleteDoc(doc(db, 'projects', projectId, 'tasks', taskId, 'comments', commentId));
+  const ref=doc(db, 'projects', projectId, 'tasks', taskId, 'comments', commentId);
+  await runTransaction(db,async tx=>{const current=await tx.get(ref);if(current.data()?.reviewTaskId)throw new Error('確認依頼の元コメントは記録として保持します。');tx.delete(ref);});
 }
 
 export async function updateComment(
@@ -921,10 +996,8 @@ export async function updateComment(
   content: string
 ): Promise<void> {
   const db = getFirebaseDb();
-  await updateDoc(doc(db, 'projects', projectId, 'tasks', taskId, 'comments', commentId), {
-    content,
-    updatedAt: serverTimestamp(),
-  });
+  const ref=doc(db, 'projects', projectId, 'tasks', taskId, 'comments', commentId);
+  await runTransaction(db,async tx=>{const current=await tx.get(ref);if(current.data()?.reviewTaskId)throw new Error('確認内容の変更は親タスクの返答・再確認から操作してください。');tx.update(ref,{content,updatedAt:serverTimestamp()});});
 }
 
 // ==================== Checklists ====================
@@ -934,16 +1007,13 @@ export async function createChecklist(
   taskId: string,
   data: Omit<Checklist, 'id' | 'taskId' | 'createdAt'>
 ): Promise<string> {
-  const db = getFirebaseDb();
-  const checklistRef = await addDoc(
-    collection(db, 'projects', projectId, 'tasks', taskId, 'checklists'),
+  return createTaskChild(projectId, taskId, 'checklists',
     {
       ...data,
       taskId,
       createdAt: serverTimestamp(),
     }
   );
-  return checklistRef.id;
 }
 
 export async function updateChecklist(
@@ -989,6 +1059,11 @@ export async function getTaskChecklists(
   })) as Checklist[];
 }
 
+export function subscribeToTaskChecklists(projectId: string, taskId: string, callback: (lists: Checklist[]) => void, onError: () => void): () => void {
+  const q = query(collection(getFirebaseDb(), 'projects', projectId, 'tasks', taskId, 'checklists'), orderBy('order', 'asc'));
+  return onSnapshot(q, snapshot => callback(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, taskId, createdAt: toDate(doc.data().createdAt) })) as Checklist[]), onError);
+}
+
 // ==================== Attachments ====================
 
 export async function createAttachment(
@@ -996,16 +1071,13 @@ export async function createAttachment(
   taskId: string,
   data: Omit<Attachment, 'id' | 'taskId' | 'uploadedAt'>
 ): Promise<string> {
-  const db = getFirebaseDb();
-  const attachmentRef = await addDoc(
-    collection(db, 'projects', projectId, 'tasks', taskId, 'attachments'),
+  return createTaskChild(projectId, taskId, 'attachments',
     {
       ...data,
       taskId,
       uploadedAt: serverTimestamp(),
     }
   );
-  return attachmentRef.id;
 }
 
 export async function deleteAttachment(
@@ -1269,7 +1341,8 @@ export async function getUserNotifications(userId: string): Promise<Notification
 
 export function subscribeToUserNotifications(
   userId: string,
-  callback: (notifications: Notification[]) => void
+  callback: (notifications: Notification[]) => void,
+  onError?: (error: Error) => void
 ): () => void {
   const db = getFirebaseDb();
   const q = query(
@@ -1290,8 +1363,12 @@ export function subscribeToUserNotifications(
     },
     (error) => {
       console.error('[Firestore] Notification subscription error:', error);
-      // Return empty array on error to stop loading
-      callback([]);
+      if (onError) {
+        onError(error);
+      } else {
+        // Preserve the existing fallback for callers without an error handler.
+        callback([]);
+      }
     }
   );
 }
@@ -1346,7 +1423,8 @@ export async function createActivityLog(
 export function subscribeToActivityLogs(
   projectId: string,
   callback: (logs: ActivityLog[]) => void,
-  maxItems: number = 50
+  maxItems: number = 50,
+  onError?: (error: Error) => void
 ): () => void {
   const db = getFirebaseDb();
   const q = query(
@@ -1365,5 +1443,5 @@ export function subscribeToActivityLogs(
       } as ActivityLog;
     });
     callback(logs);
-  });
+  }, onError);
 }

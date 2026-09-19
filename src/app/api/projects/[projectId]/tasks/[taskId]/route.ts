@@ -1,3 +1,4 @@
+import { TaskDateValidationError } from '@/lib/task/dateValidation';
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest } from '@/lib/auth/authenticateRequest';
 import { getProjectAccess } from '@/lib/auth/projectAccess';
@@ -7,6 +8,8 @@ import {
   type UpdateProjectTaskInput,
 } from '@/lib/firebase/admin-projects';
 import type { Priority } from '@/types';
+import { actOnDescription } from '@/lib/ai/descriptionOperations';
+import { SecretaryError } from '@/lib/secretary/engine';
 
 interface RouteContext {
   params: Promise<{
@@ -146,10 +149,17 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     );
 
     const body = await request.json();
+    if (body && typeof body === 'object' && 'aiDescriptionOperation' in body) {
+      const op = body.aiDescriptionOperation;
+      if (Object.keys(body).length !== 1 || !op || typeof op !== 'object' || Object.keys(op).some(k => !['operationId', 'action'].includes(k))) throw new SecretaryError('INVALID', '説明以外の変更は実行できません。');
+      return NextResponse.json(await actOnDescription(auth.userId, projectId, taskId, op.operationId, op.action), { headers: { 'Cache-Control': 'no-store' } });
+    }
     const updateInput = parseUpdateTaskBody(body);
     const result = await updateProjectTask(projectId, taskId, updateInput);
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof TaskDateValidationError) return NextResponse.json({ error: error.message }, { status: 422 });
+    if (error instanceof SecretaryError) return NextResponse.json({ error: error.message }, { status: ({ INVALID: 422, CONFLICT: 409, FORBIDDEN: 403, INCOMPLETE: 503, AI_UNAVAILABLE: 503 })[error.code] });
     const message = error instanceof Error ? error.message : 'Internal server error';
 
     if (message === 'FORBIDDEN') {

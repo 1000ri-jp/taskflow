@@ -1,73 +1,23 @@
 # AI Delivery Workflow
 
-This repository blends project management and implementation work.
-TaskFlow holds the runtime backlog. GitHub holds the source of truth for issues, code review,
-merge history, and delivery state.
+TaskFlow holds the runtime backlog. GitHub holds issues, code review, merge history and delivery state. This contract applies to linked delivery requests; ordinary local edits do not require an Issue, external comments or a pipeline.
 
-## Delivery Loop
+## Scope and stages
 
-1. Start from a TaskFlow task or a GitHub Issue.
-2. If the source is TaskFlow, inspect the current implementation before creating or updating a GitHub Issue.
-3. Classify the request as `already implemented`, `partially implemented`, `reproducible gap`, or `needs clarification`.
-4. Leave an `AI triage:` comment in the GitHub Issue.
-5. Implement only after the task is explicit enough.
-6. Open a PR, run the required checks, and merge through the normal GitHub workflow.
-7. Write an `[AIからのメッセージ]` comment back to the originating TaskFlow task with the GitHub Issue number, PR number, and delivery summary.
+Perform the stages covered by the request. Existing authorization persists; skill selection or a successful review does not grant permission for additional external actions. Prepare a concrete result before seeking any missing authorization for posting, pushing, merging or release.
 
-## Required Sync-Back Points
+- **TaskFlow intake:** follow [TASKFLOW_GITHUB_TRIAGE.md](TASKFLOW_GITHUB_TRIAGE.md), inspect current behavior, classify the request and preserve source project/task IDs and board URL. When Issue coordination is authorized, record the `AI triage:` decision before implementation.
+- **Implementation and review:** implement the scoped gap and use [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md) for branch, PR and merge requirements. Select local checks by affected behavior; retain all required CI gates before merge.
+- **Merge and release:** execute only the authorized action. Report merge and deployment separately; confirm the actual deployment result before claiming publication. Release preparation uses [FIREBASE_APP_HOSTING_RELEASE.md](FIREBASE_APP_HOSTING_RELEASE.md).
 
-Leave a TaskFlow AI comment at these milestones:
+## TaskFlow sync-back
 
-- triage completed
-- meaningful scope change during implementation
-- PR opened
-- merged
-- closed without code
+For a requested delivery loop with TaskFlow feedback, post `[AIからのメッセージ]` at triage completion, meaningful scope changes, PR opening and final merge/closure without code. Include Issue number, PR number or `なし`, status and a short Japanese result. A narrower local or review request does not trigger comments.
 
-The message should include:
+Use confirmed source IDs and destination. If feedback is required but cannot be posted, report it as pending; do not claim the loop is closed. Preserve the distinction between implementation, review, merge, deployment and feedback.
 
-- GitHub Issue number
-- GitHub PR number or `なし`
-- a short status line
-- a short Japanese summary of what changed or why the Issue closed
+## Skill and helpers
 
-## Source Of Truth Rule
+Versioned source: [`codex-skills/taskflow-github-delivery`](../codex-skills/taskflow-github-delivery/SKILL.md). Paths resolve from the actual checkout. This repository contract takes precedence over a stale installed copy; compare any installed copy before using it.
 
-If the local Codex skill and this repository document ever diverge, this repository wins.
-Update docs in the same PR when the workflow changes.
-
-## Codex Skill
-
-The local skill name is `taskflow-github-delivery`.
-
-Versioned skill source lives in:
-
-- `/Users/hgs/devel/project_manager/taskflow/codex-skills/taskflow-github-delivery`
-
-Single-function agent folders live under:
-
-- `/Users/hgs/devel/project_manager/taskflow/codex-skills/taskflow-github-delivery/agents/issue-to-code`
-- `/Users/hgs/devel/project_manager/taskflow/codex-skills/taskflow-github-delivery/agents/pr-review`
-- `/Users/hgs/devel/project_manager/taskflow/codex-skills/taskflow-github-delivery/agents/merge-deploy`
-
-The handoff contract between those folders is:
-
-- `/Users/hgs/devel/project_manager/taskflow/codex-skills/taskflow-github-delivery/agents/pipeline.yaml`
-
-The installed local copy lives in:
-
-- `$CODEX_HOME/skills/taskflow-github-delivery`
-
-The helper script for posting AI sync-back comments is:
-
-- `/Users/hgs/devel/project_manager/taskflow/codex-skills/taskflow-github-delivery/scripts/post_taskflow_ai_message.py`
-
-The sequential runner for those agent folders is:
-
-- `/Users/hgs/devel/project_manager/taskflow/codex-skills/taskflow-github-delivery/scripts/run_delivery_agents.py`
-
-## Related Docs
-
-- [`TASKFLOW_GITHUB_TRIAGE.md`](./TASKFLOW_GITHUB_TRIAGE.md)
-- [`GITHUB_WORKFLOW.md`](./GITHUB_WORKFLOW.md)
-- [`API_INTEGRATION.md`](./API_INTEGRATION.md)
+The skill links to posting and optional staged-runner instructions. The stage folders and `agents/pipeline.yaml` are optional automation resources, not required steps for every edit. Keep this contract current when the workflow changes; avoid repeating it in each entrypoint.

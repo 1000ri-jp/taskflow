@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import type { DashboardTask } from '@/lib/dashboard/brief';
 import type { Project } from '@/types';
 import { cn } from '@/lib/utils';
+import { taskRowInteraction } from '@/components/ui/density';
 import { useTargetTaskStore } from '@/stores/targetTaskStore';
 
 const EMPTY_IDS: string[] = [];
@@ -73,7 +74,7 @@ export function TargetTasks({ project, month, tasks, isLoading, error }: {
     {!isLoading && selectedIds.length === 0 && <p className="text-xs leading-relaxed text-muted-foreground">「タスクを選択」から今月の的を選んでください。</p>}
     {!isLoading && selected.map((task) => {
       const Icon = task.isAbandoned ? Ban : task.isCompleted ? CheckCircle2 : Circle;
-      return <Link key={task.id} href={`/projects/${encodeURIComponent(project.id)}/board?task=${encodeURIComponent(task.id)}`} className="flex items-start gap-2 rounded py-1 hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-blue-600">
+      return <Link key={task.id} href={`/projects/${encodeURIComponent(project.id)}/board?task=${encodeURIComponent(task.id)}`} className={taskRowInteraction + ' flex items-start gap-2 rounded py-1'}>
         <Icon aria-hidden="true" className={cn('mt-0.5 h-4 w-4 shrink-0 text-muted-foreground', task.isCompleted && !task.isAbandoned && 'text-emerald-600')} />
         <span className="min-w-0 space-y-1"><span className={cn('block break-words text-sm font-medium', (task.isCompleted || task.isAbandoned) && 'text-muted-foreground line-through')}>{task.title}</span><TaskStatus task={task} /></span>
       </Link>;

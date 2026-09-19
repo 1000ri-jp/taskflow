@@ -1,7 +1,9 @@
+import { taskResolutionPrompt } from '../taskResolutionPrompt';
 import { AIContext, AIMessage, DEFAULT_MODELS } from '@/types/ai';
 import { AIProvider, StreamChunk, SendMessageOptions } from './types';
 import { getGeminiTools } from '../tools';
 import { ToolCall } from '../tools/types';
+import { AIProviderError } from './errors';
 
 /**
  * Convert AIMessage array to Gemini content format
@@ -78,7 +80,7 @@ function convertMessagesToGemini(messages: AIMessage[]): Array<{
       // User message
       result.push({
         role: 'user',
-        parts: [{ text: msg.content }],
+        parts: [{ text: msg.content }, ...(msg.images ?? []).map(image=>({inlineData:{mimeType:image.mimeType,data:image.data}}))],
       });
     }
   }
@@ -100,7 +102,7 @@ export class GeminiProvider implements AIProvider {
     const resolvedProjectId = options?.projectId !== undefined
       ? options.projectId
       : (context.project?.id || null);
-    const systemPrompt = buildCompanionSystemPrompt(context, options?.enableTools && !options?.isToolResultContinuation, resolvedProjectId);
+    const systemPrompt = [options?.systemPrompt ?? buildCompanionSystemPrompt(context, options?.enableTools && !options?.isToolResultContinuation, resolvedProjectId), options?.supportInstructions].filter(Boolean).join('\n\n');
     const modelToUse = model || DEFAULT_MODELS.gemini;
 
     // Convert messages to Gemini format (handles function calls and responses)
@@ -120,9 +122,11 @@ export class GeminiProvider implements AIProvider {
     ];
 
     const requestBody: Record<string, unknown> = {
-      contents,
+      contents: options?.systemPrompt ? geminiMessages : contents,
+      ...(options?.systemPrompt ? { systemInstruction: { parts: [{ text: systemPrompt }] } } : {}),
       generationConfig: {
-        maxOutputTokens: 16384,
+        maxOutputTokens: options?.maxOutputTokens ?? 16384,
+        ...(options?.geminiThinkingLevel && /^gemini-3[.-]/.test(modelToUse) ? { thinkingConfig: { thinkingLevel: options.geminiThinkingLevel } } : {}),
       },
     };
 
@@ -135,6 +139,7 @@ export class GeminiProvider implements AIProvider {
 
     const response = await fetch(url, {
       method: 'POST',
+      signal: options?.signal,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -142,16 +147,8 @@ export class GeminiProvider implements AIProvider {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[Gemini] API Error Response:', errorText);
-      console.error('[Gemini] Request URL:', url.replace(apiKey, 'API_KEY_HIDDEN'));
-      console.error('[Gemini] Request Body:', JSON.stringify(requestBody, null, 2));
-      try {
-        const error = JSON.parse(errorText);
-        throw new Error(error.error?.message || `Gemini API error: ${response.status}`);
-      } catch {
-        throw new Error(`Gemini API error: ${response.status} - ${errorText.substring(0, 200)}`);
-      }
+      // Provider errors may contain private input. Never log or return the raw body.
+      throw new AIProviderError('gemini', response.status);
     }
 
     const reader = response.body?.getReader();
@@ -177,7 +174,6 @@ export class GeminiProvider implements AIProvider {
       try {
         responseArray = JSON.parse(buffer);
       } catch {
-        console.error('[Gemini] Failed to parse response:', buffer.substring(0, 500));
         throw new Error('Failed to parse Gemini response');
       }
 
@@ -189,15 +185,15 @@ export class GeminiProvider implements AIProvider {
       for (const response of responseArray) {
         // Check for errors
         if (response.error) {
-          console.error('[Gemini] API Error:', response.error);
-          throw new Error(response.error.message || 'Gemini API error');
+          throw new AIProviderError('gemini', Number(response.error.code) || 503);
         }
 
         const candidate = response.candidates?.[0];
+        if (candidate?.finishReason && candidate.finishReason !== 'STOP') throw new Error('Incomplete Gemini response');
         if (candidate?.content?.parts) {
           for (const part of candidate.content.parts) {
             // Handle text content
-            if (part.text) {
+            if (part.text && !part.thought) {
               yield { type: 'text', content: part.text };
             }
 
@@ -433,5 +429,5 @@ ${getTimePeriodInstructions(currentHour)}
 ${!hasProject ? '- プロジェクト横断で優先順位や作業負荷を分析してください\n- 日報やサマリーを出力する際は、マークダウン形式で見やすく整形してください' : ''}
 `;
 
-  return prompt;
+  return prompt + taskResolutionPrompt(context);
 }

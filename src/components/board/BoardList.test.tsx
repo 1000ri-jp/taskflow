@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useBoardSortStore } from '@/stores/boardSortStore';
+import { useBoardColumnStore, boardColumnScope, BOARD_COLUMN_KEY } from '@/stores/boardColumnStore';
 import { BoardList } from './BoardList';
 import type { List, Task } from '@/types';
 
@@ -90,8 +91,8 @@ const task: Task = {
 };
 
 describe('BoardList', () => {
-  beforeEach(() => useBoardSortStore.setState({byProject:{},persistenceFailed:false}));
-  function taskList(tasks: Task[], onTaskClick = vi.fn(), onTaskMove = vi.fn()) {
+  beforeEach(() => { localStorage.clear(); useBoardColumnStore.setState({byScope:{},persistenceFailed:false}); useBoardSortStore.setState({byProject:{},persistenceFailed:false}); });
+  function taskList(tasks: Task[], onTaskClick = vi.fn(), onTaskMove = vi.fn(), onEditList = vi.fn()) {
     return (
       <BoardList
         projectId="project-1"
@@ -101,7 +102,7 @@ describe('BoardList', () => {
         labels={[]}
         tags={[]}
         onAddTask={vi.fn()}
-        onEditList={vi.fn()}
+        onEditList={onEditList}
         onDeleteList={vi.fn()}
         onTaskClick={onTaskClick}
         allLists={[list]}
@@ -113,14 +114,39 @@ describe('BoardList', () => {
   const cardTitles = () => screen.queryAllByTestId('mock-task-card')
     .map((card) => card.querySelector('button')?.textContent);
 
-  it('uses project date sorting without changing shared order and disables card dragging', () => {
+  it('uses project date sorting without changing shared order and keeps card dragging available', () => {
     useBoardSortStore.setState({byProject:{'project-1':'due-asc'}});
     const tasks=[{...task,id:'late',title:'遅い',dueDate:new Date(2026,8,20)},{...task,id:'early',title:'早い',dueDate:new Date(2026,8,3)}];
     const original=structuredClone(tasks); const move=vi.fn();
     render(taskList(tasks,vi.fn(),move));
     expect(cardTitles()).toEqual(['早い','遅い']);
-    expect(screen.getAllByTestId('mock-task-card').every(card=>card.dataset.dragDisabled==='true')).toBe(true);
+    expect(screen.getAllByTestId('mock-task-card').every(card=>card.dataset.dragDisabled!=='true')).toBe(true);
     expect(tasks).toEqual(original); expect(move).not.toHaveBeenCalled();
+  });
+
+  it('applies a saved column override without changing another viewer or the project default', () => {
+    useBoardSortStore.setState({ byProject: { 'project-1': 'due-desc' } });
+    localStorage.setItem(BOARD_COLUMN_KEY, JSON.stringify({
+      [boardColumnScope('', 'project-1', list.id)]: { sort: 'due-asc', display: {} },
+      [boardColumnScope('another', 'project-1', list.id)]: { sort: 'manual', display: {} },
+    }));
+    render(taskList([{ ...task, id:'late', title:'遅い', dueDate:new Date(2026,8,20) }, { ...task, id:'early', title:'早い', dueDate:new Date(2026,8,3) }]));
+    expect(cardTitles()).toEqual(['早い','遅い']);
+    fireEvent.click(screen.getByRole('button', { name: '依頼事項列の設定' }));
+    fireEvent.change(screen.getByLabelText('依頼事項の並び順'), { target: { value:'manual' } });
+    expect(cardTitles()).toEqual(['遅い','早い']);
+    expect(screen.getAllByTestId('mock-task-card').every(card=>card.dataset.dragDisabled!=='true')).toBe(true);
+    expect(useBoardSortStore.getState().byProject['project-1']).toBe('due-desc');
+    expect(useBoardColumnStore.getState().byScope[boardColumnScope('another','project-1',list.id)].sort).toBe('manual');
+  });
+
+  it('saves the list primary assignee from the existing list settings popover', async () => {
+    const onEditList = vi.fn().mockResolvedValue(undefined);
+    render(<BoardList projectId="project-1" list={list} tasks={[]} allTasks={[]} labels={[]} tags={[]} onAddTask={vi.fn()} onEditList={onEditList} onDeleteList={vi.fn()} onTaskClick={vi.fn()} allLists={[list]} onTaskMove={vi.fn()} projectMemberIds={['user-1']} projectMembers={[{ id: 'user-1', displayName: '本人' }]} />);
+    fireEvent.click(screen.getByRole('button', { name: '依頼事項列の設定' }));
+    fireEvent.change(screen.getByRole('combobox', { name: '依頼事項の主担当' }), { target: { value: 'user-1' } });
+    await waitFor(() => expect(onEditList).toHaveBeenCalledWith({ defaultAssigneeId: 'user-1' }));
+    expect(screen.getByText(/プロジェクトの主担当より優先します/)).toBeInTheDocument();
   });
 
   it('displays completed tasks last while preserving each group and the original task data', () => {
@@ -191,7 +217,7 @@ describe('BoardList', () => {
     expect(screen.getByTestId('mock-task-card')).toHaveAttribute('data-list-color', '#8b5cf6');
   });
 
-  it('keeps the task composer at the bottom when launched from the bottom add button', () => {
+  it('keeps the task composer at the bottom when launched from the bottom add button', async () => {
     const onAddTask = vi.fn();
 
     render(
@@ -223,8 +249,8 @@ describe('BoardList', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: '追加' }));
 
-    expect(onAddTask).toHaveBeenCalledWith('末尾で追加するタスク', 'bottom');
-    expect(screen.getAllByRole('button', { name: 'タスクを追加' })).toHaveLength(2);
+    expect(onAddTask).toHaveBeenCalledWith('末尾で追加するタスク', 'bottom', []);
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'タスクを追加' })).toHaveLength(2));
   });
 
   it('reports top position when launched from the top add button', () => {
@@ -254,7 +280,7 @@ describe('BoardList', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: '追加' }));
 
-    expect(onAddTask).toHaveBeenCalledWith('先頭で追加するタスク', 'top');
+    expect(onAddTask).toHaveBeenCalledWith('先頭で追加するタスク', 'top', []);
   });
 
   it('keeps normal task clicks and routes context-menu moves with the task id', () => {
@@ -285,3 +311,6 @@ describe('BoardList', () => {
     expect(onTaskMove).toHaveBeenCalledWith('task-1', 'list-2');
   });
 });
+
+vi.mock('@/hooks/useProjects', () => ({ useProject: () => ({ project: { id: 'project-1', memberIds: ['user-1'], defaultAssigneeId: null }, isLoading: false, error: null }) }));
+vi.mock('@/hooks/useMeetingMembers', () => ({ useMeetingMembers: () => ({ users: [{ id: 'user-1', displayName: '本人' }], isLoading: false, hasError: false }) }));

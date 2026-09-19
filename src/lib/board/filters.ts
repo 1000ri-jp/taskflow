@@ -6,6 +6,7 @@ export interface BoardFilters {
   labelIds: Set<string>;
   dueFilter: 'all' | 'today' | 'week' | 'overdue' | 'none';
   showCompleted: boolean;
+  assigneeId?: string;
 }
 
 export function taskMatchesBoardFilters(
@@ -13,6 +14,7 @@ export function taskMatchesBoardFilters(
   filters: BoardFilters,
   now: Date = new Date()
 ): boolean {
+  if (filters.assigneeId && !task.assigneeIds.includes(filters.assigneeId)) return false;
   if (filters.keyword) {
     const keyword = filters.keyword.toLowerCase();
     if (

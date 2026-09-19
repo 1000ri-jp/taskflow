@@ -1,4 +1,5 @@
 import { getProjectLists, getRecentTaskComments, getUsersByIds } from '@/lib/firebase/firestore';
+import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import type { Comment } from '@/types';
 
 export const INBOX_COMMENT_LIMIT = 10;
@@ -9,6 +10,7 @@ export interface InboxComment {
   projectId: string;
   comment: Comment;
   authorName: string;
+  authorPhotoURL?: string | null;
   listName: string;
 }
 
@@ -24,6 +26,7 @@ export function commentPreview(comment: Pick<Comment, 'content' | 'attachments'>
 }
 
 export async function loadDashboardComments(tasks: CommentTaskRef[], isCancelled: () => boolean = () => false) {
+  const mock = isE2EMockAuthEnabled();
   const entries: { task: CommentTaskRef; comment: Comment }[] = [];
   let cursor = 0;
   let failedTasks = 0;
@@ -33,7 +36,9 @@ export async function loadDashboardComments(tasks: CommentTaskRef[], isCancelled
     while (cursor < tasks.length && !isCancelled()) {
       const task = tasks[cursor++];
       try {
-        const comments = await getRecentTaskComments(task.projectId, task.id, INBOX_COMMENT_LIMIT);
+        const comments = await (mock
+          ? import('@/lib/task/detailMock').then(({ readTaskDetailsMock }) => readTaskDetailsMock(task.projectId, task.id).comments)
+          : getRecentTaskComments(task.projectId, task.id, INBOX_COMMENT_LIMIT));
         if (!isCancelled()) entries.push(...comments.map((comment) => ({ task, comment })));
       } catch (error) {
         failedTasks++;
@@ -45,7 +50,11 @@ export async function loadDashboardComments(tasks: CommentTaskRef[], isCancelled
   const latest = entries.sort((a, b) => b.comment.createdAt.getTime() - a.comment.createdAt.getTime()
     || `${commentTaskKey(a.task)}:${a.comment.id}`.localeCompare(`${commentTaskKey(b.task)}:${b.comment.id}`))
     .slice(0, INBOX_COMMENT_LIMIT);
-  const authorIds = [...new Set(latest.filter(({ comment }) => !comment.authorLabel).map(({ comment }) => comment.authorId))];
+  if (mock) return { items: latest.map(({ task, comment }) => ({
+    key: JSON.stringify([task.projectId, task.id, comment.id]), taskId: task.id, projectId: task.projectId, comment,
+    authorName: comment.authorLabel || (comment.authorId === 'e2e-mock-user' ? '本人' : '同僚'), authorPhotoURL: null, listName: '進行中',
+  })), failedTasks, errorCodes: [...errorCodes], metadataIncomplete: false };
+  const authorIds = [...new Set(latest.filter(({ comment }) => !comment.authorLabel || !comment.authorIcon).map(({ comment }) => comment.authorId))];
   const projectIds = [...new Set(latest.map(({ task }) => task.projectId))];
   let metadataIncomplete = false;
   const [users, lists] = await Promise.all([
@@ -55,14 +64,15 @@ export async function loadDashboardComments(tasks: CommentTaskRef[], isCancelled
       catch { metadataIncomplete = true; return { projectId, lists: [] }; }
     })),
   ]);
-  const userNames = new Map(users.map((user) => [user.id, user.displayName]));
+  const userProfiles = new Map(users.map((user) => [user.id, user]));
   const listNames = new Map(lists.flatMap(({ projectId, lists }) => lists.map((list) => [JSON.stringify([projectId, list.id]), list.name])));
   const items: InboxComment[] = latest.map(({ task, comment }) => ({
     key: JSON.stringify([task.projectId, task.id, comment.id]),
     taskId: task.id,
     projectId: task.projectId,
     comment,
-    authorName: comment.authorLabel || userNames.get(comment.authorId) || '投稿者名未取得',
+    authorName: comment.authorLabel || userProfiles.get(comment.authorId)?.displayName || '投稿者名未取得',
+    authorPhotoURL: userProfiles.get(comment.authorId)?.photoURL ?? null,
     listName: listNames.get(JSON.stringify([task.projectId, task.listId])) || '列名未取得',
   }));
   return { items, failedTasks, errorCodes: [...errorCodes], metadataIncomplete };

@@ -320,7 +320,8 @@ export const executeTaskPlanHandler: ToolHandler<
         title: plannedTask.title,
         description: plannedTask.description || '',
         order: Date.now(),
-        assigneeIds: [],
+        // Omitted assignment uses the project default; model guesses are not assignments.
+        aiSuggested: true,
         labelIds: [],
         tagIds: [],
         dependsOnTaskIds: actualDependsOnIds,
@@ -356,7 +357,8 @@ export const executeTaskPlanHandler: ToolHandler<
         title: plannedTask.title,
         description: plannedTask.description || '',
         order: Date.now(),
-        assigneeIds: [],
+        assigneeIds: [], // Dependency validation uses dates only; this is not a persisted assignment.
+        aiSuggested: true,
         labelIds: [],
         tagIds: [],
         dependsOnTaskIds: actualDependsOnIds,

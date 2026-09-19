@@ -9,6 +9,7 @@ export interface AIProviderConfig {
 
 // Message types
 export interface AIMessage {
+  images?: { mimeType: 'image/png' | 'image/jpeg' | 'image/webp'; data: string }[];
   id: string;
   role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
@@ -30,6 +31,7 @@ export interface AIMessage {
 
 // Conversation types
 export interface AIConversation {
+  mode?: 'description' | 'draft';
   id: string;
   projectId: string | null;  // For project scope, null for personal/companion
   scope: AIScope;             // 'project' | 'personal' | 'companion'
@@ -129,7 +131,7 @@ export const DEFAULT_MODELS: Record<AIProviderType, string> = {
 
 // Provider display names
 export const PROVIDER_DISPLAY_NAMES: Record<AIProviderType, string> = {
-  openai: 'OpenAI (GPT-4)',
+  openai: 'OpenAI',
   anthropic: 'Anthropic (Claude)',
   gemini: 'Google (Gemini)',
 };

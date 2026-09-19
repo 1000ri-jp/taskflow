@@ -27,6 +27,7 @@ interface UseAISettingsReturn {
 
 export function useAISettings(): UseAISettingsReturn {
   const store = useAISettingsStore();
+  const { provider, setKeyConfigured, setAllowedProjectIds, setProjectAccessLoaded } = store;
   const { isAuthenticated } = useAuthStore();
   const [isSaving, setIsSaving] = useState(false);
   const [isProjectAccessSaving, setIsProjectAccessSaving] = useState(false);
@@ -47,14 +48,14 @@ export function useAISettings(): UseAISettingsReturn {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.openai !== undefined) store.setKeyConfigured('openai', data.openai);
-        if (data.anthropic !== undefined) store.setKeyConfigured('anthropic', data.anthropic);
-        if (data.gemini !== undefined) store.setKeyConfigured('gemini', data.gemini);
+        if (data.openai !== undefined) setKeyConfigured('openai', data.openai);
+        if (data.anthropic !== undefined) setKeyConfigured('anthropic', data.anthropic);
+        if (data.gemini !== undefined) setKeyConfigured('gemini', data.gemini);
       }
     } catch {
       // Silently fail - key status will be stale but functional
     }
-  }, [isAuthenticated, store]);
+  }, [isAuthenticated, setKeyConfigured]);
 
   const refreshProjectAccess = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -70,18 +71,20 @@ export function useAISettings(): UseAISettingsReturn {
       }
 
       const data = await response.json();
-      store.setAllowedProjectIds(
+      setAllowedProjectIds(
         Array.isArray(data.allowedProjectIds) ? data.allowedProjectIds : null
       );
-      store.setProjectAccessLoaded(true);
+      setProjectAccessLoaded(true);
     } catch (error) {
-      store.setProjectAccessLoaded(false);
+      setProjectAccessLoaded(false);
       setProjectAccessError(
         error instanceof Error ? error.message : 'AIアクセス設定の取得に失敗しました'
       );
     }
-  }, [isAuthenticated, store]);
+  }, [isAuthenticated, setAllowedProjectIds, setProjectAccessLoaded]);
 
+  // Depend on stable actions: each response updates the store, so depending on
+  // the whole store here would start another request after every response.
   useEffect(() => {
     refreshKeyStatus();
     refreshProjectAccess();
@@ -95,7 +98,7 @@ export function useAISettings(): UseAISettingsReturn {
       const response = await fetch('/api/ai/keys', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ provider: store.provider, apiKey }),
+        body: JSON.stringify({ provider, apiKey }),
       });
 
       if (!response.ok) {
@@ -103,11 +106,11 @@ export function useAISettings(): UseAISettingsReturn {
         throw new Error(data.error || 'APIキーの保存に失敗しました');
       }
 
-      store.setKeyConfigured(store.provider, apiKey.length > 0);
+      setKeyConfigured(provider, apiKey.length > 0);
     } finally {
       setIsSaving(false);
     }
-  }, [store]);
+  }, [provider, setKeyConfigured]);
 
   const saveProjectAccess = useCallback(async (allowedProjectIds: string[] | null) => {
     setIsProjectAccessSaving(true);
@@ -126,10 +129,10 @@ export function useAISettings(): UseAISettingsReturn {
       }
 
       const data = await response.json();
-      store.setAllowedProjectIds(
+      setAllowedProjectIds(
         Array.isArray(data.allowedProjectIds) ? data.allowedProjectIds : null
       );
-      store.setProjectAccessLoaded(true);
+      setProjectAccessLoaded(true);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'AIアクセス設定の保存に失敗しました';
@@ -138,7 +141,7 @@ export function useAISettings(): UseAISettingsReturn {
     } finally {
       setIsProjectAccessSaving(false);
     }
-  }, [store]);
+  }, [setAllowedProjectIds, setProjectAccessLoaded]);
 
   return {
     provider: store.provider,

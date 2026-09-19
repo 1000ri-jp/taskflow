@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { resolveTaskView, type TaskView } from '@/lib/board/taskViews';
+import { projectViewHref, resolveProjectView, type ProjectView } from '@/lib/board/projectNavigation';
 import {
   PROJECT_TASK_VIEW_KEY,
   taskViewScope,
@@ -11,14 +11,15 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 
 export function useProjectTaskViewNavigation(projectId: string) {
-  const pathname = usePathname();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user } = useAuthStore();
+  const { firebaseUser } = useAuthStore();
+  const viewerId = firebaseUser?.uid ?? null;
   const { byScope, hydrated, hydrate, setDefault, persistenceFailed } = useProjectTaskViewStore();
-  const scope = taskViewScope(user?.id ?? '', projectId);
+  const scope = taskViewScope(viewerId ?? '', projectId);
   const primaryView = byScope[scope] ?? 'board';
-  const view = resolveTaskView(searchParams.get('view'), primaryView);
+  const view = pathname === `/projects/${projectId}/gantt` ? 'gantt' : resolveProjectView(searchParams.get('view'), primaryView);
 
   useEffect(() => {
     hydrate();
@@ -29,22 +30,20 @@ export function useProjectTaskViewNavigation(projectId: string) {
     return () => window.removeEventListener('storage', sync);
   }, [hydrate]);
 
-  const changeView = useCallback((nextView: TaskView) => {
-    const next = new URLSearchParams(searchParams.toString());
-    next.set('view', nextView);
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-  }, [pathname, router, searchParams]);
+  const changeView = useCallback((nextView: ProjectView) => {
+    router.replace(projectViewHref(projectId, nextView, new URLSearchParams(searchParams.toString()), primaryView), { scroll: false });
+  }, [projectId, primaryView, router, searchParams]);
 
   const setCurrentViewAsDefault = useCallback(() => {
-    setDefault(scope, view);
-  }, [scope, setDefault, view]);
+    if (hydrated && viewerId) setDefault(scope, view);
+  }, [hydrated, viewerId, scope, setDefault, view]);
 
   return {
     view,
     primaryView,
     changeView,
     setCurrentViewAsDefault,
-    canSave: hydrated && !!user?.id,
+    canSave: hydrated && !!viewerId,
     persistenceFailed,
   };
 }

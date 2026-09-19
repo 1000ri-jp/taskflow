@@ -132,6 +132,26 @@ Unit and integration tests use Vitest. End-to-end coverage uses Playwright.
 - `npm run test:e2e:smoke` also runs a mock-authenticated settings smoke using `NEXT_PUBLIC_E2E_MOCK_AUTH=true`.
 - `npm run test:e2e` remains the broader local suite and expects a real Firebase-backed local environment, including optional `NEXT_PUBLIC_ENABLE_TEST_AUTH=true` for the existing test-user flow.
 
+### 実 Firebase のローカル確認
+
+会社の TaskFlow データでログインする場合は、モック用の `dev:local` / `dev:secretary` ではなく `npm run dev:real` を使います。これは `NEXT_PUBLIC_E2E_MOCK_AUTH=false` と `NEXT_PUBLIC_ENABLE_TEST_AUTH=false` を明示し、`http://localhost:3003/login` を開きます。Googleログイン後はFirestore Rulesの権限範囲内で実データを読み込みます。
+
+Firebaseの公開クライアント設定が `.env.local` に必要です。ファイルはGit管理外で、APIキー・プロジェクトID・Authドメイン等の `NEXT_PUBLIC_FIREBASE_*` だけを置きます。サービスアカウント鍵や `FIREBASE_SERVICE_ACCOUNT_KEY` はローカルブラウザログインには不要です。
+
+ログイン後の確認画面は `http://localhost:3003/my-dashboard` です。`dev:real` は `.next-real` を使用するため、架空データ用のビルド設定と分離できます。タスク・期限・コメントはブラウザのログイン権限で取得します。AI秘書と共通カウントダウンのAPIには、別途Firebase Adminが利用できるサーバー認証（ADC等）が必要です。APIが未接続でも「従来の一覧・予定・表示設定」から実データを確認できます。
+
+ローカルのサーバー認証は、会社のGoogle CloudアカウントでADCを設定します。
+
+```sh
+gcloud auth application-default login --project=projectmanager-e3308 \
+  --scopes=openid,https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/cloud-platform
+npm run dev:real
+```
+
+Googleの認証画面ではGoogle Cloudへのアクセス許可を選択します。この方式はアカウントの既存のGoogle Cloud権限を使用し、再認証用の情報をこのMacの `~/.config/gcloud/application_default_credentials.json` に保存します。実施前にこの範囲の許可を確認してください。認証情報はリポジトリや `.env.local` にコピーしません。設定後、画面を再読み込みし、秘書欄の「取得範囲・採用履歴・再整理の設定」で取得日時・対象件数を確認できます。
+
+参考: [Google公式のローカルADC設定](https://docs.cloud.google.com/docs/authentication/set-up-adc-local-dev-environment)。
+
 See [`docs/E2E_STRATEGY.md`](./docs/E2E_STRATEGY.md) for the current test-mode split.
 
 ## Project Notes

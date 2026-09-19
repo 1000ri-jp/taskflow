@@ -2,17 +2,20 @@
 
 The production target is Firebase App Hosting, following the user decision on 2026-09-09. Initial cloud deployment succeeded at <https://taskflow--projectmanager-e3308.asia-east1.hosted.app>. The user confirmed successful Google login in their regular browser; see the release record for the exact validation scope.
 
-Follow [Firebase App Hosting release steps](FIREBASE_APP_HOSTING_RELEASE.md) and the [DB release runbook](PRODUCTION_RELEASE_RUNBOOK_2026-09-07.md). Deploy Firestore milestone rules separately before the application. Neither a static export nor a bare `firebase deploy` is appropriate.
+Follow [Firebase App Hosting release steps](FIREBASE_APP_HOSTING_RELEASE.md) and the [current production release runbook](PRODUCTION_RELEASE_RUNBOOK_2026-09-18.md). The [2026-09-07 DB runbook](PRODUCTION_RELEASE_RUNBOOK_2026-09-07.md) documents an older milestone-focused candidate and must not be used by itself for the current Rules/Indexes changes. Neither a static export nor a bare `firebase deploy` is appropriate.
+
+This section is only a summary. Follow the detailed runbook's No-Go gates, database restore rehearsal, and deployment order before production changes.
 
 The former Vercel Actions deploy workflow has been removed. No replacement automatic deployment workflow is configured yet. The current Vercel website and its independent Git integration have not been changed.
 
 ## Production Path
 
-1. Complete audit, lint, tests, build, E2E, and the DB checks.
-2. Confirm the Firebase backend, runtime identity, public web config, and authorized login domains.
-3. Deploy the reviewed Firestore rules and verify the active ruleset.
-4. Run `firebase deploy --only apphosting:taskflow --project=projectmanager-e3308`.
-5. Verify the Cloud Build, rollout, generated URL, login, API, and existing data before directing users to the new site.
+1. Complete audit, lint, tests, build, E2E, and isolated DB/Rules/Indexes checks.
+2. Confirm the Firebase backend, runtime identity, public web config, authorized login domains, current live SHA, and delivery mode.
+3. Pause and verify every writer, create a fresh Firestore export and Storage copy, then prove Firestore restore in an isolated project.
+4. Deploy reviewed Firestore indexes and wait for `READY`; then deploy reviewed Firestore rules and verify the active ruleset.
+5. Run the explicit App Hosting backend rollout command for the verified delivery mode.
+6. Verify Cloud Build, rollout, URL, login, APIs, permissions, and existing data before directing users to the site.
 
 Use `apphosting.yaml` for runtime configuration. Keep credentials and local `.env` files out of source uploads. The server uses its Google Cloud runtime identity for Firebase Admin access.
 

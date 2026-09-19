@@ -17,7 +17,7 @@ describe('loadDashboardComments', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(getProjectLists).mockResolvedValue([{ id: 'l1', name: '上位の列' } as List]);
-    vi.mocked(getUsersByIds).mockResolvedValue([{ id: 'author', displayName: '投稿した人' } as User]);
+    vi.mocked(getUsersByIds).mockResolvedValue([{ id: 'author', displayName: '投稿した人', photoURL: 'https://example.com/avatar.png' } as User]);
     vi.mocked(getRecentTaskComments).mockResolvedValue([]);
   });
   it('merges newest comments across projects, caps the feed, and retains source context', async () => {
@@ -28,9 +28,17 @@ describe('loadDashboardComments', () => {
     expect(result.items).toHaveLength(10);
     expect(result.items[0]).toMatchObject({ projectId: 'p2', taskId: 'task-1', authorName: '投稿名', listName: '上位の列', comment: { id: 'b-latest' } });
     expect(result.items[1].authorName).toBe('投稿した人');
+    expect(result.items[0].authorPhotoURL).toBe('https://example.com/avatar.png');
+    expect(result.items[1].authorPhotoURL).toBe('https://example.com/avatar.png');
     expect(getRecentTaskComments).toHaveBeenCalledWith('p1', 'task-1', 10);
     expect(getUsersByIds).toHaveBeenCalledWith(['author']);
     expect(new Set(result.items.map((item) => item.key)).size).toBe(10);
+  });
+  it('gets the avatar in the same metadata lookup even when the comment already includes an author name', async () => {
+    vi.mocked(getRecentTaskComments).mockResolvedValue([comment('named', 3, '保存された投稿名')]);
+    const result = await loadDashboardComments([task]);
+    expect(getUsersByIds).toHaveBeenCalledExactlyOnceWith(['author']);
+    expect(result.items[0]).toMatchObject({ authorName: '保存された投稿名', authorPhotoURL: 'https://example.com/avatar.png' });
   });
   it('reports partial and total failures separately from zero comments', async () => {
     vi.mocked(getRecentTaskComments).mockRejectedValueOnce(new Error('denied')).mockResolvedValueOnce([comment('visible', 3)]);

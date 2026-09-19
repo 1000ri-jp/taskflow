@@ -40,14 +40,15 @@ export interface GanttTask extends Task {
 export function getDateRange(
   tasks: Task[],
   viewMode: ViewMode,
-  padding: number = 7
+  padding: number = 7,
+  additionalDates: Date[] = []
 ): { start: Date; end: Date } {
   const today = new Date();
 
   // Filter tasks with dates
   const tasksWithDates = tasks.filter((t) => t.startDate || t.dueDate);
 
-  if (tasksWithDates.length === 0) {
+  if (tasksWithDates.length === 0 && additionalDates.length === 0) {
     // Default range: 2 weeks before and after today
     return {
       start: addDays(today, -14),
@@ -55,7 +56,7 @@ export function getDateRange(
     };
   }
 
-  const dates: Date[] = [];
+  const dates: Date[] = [...additionalDates];
   tasksWithDates.forEach((task) => {
     if (task.startDate) dates.push(task.startDate);
     if (task.dueDate) dates.push(task.dueDate);

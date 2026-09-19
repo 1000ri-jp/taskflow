@@ -3,6 +3,7 @@ import { useAISettingsStore } from './aiSettingsStore';
 
 describe('aiSettingsStore', () => {
   beforeEach(() => {
+    localStorage.clear();
     useAISettingsStore.setState({
       provider: 'openai',
       openaiKeyConfigured: false,

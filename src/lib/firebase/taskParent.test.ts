@@ -1,0 +1,12 @@
+import { beforeEach, expect, it, vi } from 'vitest';
+import { viewTask } from '@/test/taskViewFixtures';
+vi.mock('./firestore',()=>({getTask:vi.fn()}));
+vi.mock('@/lib/task/workflowClient',()=>({sendWorkflow:vi.fn()}));
+import { getTask } from './firestore';
+import { sendWorkflow } from '@/lib/task/workflowClient';
+import { updateTaskParent } from './taskParent';
+beforeEach(()=>{vi.clearAllMocks();vi.mocked(getTask).mockResolvedValue(viewTask({id:'t',projectId:'p'}));vi.mocked(sendWorkflow).mockResolvedValue(null);});
+it('uses the common transaction with the observed task version',async()=>{const task=await getTask('p','t');await updateTaskParent('p','t','parent');expect(sendWorkflow).toHaveBeenCalledWith('p','t',expect.objectContaining({action:'reparent',expectedVersion:task!.updatedAt.toISOString(),parentTaskId:'parent'}));});
+it('makes no write when the parent is unchanged',async()=>{expect(await updateTaskParent('p','t',null)).toMatchObject({changed:false});expect(sendWorkflow).not.toHaveBeenCalled();});
+it('does not turn rejected hierarchy changes into success',async()=>{vi.mocked(sendWorkflow).mockRejectedValue(new Error('二段まで'));await expect(updateTaskParent('p','t','child')).rejects.toThrow('二段');});
+it('rejects missing tasks and unsafe paths before mutation',async()=>{vi.mocked(getTask).mockResolvedValue(null);await expect(updateTaskParent('p','t','parent')).rejects.toThrow('見つかりません');await expect(updateTaskParent('p','t','bad/path')).rejects.toThrow('正しく');expect(sendWorkflow).not.toHaveBeenCalled();});

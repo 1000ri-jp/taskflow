@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthStore } from '@/stores/authStore';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -26,6 +27,8 @@ export function ProjectFormModal() {
   const router = useRouter();
   const { isProjectModalOpen, selectedProjectId, closeProjectModal } = useUIStore();
   const { create } = useProjects();
+  const user = useAuthStore(state => state.user);
+  const [defaultToMe, setDefaultToMe] = useState(false);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -53,10 +56,12 @@ export function ProjectFormModal() {
         description: description.trim(),
         color,
         icon,
+        defaultAssigneeId: defaultToMe ? user?.id ?? null : null,
       });
 
       // Reset form
-      setName('');
+      setDefaultToMe(false);
+    setName('');
       setDescription('');
       setColor(LIST_COLORS[0].value);
       setIcon(PROJECT_ICONS[0]);
@@ -73,6 +78,7 @@ export function ProjectFormModal() {
   };
 
   const handleClose = () => {
+    setDefaultToMe(false);
     setName('');
     setDescription('');
     setColor(LIST_COLORS[0].value);
@@ -150,6 +156,7 @@ export function ProjectFormModal() {
               />
             </div>
 
+            {user && <label className="flex min-h-9 items-center gap-2 text-sm"><input type="checkbox" checked={defaultToMe} disabled={isSubmitting} onChange={event => setDefaultToMe(event.target.checked)} />新規タスクの主担当を{user.displayName}にする</label>}
             {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description">説明</Label>

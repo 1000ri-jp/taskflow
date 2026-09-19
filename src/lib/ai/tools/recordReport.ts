@@ -1,0 +1,20 @@
+import {getTask} from '@/lib/firebase/firestore';
+import {submitTaskComment} from '@/lib/firebase/commentSubmission';
+import {useAuthStore} from '@/stores/authStore';
+import {sourceCommentHref,validDocumentId} from '@/lib/task/commentSubmission';
+import type {AITool,ToolHandler} from './types';
+export const recordReportToolDefinition:AITool={name:'record_task_report',description:'本人が報告した事実を既存の親タスクのコメントに残す。相談・仮定・引用された他人の発言は記録しない。説明を上書きせず、通知・期限変更・完了は行わない。対象不明なら先に get_tasks / get_my_tasks_across_projects で名前・作業内容を照合し get_task_details で確かめる。複数候補が残る場合だけ、実在するタスク名を示して選んでもらう。',parameters:{type:'object',properties:{projectId:{type:'string'},taskId:{type:'string'},quote:{type:'string',description:'直前の本人の報告の原文。要約や補完をしない。'}},required:['projectId','taskId','quote']}};
+export const recordReportHandler:ToolHandler=async(args,context)=>{
+ const projectId=context.projectId||args.projectId,taskId=args.taskId,quote=args.quote,source=context.sourceUserMessage;
+ if(!validDocumentId(projectId)||!validDocumentId(taskId)||!source||typeof quote!=='string'||!quote.trim()||quote.length>10000||!source.content.includes(quote))throw new Error('本人の報告と記録先を確認してください。');
+ if(context.projectId!==projectId&&!context.projectIds?.includes(projectId))throw new Error('AIの対象外のプロジェクトです。');
+ const current=()=>{const user=useAuthStore.getState().user;if(user?.id!==context.userId)throw new Error('ログインが変更されました。');return user;};current();
+ const task=await getTask(projectId,taskId);if(!task)throw new Error('仕事が見つかりません。');
+ const parent=task.parentTaskId?await getTask(projectId,task.parentTaskId):task;
+ if(!parent||parent.parentTaskId||parent.taskKind==='review_request'||parent.isArchived||parent.isAbandoned)throw new Error('記録する親タスクを確認してください。');
+ const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify([context.userId,source.id,projectId,parent.id,quote])));
+ const id='moai-'+Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('').slice(0,40);
+ const user=current();
+ const result=await submitTaskComment({id,projectId,taskId:parent.id,authorId:context.userId,authorName:user.displayName||'本人',content:quote,notifyIds:[],attachments:[],review:null,purpose:'memo',expectedTaskVersion:parent.updatedAt.toISOString()});
+ current();return {recorded:true,alreadyRecorded:result.alreadySubmitted,taskId:parent.id,title:parent.title,href:sourceCommentHref(projectId,parent.id,id),message:'報告を親タスクへ記録しました。期限・担当・完了は変更していません。'};
+};

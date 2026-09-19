@@ -16,6 +16,7 @@ import { CompanionAI } from '@/components/ai/CompanionAI';
 import { CommandPalette } from '@/components/common/CommandPalette';
 import { UndoToast } from '@/components/common/UndoToast';
 import { useUndoStore } from '@/stores/undoStore';
+import { useDashboardViewStore } from '@/stores/dashboardViewStore';
 
 export default function DashboardLayout({
   children,
@@ -25,9 +26,12 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
-  const { isSidebarOpen, isSidebarCollapsed, openProjectModal, openCommandPalette } = useUIStore();
+  const { openProjectModal, openCommandPalette, setSidebarOpen } = useUIStore();
   const { undo: performUndo, redo: performRedo } = useUndoStore();
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const { hydrated: dashboardHydrated, hydrate: hydrateDashboard } = useDashboardViewStore();
+  useEffect(() => { if (!dashboardHydrated) hydrateDashboard(); }, [dashboardHydrated, hydrateDashboard]);
+  useEffect(() => { if (window.matchMedia('(max-width: 1023px)').matches) setSidebarOpen(false); }, [setSidebarOpen]);
 
   // Extract projectId from pathname if on a project page
   const currentProjectId = useMemo(() => {
@@ -126,8 +130,7 @@ export default function DashboardLayout({
           <Sidebar />
           <main
             className={cn(
-              'flex min-h-0 flex-1 flex-col overflow-y-auto bg-gray-50 p-4 lg:ml-0 lg:p-6',
-              isSidebarOpen && (isSidebarCollapsed ? 'ml-16' : 'ml-64')
+              'tf-main flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-gray-50 p-4 lg:ml-0 lg:p-6'
             )}
           >
             {children}
@@ -137,7 +140,7 @@ export default function DashboardLayout({
         <ShortcutHelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
         <CommandPalette />
         <UndoToast />
-        <CompanionAI projectId={currentProjectId} />
+        <CompanionAI projectId={currentProjectId} autoGreeting={pathname !== '/neo'} quickCheckEnabled={Boolean(pathname) && pathname !== '/neo'} />
       </div>
     </NotificationProvider>
   );

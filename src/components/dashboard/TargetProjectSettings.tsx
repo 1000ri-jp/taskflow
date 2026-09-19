@@ -42,7 +42,7 @@ export function TargetProjectSettings({ projects, isLoading, hasError }: {
             </div>
           </>}
         <p className="text-xs leading-relaxed text-muted-foreground">選んだプロジェクトの未完了タスクから、おすすめを最大3件ずつ自動表示します。プロジェクトの選択はこのブラウザだけに保存し、元のタスクは変更しません。</p>
-        <Button variant="ghost" size="sm" className="w-full" onClick={() => select(null)}>サンプル表示に戻す</Button>
+        <Button variant="ghost" size="sm" className="w-full" onClick={() => select(null)}>選択をリセット</Button>
       </PopoverContent>
     </Popover>
   );

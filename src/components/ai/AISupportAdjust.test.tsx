@@ -1,0 +1,31 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { AISupportAdjust } from './AISupportAdjust';
+import { DEFAULT_AI_SUPPORT } from '@/lib/ai/support/profile';
+const mock = vi.hoisted(() => ({ request: vi.fn() }));
+vi.mock('@/lib/ai/support/client', () => ({ requestAISupport: mock.request }));
+beforeEach(() => { vi.clearAllMocks(); vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} }); });
+afterEach(() => vi.unstubAllGlobals());
+it('uses a one-response preference without saving, and saves only when the user chooses the usual default', async () => {
+  const once = vi.fn();
+  mock.request.mockResolvedValue({ ...DEFAULT_AI_SUPPORT, wishes: '端的に' });
+  render(<QueryClientProvider client={new QueryClient()}><AISupportAdjust userId="kozue" onApplyOnce={once} /></QueryClientProvider>);
+  fireEvent.click(screen.getByRole('button', { name: '手伝い方を変更' }));
+  fireEvent.click(screen.getByRole('button', { name: '全体を見たい' }));
+  fireEvent.click(screen.getByRole('button', { name: '今回に適用' }));
+  expect(once).toHaveBeenCalledWith('全体を見たい');
+  expect(mock.request).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '手伝い方を変更' }));
+  fireEvent.click(screen.getByLabelText('普段もこうして'));
+  fireEvent.click(screen.getByRole('button', { name: '保存して適用' }));
+  await waitFor(() => expect(mock.request).toHaveBeenLastCalledWith('kozue', { ...DEFAULT_AI_SUPPORT, wishes: '端的に', feedback: '全体を見たい', presentation: 'overview' }));
+});
+it('clears the one-response notice when the preference has been consumed', () => {
+  const client = new QueryClient();
+  const once = vi.fn();
+  const { rerender } = render(<QueryClientProvider client={client}><AISupportAdjust userId="kozue" pendingInstruction="もっと短く" onApplyOnce={once} /></QueryClientProvider>);
+  expect(screen.getByRole('status')).toHaveTextContent('次の応答だけ：もっと短く');
+  rerender(<QueryClientProvider client={client}><AISupportAdjust userId="kozue" onApplyOnce={once} /></QueryClientProvider>);
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+});

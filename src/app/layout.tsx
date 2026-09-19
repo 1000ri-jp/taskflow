@@ -19,7 +19,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
+    <html lang="ja" data-appearance="neo" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: "(function(){try{var a=localStorage.getItem('taskflow.appearance.v1');document.documentElement.dataset.appearance=a==='classic'||a==='ivory'?a:'neo'}catch{}})()" }} />
+      </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>{children}</Providers>
       </body>

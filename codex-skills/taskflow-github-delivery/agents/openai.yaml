@@ -1,4 +1,4 @@
 interface:
-  display_name: "TaskFlow Delivery Orchestrator"
-  short_description: "Route issue, review, and deploy work across agents"
-  default_prompt: "Use $taskflow-github-delivery to hand work from issue-to-code to pr-review to merge-deploy."
+  display_name: "TaskFlow GitHub Delivery"
+  short_description: "Coordinate TaskFlow issues, PRs and delivery status"
+  default_prompt: "Use $taskflow-github-delivery for the requested TaskFlow and GitHub stage, preserving the existing scope and authorization."

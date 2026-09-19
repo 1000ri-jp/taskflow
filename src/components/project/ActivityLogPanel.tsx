@@ -1,7 +1,10 @@
 'use client';
+import { changeLabel } from '@/lib/task/history/presentation';
+import { compactRow } from '@/components/ui/density';
 
 import { useActivityLog } from '@/hooks/useActivityLog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AsyncState } from '@/components/ui/async-state';
 import { Badge } from '@/components/ui/badge';
 import {
   Plus,
@@ -12,8 +15,6 @@ import {
   RotateCcw,
   UserPlus,
   UserMinus,
-  Loader2,
-  History,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -42,12 +43,12 @@ function ActivityLogItem({ log }: { log: ActivityLog }) {
   const Icon = config.icon;
 
   return (
-    <div className="flex gap-3 px-3 py-2">
-      <div className={cn('mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted', config.color)}>
+    <div className={`${compactRow} flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3`}>
+      <div className={cn('flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted', config.color)}>
         <Icon className="h-3 w-3" />
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-0.5">
+        <p className="min-w-0 break-words text-sm">
           <span className="font-medium">{log.userName}</span>
           {' '}
           <span className="text-muted-foreground">が</span>
@@ -57,10 +58,10 @@ function ActivityLogItem({ log }: { log: ActivityLog }) {
           <span className="text-muted-foreground">を{config.label}</span>
         </p>
         {log.changes && log.changes.length > 0 && (
-          <div className="mt-1 space-y-0.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5">
             {log.changes.map((change, i) => (
-              <p key={i} className="text-xs text-muted-foreground">
-                {change.field}:
+              <p key={i} className="min-w-0 break-words text-xs text-muted-foreground">
+                {changeLabel(change.field)}:
                 {change.oldValue && (
                   <span className="line-through"> {change.oldValue}</span>
                 )}
@@ -71,9 +72,9 @@ function ActivityLogItem({ log }: { log: ActivityLog }) {
             ))}
           </div>
         )}
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <time dateTime={log.createdAt.toISOString()} title={log.createdAt.toLocaleString('ja-JP')} className="ml-auto shrink-0 text-xs text-muted-foreground">
           {formatDistanceToNow(log.createdAt, { addSuffix: true, locale: ja })}
-        </p>
+        </time>
       </div>
       <Badge variant="outline" className="h-fit shrink-0 text-[10px]">
         {log.targetType === 'task' ? 'タスク' :
@@ -86,24 +87,11 @@ function ActivityLogItem({ log }: { log: ActivityLog }) {
 }
 
 export function ActivityLogPanel({ projectId }: ActivityLogPanelProps) {
-  const { logs, isLoading } = useActivityLog(projectId);
+  const { logs, isLoading, error, retry } = useActivityLog(projectId);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (logs.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
-        <History className="h-8 w-8" />
-        <p className="text-sm">アクティビティはまだありません</p>
-      </div>
-    );
-  }
+  if (error) return <AsyncState state="error" message="アクティビティを取得できません。" onRetry={retry} />;
+  if (isLoading) return <AsyncState state="loading" message="アクティビティを読み込み中…" />;
+  if (logs.length === 0) return <AsyncState state="empty" message="アクティビティはまだありません" />;
 
   return (
     <ScrollArea className="h-full">

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
+import { listMockScoped, deleteMockScoped } from '@/lib/ai/scopedConversationMock';
 import { AIConversation } from '@/types/ai';
 import {
   createUnifiedConversation,
@@ -49,6 +51,11 @@ export function useUnifiedConversations({
       setError(null);
     });
 
+    if (isE2EMockAuthEnabled()) {
+      const refresh = () => { setConversations(projectId ? [] : listMockScoped(userId)); setIsLoading(false); };
+      queueMicrotask(refresh); window.addEventListener('taskflow-scoped-history', refresh);
+      return () => window.removeEventListener('taskflow-scoped-history', refresh);
+    }
     const unsubscribe = subscribeToUnifiedConversations(
       userId,
       (convs) => {
@@ -106,6 +113,7 @@ export function useUnifiedConversations({
       if (!userId) return;
 
       try {
+        if (isE2EMockAuthEnabled()) { deleteMockScoped(userId, conversationId); return; }
         await deleteUnifiedConversation(userId, conversationId);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to delete conversation';

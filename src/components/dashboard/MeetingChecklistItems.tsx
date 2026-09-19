@@ -27,7 +27,7 @@ export function MeetingChecklistItems({ proposal, onDueDateChange }: { proposal:
           <input type="checkbox" className="h-4 w-4 shrink-0 accent-emerald-600" checked={saved?.checked ?? false} aria-label={entry.label + 'を完了（テスト）'} onChange={event => setItem(entry.key,{...saved,checked:event.target.checked})}/>
           <span className={saved?.checked ? 'text-muted-foreground line-through' : ''}>{proposal.id === 'EX-9' ? entry.label : '完了チェック（テスト）'}</span>
         </label>
-        <label className="flex items-center gap-2"><span>期限</span><Input type="date" className="h-7 w-36 px-2 text-xs" aria-label={entry.label + 'の子タスク期限'} value={dueDate} onInput={event => saveDueDate(event.currentTarget.value)} onChange={event => saveDueDate(event.target.value)}/></label>
+        <label className="flex items-center gap-2"><span>期限</span><Input type="date" className="h-7 w-36 px-2 text-xs" aria-label={entry.label + 'のサブタスク期限'} value={dueDate} onInput={event => saveDueDate(event.currentTarget.value)} onChange={event => saveDueDate(event.target.value)}/></label>
         {saved && <button type="button" className="text-[11px] text-muted-foreground underline" aria-label={entry.label + 'のテスト入力を解除'} onClick={()=>setItem(entry.key)}>元に戻す</button>}
       </div>;
     })}

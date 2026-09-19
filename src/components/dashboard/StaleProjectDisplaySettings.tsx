@@ -40,7 +40,7 @@ export function StaleProjectDisplaySettings() {
               ))}
             </div>
           </>}
-        <p className="text-xs leading-relaxed text-muted-foreground">設定はこのブラウザだけに保存します。「今日やる」・直近3日・受信箱や、元のプロジェクト・タスクは変更しません。</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">設定はこのブラウザだけに保存します。「今日やる」・直近の予定・受信箱や、元のプロジェクト・タスクは変更しません。</p>
       </PopoverContent>
     </Popover>
   );

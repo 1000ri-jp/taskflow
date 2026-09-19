@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink, Plus, Pencil, X } from 'lucide-react';
+import { ExternalLink, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -192,7 +192,7 @@ export function ProjectUrlsBar({
               onClick={() => onRemoveUrl(url.id)}
               title="削除"
             >
-              <X className="h-3 w-3 text-red-500" />
+              <Trash2 className="h-3 w-3 text-red-500" />
             </button>
           </div>
         </div>

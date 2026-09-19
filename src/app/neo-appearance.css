@@ -1,0 +1,405 @@
+/* Opt-in appearances. Removing data-appearance restores the existing theme.
+   Reading and editing surfaces stay white; .tf-main owns the tinted canvas. */
+html[data-appearance="neo"] {
+  --neo-canvas: #f2f8fd;
+  --neo-surface: #ffffff;
+  --neo-surface-subtle: #eaf4fb;
+  --neo-ink: #203748;
+  --neo-muted: #567084;
+  --neo-blue: #226b98;
+  --neo-blue-soft: #deeffc;
+  --neo-border: #d1e4f1;
+  --neo-shadow-card: 0 1px 2px rgb(32 55 72 / 3%), 0 5px 18px rgb(32 55 72 / 4%);
+  --neo-shadow-overlay: 0 4px 12px rgb(32 55 72 / 7%), 0 20px 56px rgb(32 55 72 / 13%);
+
+  --background: var(--neo-surface);
+  --foreground: var(--neo-ink);
+  --card: var(--neo-surface);
+  --card-foreground: var(--neo-ink);
+  --popover: var(--neo-surface);
+  --popover-foreground: var(--neo-ink);
+  --primary: var(--neo-blue);
+  --primary-foreground: #ffffff;
+  --secondary: #e7f2fa;
+  --secondary-foreground: #30556e;
+  --muted: var(--neo-surface-subtle);
+  --muted-foreground: var(--neo-muted);
+  --accent: var(--neo-blue-soft);
+  --accent-foreground: #215b80;
+  --border: var(--neo-border);
+  --input: #819eb2;
+  --ring: #347daa;
+
+  --sidebar: #e6f3fc;
+  --sidebar-foreground: #294b65;
+  --sidebar-primary: #cce8fb;
+  --sidebar-primary-foreground: #174c70;
+  --sidebar-accent: #d9edfb;
+  --sidebar-accent-foreground: #214f6e;
+  --sidebar-border: #c4dfee;
+  --sidebar-ring: #347daa;
+}
+
+/* Ivory changes the interface palette only. Explicit task, priority and project
+   colors keep their meaning across appearances. */
+html[data-appearance="ivory"] {
+  --ivory-canvas: #f7f5ef;
+  --ivory-surface: #ffffff;
+  --ivory-ink: #282825;
+  --ivory-gold: #b59961;
+  --ivory-border: #ddd7c9;
+  --ivory-shadow-card: 0 1px 2px rgb(48 43 32 / 3%), 0 5px 18px rgb(48 43 32 / 4%);
+  --ivory-shadow-overlay: 0 4px 12px rgb(48 43 32 / 7%), 0 20px 56px rgb(48 43 32 / 14%);
+
+  --background: var(--ivory-surface);
+  --foreground: var(--ivory-ink);
+  --card: var(--ivory-surface);
+  --card-foreground: var(--ivory-ink);
+  --popover: var(--ivory-surface);
+  --popover-foreground: var(--ivory-ink);
+  --primary: #33332f;
+  --primary-foreground: #fffef8;
+  --secondary: #eeece4;
+  --secondary-foreground: #494942;
+  --muted: #f1efe8;
+  --muted-foreground: #69685f;
+  --accent: #ece5d6;
+  --accent-foreground: #484030;
+  --border: var(--ivory-border);
+  --input: #aaa290;
+  --ring: #8a7444;
+
+  --sidebar: #eeece5;
+  --sidebar-foreground: #36362f;
+  --sidebar-primary: #35352f;
+  --sidebar-primary-foreground: #fbfaf4;
+  --sidebar-accent: #e7e3d8;
+  --sidebar-accent-foreground: #48443a;
+  --sidebar-border: #d8d1c2;
+  --sidebar-ring: #9c8452;
+}
+
+html[data-appearance="ivory"] ::selection {
+  background: #e6d6af;
+  color: var(--ivory-ink);
+}
+
+html[data-appearance="ivory"] .tf-header {
+  background-color: var(--ivory-surface);
+  border-color: var(--ivory-border);
+  box-shadow: 0 1px 4px rgb(48 43 32 / 3%);
+}
+
+html[data-appearance="ivory"] .tf-brand {
+  color: var(--ivory-ink);
+}
+
+html[data-appearance="ivory"] .tf-brand > div:first-child {
+  background: #33332f;
+  color: #fffef8;
+  box-shadow: inset 0 1px 0 var(--ivory-gold);
+}
+
+html[data-appearance="ivory"] .tf-main {
+  background-color: var(--ivory-canvas);
+}
+
+html[data-appearance="ivory"] .neo-intro {
+  background: linear-gradient(115deg, #fffefb 42%, #f5f0e2);
+  border-color: var(--ivory-border);
+  box-shadow: var(--ivory-shadow-card), inset 0 2px 0 #c4ae76;
+}
+
+html[data-appearance="ivory"] .tf-secretary {
+  background-color: #f1eee5;
+  border-color: var(--ivory-border);
+}
+
+html[data-appearance="ivory"] .tf-secretary > div:first-child {
+  background-color: var(--ivory-surface);
+  border-color: var(--ivory-border);
+}
+
+html[data-appearance="ivory"] .tf-secretary h2 > svg {
+  color: #8a7444;
+}
+
+html[data-appearance="ivory"] .tf-sidebar {
+  --background: var(--sidebar);
+  --foreground: var(--sidebar-foreground);
+  --primary: var(--sidebar-primary);
+  --primary-foreground: var(--sidebar-primary-foreground);
+  --secondary: var(--sidebar-accent);
+  --secondary-foreground: var(--sidebar-accent-foreground);
+  --muted: #e8e5dc;
+  --muted-foreground: #69685f;
+  --accent: var(--sidebar-accent);
+  --accent-foreground: var(--sidebar-accent-foreground);
+  --border: var(--sidebar-border);
+  --input: #aaa290;
+  --ring: var(--sidebar-ring);
+
+  background: linear-gradient(165deg, var(--sidebar), #f7f5ef);
+  color: var(--sidebar-foreground);
+  border-color: var(--sidebar-border);
+}
+
+html[data-appearance="ivory"] .tf-sidebar .tf-navigation-link[aria-current="page"] {
+  background-color: var(--sidebar-primary);
+  color: var(--sidebar-primary-foreground);
+  box-shadow: inset 3px 0 0 var(--ivory-gold);
+}
+
+html[data-appearance="ivory"] :where(.tf-navigation-link, .tf-brand):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-appearance="ivory"] .tf-sidebar .tf-navigation-link:not([aria-current="page"]):hover {
+    background-color: var(--sidebar-accent);
+    color: var(--sidebar-accent-foreground);
+  }
+}
+
+html[data-appearance="ivory"] [data-slot="card"]:not(.shadow-none) {
+  --tw-shadow: var(--ivory-shadow-card);
+}
+
+html[data-appearance="ivory"] :where(
+  [data-slot="dialog-content"],
+  [data-slot="alert-dialog-content"],
+  [data-slot="sheet-content"],
+  [data-slot="popover-content"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="dropdown-menu-sub-content"],
+  [data-slot="select-content"]
+):not(.shadow-none) {
+  --tw-shadow: var(--ivory-shadow-overlay);
+}
+
+html[data-appearance="ivory"] :where(
+  [data-slot="dialog-overlay"],
+  [data-slot="alert-dialog-overlay"],
+  [data-slot="sheet-overlay"]
+) {
+  background-color: rgb(37 36 30 / 38%);
+}
+
+html[data-appearance="ivory"] .board-list-scroll {
+  scrollbar-color: #c8c0ae #f1efe8;
+}
+
+html[data-appearance="ivory"] .board-list-scroll::-webkit-scrollbar-track {
+  background: #f1efe8;
+}
+
+html[data-appearance="ivory"] .board-list-scroll::-webkit-scrollbar-thumb {
+  background-color: #c8c0ae;
+}
+
+html[data-appearance="ivory"] .board-list-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #9c927c;
+}
+
+@media (width < 64rem) {
+  html[data-appearance="ivory"] .tf-sidebar {
+    box-shadow: 12px 0 36px rgb(48 43 32 / 18%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-appearance="ivory"] :where(
+    .tf-sidebar,
+    .tf-sidebar *,
+    .tf-brand,
+    .tf-navigation-link,
+    [data-slot="button"],
+    [data-slot="input"],
+    [data-slot="textarea"],
+    [data-slot="select-trigger"]
+  ) {
+    transition-duration: 0s;
+  }
+
+  html[data-appearance="ivory"] :where(
+    [data-slot="dialog-content"],
+    [data-slot="dialog-overlay"],
+    [data-slot="alert-dialog-content"],
+    [data-slot="alert-dialog-overlay"],
+    [data-slot="sheet-content"],
+    [data-slot="sheet-overlay"],
+    [data-slot="popover-content"],
+    [data-slot="dropdown-menu-content"],
+    [data-slot="dropdown-menu-sub-content"],
+    [data-slot="select-content"],
+    [data-slot="tooltip-content"]
+  ) {
+    animation-duration: 0.01ms;
+    transition-duration: 0s;
+  }
+}
+
+html[data-appearance="neo"] ::selection {
+  background: #c6e6fc;
+  color: var(--neo-ink);
+}
+
+html[data-appearance="neo"] .tf-header {
+  background-color: var(--neo-surface);
+  border-color: var(--neo-border);
+  box-shadow: 0 1px 4px rgb(32 55 72 / 3%);
+}
+
+html[data-appearance="neo"] .tf-brand {
+  color: var(--neo-ink);
+}
+
+html[data-appearance="neo"] .tf-brand > div:first-child {
+  background: linear-gradient(145deg, #3b82b1, #226b98);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 15%);
+}
+
+html[data-appearance="neo"] .tf-main {
+  background-color: var(--neo-canvas);
+}
+
+html[data-appearance="neo"] .neo-intro {
+  background: linear-gradient(115deg, #ffffff 42%, #e8f4fe);
+  border-color: #cbdfee;
+  box-shadow: var(--neo-shadow-card), inset 0 2px 0 #a5d1ef;
+}
+
+html[data-appearance="neo"] .tf-secretary {
+  background-color: #eaf4fb;
+  border-color: var(--neo-border);
+}
+
+html[data-appearance="neo"] .tf-secretary > div:first-child {
+  background-color: #f7fbfe;
+  border-color: var(--neo-border);
+}
+
+html[data-appearance="neo"] .tf-secretary h2 > svg {
+  color: var(--neo-blue);
+}
+
+/* Sidebar descendants use the same semantic classes on their pale blue surface.
+   Radix portals stay outside this scope and retain the light root palette. */
+html[data-appearance="neo"] .tf-sidebar {
+  --background: var(--sidebar);
+  --foreground: var(--sidebar-foreground);
+  --primary: var(--sidebar-primary);
+  --primary-foreground: var(--sidebar-primary-foreground);
+  --secondary: var(--sidebar-accent);
+  --secondary-foreground: var(--sidebar-accent-foreground);
+  --muted: #deeffb;
+  --muted-foreground: #516e84;
+  --accent: var(--sidebar-accent);
+  --accent-foreground: var(--sidebar-accent-foreground);
+  --border: var(--sidebar-border);
+  --input: #7b9fb9;
+  --ring: var(--sidebar-ring);
+
+  background: linear-gradient(165deg, var(--sidebar), #edf7fe);
+  color: var(--sidebar-foreground);
+  border-color: var(--sidebar-border);
+}
+
+html[data-appearance="neo"] .tf-sidebar .tf-navigation-link[aria-current="page"] {
+  background-color: var(--sidebar-primary);
+  color: var(--sidebar-primary-foreground);
+  box-shadow: inset 3px 0 0 var(--sidebar-ring);
+}
+
+html[data-appearance="neo"] :where(.tf-navigation-link, .tf-brand):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-appearance="neo"] .tf-sidebar .tf-navigation-link:not([aria-current="page"]):hover {
+    background-color: var(--sidebar-accent);
+    color: var(--sidebar-accent-foreground);
+  }
+}
+
+/* Preserve Tailwind's focus rings and explicit shadow-none choices. */
+html[data-appearance="neo"] [data-slot="card"]:not(.shadow-none) {
+  --tw-shadow: var(--neo-shadow-card);
+}
+
+html[data-appearance="neo"] :where(
+  [data-slot="dialog-content"],
+  [data-slot="alert-dialog-content"],
+  [data-slot="sheet-content"],
+  [data-slot="popover-content"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="dropdown-menu-sub-content"],
+  [data-slot="select-content"]
+):not(.shadow-none) {
+  --tw-shadow: var(--neo-shadow-overlay);
+}
+
+html[data-appearance="neo"] :where(
+  [data-slot="dialog-overlay"],
+  [data-slot="alert-dialog-overlay"],
+  [data-slot="sheet-overlay"]
+) {
+  background-color: rgb(23 49 69 / 42%);
+}
+
+html[data-appearance="neo"] .board-list-scroll {
+  scrollbar-color: #b0cee3 var(--neo-surface-subtle);
+}
+
+html[data-appearance="neo"] .board-list-scroll::-webkit-scrollbar-track {
+  background: var(--neo-surface-subtle);
+}
+
+html[data-appearance="neo"] .board-list-scroll::-webkit-scrollbar-thumb {
+  background-color: #b0cee3;
+}
+
+html[data-appearance="neo"] .board-list-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #799fb9;
+}
+
+@media (width < 64rem) {
+  html[data-appearance="neo"] .tf-sidebar {
+    box-shadow: 12px 0 36px rgb(23 49 69 / 18%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-appearance="neo"] :where(
+    .tf-sidebar,
+    .tf-sidebar *,
+    .tf-brand,
+    .tf-navigation-link,
+    [data-slot="button"],
+    [data-slot="input"],
+    [data-slot="textarea"],
+    [data-slot="select-trigger"]
+  ) {
+    transition-duration: 0s;
+  }
+
+  html[data-appearance="neo"] :where(
+    [data-slot="dialog-content"],
+    [data-slot="dialog-overlay"],
+    [data-slot="alert-dialog-content"],
+    [data-slot="alert-dialog-overlay"],
+    [data-slot="sheet-content"],
+    [data-slot="sheet-overlay"],
+    [data-slot="popover-content"],
+    [data-slot="dropdown-menu-content"],
+    [data-slot="dropdown-menu-sub-content"],
+    [data-slot="select-content"],
+    [data-slot="tooltip-content"]
+  ) {
+    animation-duration: 0.01ms;
+    transition-duration: 0s;
+  }
+}

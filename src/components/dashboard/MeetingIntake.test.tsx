@@ -1,0 +1,56 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Project } from '@/types';
+import { viewTask } from '@/test/taskViewFixtures';
+import { MeetingIntake } from './MeetingIntake';
+const mode = vi.hoisted(() => ({ mock: false }));
+const access = vi.hoisted(() => ({ allowedProjectIds: null as string[] | null, projectAccessLoaded: true, projectAccessError: null as string | null, refreshProjectAccess: vi.fn() }));
+vi.mock('@/lib/firebase/testMode', () => ({ isE2EMockAuthEnabled: () => mode.mock }));
+vi.mock('@/hooks/useAISettings', () => ({ useAISettings: () => access }));
+vi.mock('@/components/task/TaskOrganizer', () => ({ TaskOrganizer: ({ projects, tasks, disabled }: { projects: { id: string; name: string }[]; tasks: { id: string; title: string }[]; disabled: boolean }) => <button disabled={disabled} data-testid="organizer" data-project-ids={projects.map(project => project.id).join(',')}>{tasks.map(task => task.title).join('、') || '文字起こしを取り込む'}</button> }));
+const project = (id: string, isArchived = false) => ({ id, name: id, isArchived }) as Project;
+beforeEach(() => { mode.mock = false; access.allowedProjectIds = null; access.projectAccessLoaded = true; access.projectAccessError = null; access.refreshProjectAccess.mockReset(); });
+afterEach(cleanup);
+describe('MeetingIntake project boundary', () => {
+  it('starts with all permitted active projects and keeps same-id tasks in separate projects', () => {
+    access.allowedProjectIds = ['a', 'b', 'archived'];
+    const tasks = ['a', 'b', 'outside'].map(projectId => ({ ...viewTask({ id: 'shared-id', projectId, title: `${projectId}の仕事` }), projectName: projectId }));
+    const { rerender } = render(<MeetingIntake projects={[project('a'), project('b'), project('outside'), project('archived', true)]} tasks={tasks} disabled={false} />);
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    expect(screen.getByTestId('organizer')).toHaveAttribute('data-project-ids', 'a,b');
+    expect(screen.getByTestId('organizer')).toHaveTextContent('aの仕事、bの仕事');
+    expect(screen.queryByLabelText('outside')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('archived')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('照合するプロジェクト（2件）'));
+    fireEvent.click(screen.getByLabelText('b'));
+    expect(screen.getByTestId('organizer')).toHaveAttribute('data-project-ids', 'a');
+    expect(screen.getByTestId('organizer')).toHaveTextContent('aの仕事');
+    rerender(<MeetingIntake projects={[project('b')]} tasks={tasks} disabled={false} />);
+    expect(screen.getByTestId('organizer')).toBeDisabled();
+    expect(screen.getByText('照合するプロジェクトを1つ以上選んでください。')).toBeVisible();
+  });
+  it('does not allow analysis while project data or AI access is unavailable', () => {
+    const { rerender } = render(<MeetingIntake projects={[project('a')]} tasks={[]} disabled />);
+    expect(screen.getByTestId('organizer')).toBeDisabled();
+    access.projectAccessLoaded = false;
+    rerender(<MeetingIntake projects={[project('a')]} tasks={[]} disabled={false} />);
+    expect(screen.getByTestId('organizer')).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('照合対象を確認中');
+    access.projectAccessError = 'AI設定を取得できません';
+    rerender(<MeetingIntake projects={[project('a')]} tasks={[]} disabled={false} />);
+    expect(screen.getByTestId('organizer')).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '照合対象を再取得' }));
+    expect(access.refreshProjectAccess).toHaveBeenCalledOnce();
+  });
+  it('restricts mock intake to the two isolated workbenches and includes loaded example tasks', () => {
+    mode.mock = true;
+    const { rerender } = render(<MeetingIntake projects={[project('ordinary-sample')]} tasks={[]} disabled />);
+    expect(screen.getByTestId('organizer')).toHaveAttribute('data-project-ids', 'secretary-demo,secretary-demo-office');
+    expect(screen.getByTestId('organizer')).toBeEnabled();
+    expect(screen.getByText(/架空のデータ・分析例/)).toBeVisible();
+    const tasks = ['secretary-demo', 'secretary-demo-office', 'ordinary-sample'].map(projectId => ({ ...viewTask({ projectId, title: `${projectId}の仕事` }), projectName: projectId }));
+    rerender(<MeetingIntake projects={[]} tasks={tasks} disabled={false} />);
+    expect(screen.getByTestId('organizer')).toHaveTextContent('secretary-demoの仕事、secretary-demo-officeの仕事');
+    expect(screen.getByTestId('organizer')).not.toHaveTextContent('ordinary-sample');
+  });
+});

@@ -1,0 +1,157 @@
+.stage { position: relative; display: flex; flex-direction: column; height: 580px; min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; }
+.frameHeader { flex-shrink: 0; max-height: 45%; overflow-y: auto; padding: 12px; border-bottom: 1px solid var(--border); }
+.frameBody { flex: 1; min-height: 0; min-width: 0; overflow: auto; }
+.frameFooter { display: flex; flex-shrink: 0; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px; border-top: 1px solid var(--border); background: var(--background); }
+.floating { position: absolute; bottom: 12px; right: 12px; display: flex; align-items: flex-end; flex-direction: column; gap: 8px; width: min(280px, calc(100% - 24px)); }
+.floating > div { max-height: 220px; }
+.dockedBubble { flex-shrink: 0; max-height: 200px; overflow-y: auto; padding: 8px 12px; }
+.tableScroll { width: 100%; overflow-x: auto; border: 1px solid var(--border); }
+.comparison { table-layout: fixed; width: 760px; border-collapse: separate; border-spacing: 0; font-size: var(--tf-body-size); }
+.comparison th, .comparison td { width: 140px; border-bottom: 1px solid var(--border); padding: var(--tf-row-block) 12px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.comparison th:first-child { width: 200px; background: var(--background); }
+.comparison[data-pinned='true'] th:first-child { position: sticky; left: 0; z-index: 1; border-right: 1px solid var(--border); }
+
+/* Adopted row padding is shown separately from the guide-only inner-gap trial. */
+.briefRowTrial { min-width: 0; overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.briefRowAdopted { min-width: 0; min-height: 32px; padding: 2px 20px; }
+.briefRowMetadataGroupsTight > :global(div) > :global(div) > :global(p) > :global(span:nth-child(2)) { column-gap: 8px !important; row-gap: 4px !important; }
+.briefRowPreviousGroups > :global(div) { column-gap: 4px !important; }
+.briefRowPreviousGroups > :global(div) > :global(div) > :global(p) { column-gap: 16px !important; }
+.briefRowPreviousGroups > :global(div) > :global(div) > :global(span) > :global(span) { gap: 4px !important; }
+
+/* Task-row one-line trial. Metadata stays at the title's right when it fits; long text may wrap. */
+.taskRowOneLineTrial { min-width: 0; overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+.oneLineRow { display: flex; min-width: 0; width: 100%; align-items: flex-start; gap: 8px; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; background: var(--background); text-align: left; transition: color 150ms ease, background-color 150ms ease; }
+.oneLineRow:hover { background: color-mix(in srgb, var(--muted) 60%, transparent); }
+.oneLineRow:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.oneLineRow[data-dragging='true'] { opacity: 0.65; outline: 2px dashed var(--ring); outline-offset: 1px; }
+.oneLineTitle { min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere; font-size: var(--tf-body-size); font-weight: 500; }
+.oneLineMeta { display: flex; min-width: 0; flex: 0 1 auto; align-items: center; justify-content: flex-end; gap: 4px; margin-left: auto; color: var(--muted-foreground); font-size: 12px; }
+.oneLineContext { max-width: 12rem; overflow-wrap: anywhere; }
+.oneLineMoai { flex: 0 0 auto; font-size: 15px; line-height: 1; }
+.subtaskOneLineSection { display: grid; min-width: 0; gap: 4px; margin-top: 12px; border-top: 1px solid var(--border); padding: 4px 10px; }
+.subtaskOneLineRows { display: grid; min-width: 0; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.subtaskOneLineHeading { display: flex; min-width: 0; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 8px; }
+.subtaskOneLineHeading h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.subtaskOneLineRow { min-height: 24px; align-items: center; padding-block: 2px; }
+.completedSubtaskSummary { min-height: 24px; padding-block: 4px; }
+
+/* Guide-only Neo home rhythm and Kanban/Progress subtask comparison. */
+/* Guide-only relationship: the final task-panel edge uses the same sample spacing as panel gaps. */
+.neoHomeTrial { --guide-neo-panel-gap: 16px; display: grid; min-width: 0; gap: var(--guide-neo-panel-gap); padding-bottom: var(--guide-neo-panel-gap); }
+.neoHomePanel { display: grid; min-width: 0; gap: 12px; border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--background); }
+.neoHomeMajorHeading { display: flex; min-width: 0; align-items: center; gap: 8px; margin: 0; font-size: 18px; font-weight: 600; line-height: 1.35; }
+.neoHomeMajorHeading svg { width: 20px; height: 20px; flex: 0 0 auto; }
+.neoHomeSectionHeading svg { width: 18px; height: 18px; flex: 0 0 auto; }
+.neoHomePanelHeading { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.neoHomeSectionHeading { display: flex; min-width: 0; align-items: center; gap: 8px; margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; }
+.neoCalendarRow { display: flex; min-width: 0; min-height: 44px; flex-wrap: wrap; align-items: center; gap: 8px 12px; border-top: 1px solid var(--border); padding-block: 8px; }
+.neoCalendarTime, .neoCalendarDate { flex: 0 0 auto; color: var(--muted-foreground); font-size: 12px; }
+.neoCalendarTitle { min-width: 0; flex: 1 1 12rem; overflow-wrap: anywhere; font-size: 14px; }
+.neoCountdownPanel { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 8px 12px; border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px 12px 24px; background: var(--background); }
+.neoCountdownIcon { width: 18px; height: 18px; flex: 0 0 auto; }
+.countdownAlignedTrial { --guide-countdown-space: 12px; display: grid; min-width: 0; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--guide-countdown-space); border: 1px solid #fcd34d; border-radius: 16px; padding-block: var(--guide-countdown-space); padding-inline: var(--guide-countdown-space) 1.25rem; background: #fffbeb; color: #451a03; box-shadow: var(--shadow-sm); }
+.neoCountdownUpdate { margin-left: auto; }
+.neoProposalCard { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.neoDecisionRow { display: flex; min-width: 0; align-items: flex-start; gap: 10px; }
+.neoDecisionState { flex: 0 0 auto; border-radius: 999px; background: var(--muted); padding: 2px 8px; font-size: 11px; color: var(--muted-foreground); }
+.neoDecisionComment { display: flex; min-width: 0; align-items: flex-start; gap: 6px; margin-top: 4px; color: var(--muted-foreground); font-size: 12px; }
+.neoHistoryDisclosure { display: grid; min-width: 0; gap: 8px; }
+.neoHistoryDisclosure > summary { cursor: pointer; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 14px; font-weight: 500; }
+.neoHistoryList { display: grid; min-width: 0; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.neoHistoryList .neoDecisionRow { align-items: flex-start; }
+.neoHistoryControls { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 8px; }
+.neoHistoryControls > :last-child { margin-left: auto; }
+.neoHomeTaskList { display: grid; min-width: 0; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.neoHomeTaskRow { display: flex; width: 100%; min-width: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: var(--background); color: var(--foreground); text-align: left; }
+.neoHomeTaskTitle { min-width: 0; flex: 1 1 12rem; overflow-wrap: anywhere; font-size: 14px; }
+.neoHomeTaskMeta { display: flex; min-width: 0; flex: 0 1 auto; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-left: auto; color: var(--muted-foreground); font-size: 12px; }
+.neoHomeTaskGroups { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.neoHomeTaskGroup { display: grid; min-width: 0; align-content: start; gap: 8px; }
+.neoHomeTaskGroup h4 { margin: 0; font-size: 14px; font-weight: 600; }
+.neoCalendarScaleGrid { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.neoCalendarScaleExample { display: grid; min-width: 0; align-content: start; gap: 6px; border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 12px; }
+.neoCalendarScaleChip { display: flex; min-width: 0; height: 25px; align-items: center; overflow: hidden; border: 1px solid var(--border); border-radius: 6px; padding-inline: 8px; background: var(--background); text-overflow: ellipsis; white-space: nowrap; }
+.calendarCreateTrial { display: grid; min-width: 0; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--background); }
+.calendarCreateTrial h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.calendarCreateDates { display: flex; min-width: 0; flex-wrap: wrap; gap: 8px; }
+.taskStructureMoaiCard { display: grid; min-width: 0; gap: 12px; border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--background); }
+.taskStructureMoaiCard h3, .taskStructureAmbiguous h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.taskStructureParent { margin: 0; font-size: 14px; font-weight: 500; }
+.taskStructureFacts { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.taskStructureFacts section { display: grid; min-width: 0; gap: 4px; border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+.taskStructureFacts h4 { margin: 0; font-size: 12px; font-weight: 600; }
+.taskStructureFacts p, .taskStructureFacts span { margin: 0; overflow-wrap: anywhere; font-size: 12px; }
+.taskStructureFacts span, .taskStructureMoaiCopy { color: var(--muted-foreground); }
+.taskStructureMoaiCopy { margin: 0; font-size: 13px; line-height: 1.6; }
+.taskStructureAmbiguous { display: grid; min-width: 0; gap: 6px; border: 1px dashed var(--border); border-radius: 10px; padding: 12px; }
+.taskStructureAmbiguous p { margin: 0; overflow-wrap: anywhere; font-size: 13px; }
+.subtaskViewsTrial { display: grid; min-width: 0; gap: 12px; }
+.subtaskViewsGrid { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.subtaskViewPanel { min-width: 0; border: 1px solid var(--border); border-radius: 10px; padding: 12px 12px; background: var(--background); }
+.subtaskViewPanel h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.subtaskViewPanel > p { margin-top: 4px; }
+.subtaskViewList { display: grid; min-width: 0; gap: 6px; margin: 8px 0 0; padding: 12px 0; list-style: none; }
+.subtaskViewRow { display: flex; min-width: 0; min-height: 28px; width: 100%; flex-wrap: wrap; align-items: center; gap: 4px 8px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; background: var(--background); text-align: left; }
+.subtaskViewRow:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.subtaskViewTitle { min-width: 0; flex: 1 1 8rem; overflow-wrap: anywhere; font-size: 12px; }
+.subtaskViewMeta { display: flex; min-width: 0; flex: 0 1 auto; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-left: auto; color: var(--muted-foreground); font-size: 11px; }
+.detailHeaderSpacingTrial { min-width: 0; }
+.detailHeaderFrame { height: 320px; min-height: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--background); }
+.taskDetailOrderTrial { display: grid; min-width: 0; gap: 12px; }
+.taskDetailOrderFrame { height: 460px; min-height: 0; max-height: 90vh; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--background); }
+.subtaskOrderList { display: grid; min-width: 0; gap: 8px; margin: 0; padding: 12px 0; list-style: none; }
+.subtaskOrderRow { display: flex; min-width: 0; min-height: 36px; flex-wrap: wrap; align-items: center; gap: 6px 8px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; background: var(--background); }
+.subtaskOrderHandle { display: flex; flex: 0 0 auto; width: 28px; height: 28px; align-items: center; justify-content: center; cursor: grab; border-radius: 4px; color: var(--muted-foreground); }
+.subtaskOrderHandle:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.subtaskOrderHandle[aria-pressed='true'] { background: var(--muted); color: var(--foreground); }
+.subtaskOrderTitle { min-width: 0; flex: 1 1 12rem; overflow-wrap: anywhere; font-size: 14px; }
+.subtaskOrderMeta { display: flex; min-width: 0; flex: 0 1 auto; flex-wrap: wrap; gap: 4px 8px; margin-left: auto; color: var(--muted-foreground); font-size: 12px; }
+.settingsDashboardOrderTrial { display: grid; min-width: 0; gap: 12px; }
+.settingsDashboardOrderPage { display: grid; min-width: 0; gap: 12px; }
+.settingsDashboardOrderPage > h3 { margin: 0; font-size: 20px; font-weight: 600; }
+.settingsDashboardSelection, .settingsDashboardOtherSection { display: grid; min-width: 0; gap: 8px; border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--background); }
+.settingsDashboardSelection h4, .settingsDashboardOtherSection h4 { margin: 0; font-size: 14px; font-weight: 600; }
+.settingsDashboardSelection > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.settingsDashboardOtherSection p { margin: 0; color: var(--muted-foreground); font-size: 12px; }
+
+/* Proposal review flow trial. All state and presentation rules are guide-only. */
+.proposalFlowTrial { min-width: 0; }
+.proposalTrialToolbar { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 8px 12px; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--background); }
+.proposalTrialCard { display: grid; min-width: 0; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 16px; background: var(--background); }
+.proposalTrialHeading { display: flex; min-width: 0; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px 16px; }
+.proposalTrialPriority { display: inline-flex; max-width: 100%; align-items: center; gap: 5px; border: 1px solid color-mix(in srgb, currentColor 28%, var(--border)); border-radius: 999px; padding: 4px 8px; font-size: 12px; line-height: 1.35; }
+.proposalTrialPriority[data-tone='now'] { color: #b42318; background: #fff1f0; }
+.proposalTrialPriority[data-tone='soon'] { color: #b54708; background: #fff7ed; }
+.proposalTrialPriority[data-tone='normal'] { color: var(--muted-foreground); background: var(--muted); }
+.proposalTrialReappearance { display: inline-flex; align-items: flex-start; gap: 6px; border-left: 3px solid var(--primary); padding-left: 8px; color: var(--primary); font-size: 12px; }
+.proposalTrialChanges { display: grid; min-width: 0; gap: 6px; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: color-mix(in srgb, var(--muted) 38%, transparent); }
+.proposalTrialChange { display: grid; grid-template-columns: minmax(4rem, 0.35fr) minmax(0, 1fr); gap: 8px; overflow-wrap: anywhere; font-size: 12px; }
+.proposalTrialChange > span:first-child { color: var(--muted-foreground); }
+.proposalTrialDetails { border-left: 2px solid var(--border); padding-left: 10px; }
+.proposalTrialActions { display: flex; min-width: 0; flex-wrap: wrap; gap: 8px; }
+.proposalTrialEmpty { display: flex; align-items: center; gap: 8px; border: 1px dashed var(--border); border-radius: 8px; padding: 16px 12px; color: var(--muted-foreground); font-size: 14px; }
+
+@media (max-width: 520px) {
+  .taskRowOneLineTrial { padding-inline: 8px; }
+  .oneLineRow { flex-direction: column; gap: 4px; }
+  .oneLineMeta { width: 100%; margin-left: 0; justify-content: flex-start; gap: 3px; }
+  /* Keep the adopted Kanban subtask row horizontal when its contents fit. */
+  .subtaskOneLineRow { flex-direction: row; }
+  .subtaskOneLineRow .oneLineMeta { width: auto; margin-left: auto; }
+  .proposalTrialToolbar { align-items: flex-start; }
+  .proposalTrialToolbar > :global(.ml-auto) { width: 100%; margin-left: 0; }
+  .proposalTrialCard { padding: 12px; }
+  .proposalTrialHeading { display: grid; gap: 8px; }
+  .proposalTrialPriority { justify-self: start; }
+  .proposalTrialChange { grid-template-columns: 1fr; gap: 2px; }
+  .subtaskViewsGrid { grid-template-columns: 1fr; }
+  .subtaskViewRow { align-items: flex-start; }
+  .subtaskViewMeta { margin-left: 0; }
+  .neoHomePanel { padding: 12px; }
+  .neoHomeTaskGroups, .neoCalendarScaleGrid { grid-template-columns: 1fr; }
+  .neoHomeTaskRow { align-items: flex-start; }
+  .neoHomeTaskMeta { width: 100%; margin-left: 0; }
+  .subtaskOrderMeta { margin-left: 36px; }
+  .taskStructureFacts { grid-template-columns: 1fr; }
+}

@@ -1,55 +1,14 @@
 'use client';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PersonalMemo } from '@/components/dashboard/PersonalMemo';
-import { MyTasks } from '@/components/dashboard/MyTasks';
-import { OverdueTasksAlert } from '@/components/dashboard/OverdueTasksAlert';
-import { ProjectProgress } from '@/components/dashboard/ProjectProgress';
+import { dashboardHref, useDashboardViewStore } from '@/stores/dashboardViewStore';
 
-export default function DashboardPage() {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="mt-2 h-4 w-32" />
-        </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6 pb-6">
-      {/* Welcome Section */}
-      <div>
-        <h1 className="text-2xl font-bold">
-          おかえりなさい、{user?.displayName?.split(' ')[0] || 'ユーザー'}さん
-        </h1>
-        <p className="text-muted-foreground">
-          今日も頑張りましょう
-        </p>
-      </div>
-
-      {/* Overdue Tasks Alert */}
-      <OverdueTasksAlert />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Personal Memo */}
-        <PersonalMemo />
-
-        {/* My Tasks */}
-        <MyTasks />
-      </div>
-
-      {/* Project Progress */}
-      <ProjectProgress />
-    </div>
-  );
+export default function DashboardEntry() {
+  const router = useRouter();
+  const { view, hydrated, hydrate } = useDashboardViewStore();
+  useEffect(() => { if (!hydrated) hydrate(); }, [hydrate, hydrated]);
+  useEffect(() => { if (hydrated) router.replace(dashboardHref(view)); }, [hydrated, view, router]);
+  return <div role="status" aria-label="ダッシュボードを開いています" className="space-y-5"><Skeleton className="h-10 w-64" /><Skeleton className="h-64" /></div>;
 }

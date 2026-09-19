@@ -1,7 +1,10 @@
+import { updateTaskWithRecurrence } from '@/lib/task/recurrenceRepository';
+import { assertTaskDates, hasTaskDateChange } from '@/lib/task/dateValidation';
 import type { CommentAttachment, Priority, Task } from '@/types';
 import { checkDeadlineOverdue, validateTask } from '@/lib/ai/tools/validation';
 import { calculateEffectiveStartDate, recalculateDates } from '@/lib/utils/task';
 import { getAdminDb } from './admin';
+import { resolveTaskAssignees } from '@/lib/task/assigneeDefaults';
 
 interface AdminProject {
   id: string;
@@ -23,6 +26,7 @@ interface AdminList {
   id: string;
   name: string;
   order: number;
+  defaultAssigneeId?: string | null;
   autoCompleteOnEnter?: boolean;
   autoSetStartDateOnEnter?: boolean;
 }
@@ -173,6 +177,7 @@ function mapTaskDataToTask(projectId: string, taskId: string, data: Record<strin
     title: typeof data.title === 'string' ? data.title : '',
     description: typeof data.description === 'string' ? data.description : '',
     order: typeof data.order === 'number' ? data.order : 0,
+    ...(data.taskKind === 'review_request' || data.taskKind === 'decision' ? { taskKind: data.taskKind } : {}),
     assigneeIds: Array.isArray(data.assigneeIds) ? data.assigneeIds : [],
     labelIds: Array.isArray(data.labelIds) ? data.labelIds : [],
     tagIds: Array.isArray(data.tagIds) ? data.tagIds : [],
@@ -256,6 +261,7 @@ async function getProjectListsInternal(projectId: string): Promise<AdminList[]> 
       id: listDoc.id,
       name: typeof data.name === 'string' ? data.name : '',
       order: typeof data.order === 'number' ? data.order : 0,
+      defaultAssigneeId: typeof data.defaultAssigneeId === 'string' ? data.defaultAssigneeId : null,
       autoCompleteOnEnter: data.autoCompleteOnEnter === true,
       autoSetStartDateOnEnter: data.autoSetStartDateOnEnter === true,
     };
@@ -409,18 +415,30 @@ export async function listProjectTasks(projectId: string): Promise<ProjectTaskIt
 export async function createProjectTask(
   projectId: string,
   userId: string,
-  input: CreateProjectTaskInput
+  input: CreateProjectTaskInput,
+  receipt?: { taskId: string; fingerprint: string }
 ): Promise<CreateOrUpdateResult> {
+  assertTaskDates(input);
   const db = getAdminDb();
-  const [lists, allTasks] = await Promise.all([
+  const [lists, allTasks, projectSnapshot] = await Promise.all([
     getProjectListsInternal(projectId),
     getProjectTasksInternal(projectId),
+    db.collection('projects').doc(projectId).get(),
   ]);
-
+  if (!projectSnapshot.exists) throw new Error('NOT_FOUND');
+  const project = projectSnapshot.data()!;
+  if (project.isArchived) throw new Error('INVALID_ARCHIVED_PROJECT');
+  const memberIds: string[] = Array.isArray(project.memberIds) ? project.memberIds : [];
   const targetList = lists.find((list) => list.id === input.listId);
   if (!targetList) {
     throw new Error('INVALID_LIST');
   }
+
+  const assigneeIds = resolveTaskAssignees({
+    explicit: input.assigneeIds, defaultAssigneeId: project.defaultAssigneeId,
+    listDefaultAssigneeId: targetList.defaultAssigneeId, memberIds,
+  });
+  if (assigneeIds.some(id => !memberIds.includes(id))) throw new Error('INVALID_ASSIGNEE');
 
   const warnings: string[] = [];
   const dependsOnTaskIds = input.dependsOnTaskIds ?? [];
@@ -482,7 +500,7 @@ export async function createProjectTask(
     title: input.title,
     description: input.description ?? '',
     order: maxOrder + 1,
-    assigneeIds: input.assigneeIds ?? [],
+    assigneeIds,
     labelIds: input.labelIds ?? [],
     tagIds: input.tagIds ?? [],
     dependsOnTaskIds,
@@ -502,7 +520,19 @@ export async function createProjectTask(
     updatedAt: now,
   };
 
-  const taskRef = await db.collection('projects').doc(projectId).collection('tasks').add(taskData);
+  assertTaskDates(taskData);
+  const tasksRef = db.collection('projects').doc(projectId).collection('tasks');
+  const taskRef = receipt ? tasksRef.doc(receipt.taskId) : await tasksRef.add(taskData);
+  if (receipt) {
+    await db.runTransaction(async transaction => {
+      const existing = await transaction.get(taskRef);
+      if (existing.exists) {
+        if (existing.data()?.createdBy !== userId || existing.data()?.requestFingerprint !== receipt.fingerprint) throw new Error('REQUEST_CONFLICT');
+        return;
+      }
+      transaction.create(taskRef, { ...taskData, requestFingerprint: receipt.fingerprint });
+    });
+  }
   const task = await getProjectTaskInternal(projectId, taskRef.id);
 
   if (!task) {
@@ -531,13 +561,17 @@ export async function updateProjectTask(
     throw new Error('NOT_FOUND');
   }
 
+  if(existingTask.parentTaskId && Object.keys(input).some(k=>!['title','assigneeIds','dueDate','isCompleted','listId'].includes(k)))throw new Error('INVALID_SUBTASK_FIELDS');
+  if (existingTask.taskKind === 'review_request' && input.isCompleted !== undefined) throw new Error('REVIEW_RESPONSE_REQUIRED');
+
   if (input.listId !== undefined && !lists.some((list) => list.id === input.listId)) {
     throw new Error('INVALID_LIST');
   }
 
   const warnings: string[] = [];
-  const nextStartDate = input.startDate !== undefined ? input.startDate : existingTask.startDate ? existingTask.startDate.toISOString().split('T')[0] : null;
-  const nextDueDate = input.dueDate !== undefined ? input.dueDate : existingTask.dueDate ? existingTask.dueDate.toISOString().split('T')[0] : null;
+  const nextStartDate = input.startDate !== undefined ? input.startDate : existingTask.startDate?.toISOString() ?? null;
+  const nextDueDate = input.dueDate !== undefined ? input.dueDate : existingTask.dueDate?.toISOString() ?? null;
+  if (hasTaskDateChange(input)) assertTaskDates({ startDate: nextStartDate, dueDate: nextDueDate });
   const nextDurationDays = input.durationDays !== undefined ? input.durationDays : existingTask.durationDays;
   const nextIsDueDateFixed = input.isDueDateFixed !== undefined ? input.isDueDateFixed : existingTask.isDueDateFixed;
   const nextDependsOnTaskIds = input.dependsOnTaskIds !== undefined ? input.dependsOnTaskIds : existingTask.dependsOnTaskIds;
@@ -625,7 +659,15 @@ export async function updateProjectTask(
   }
 
   updateData.updatedAt = new Date();
-  await db.collection('projects').doc(projectId).collection('tasks').doc(taskId).update(updateData);
+  const taskRef = db.collection('projects').doc(projectId).collection('tasks').doc(taskId);
+  if (updateData.isCompleted === true) await updateTaskWithRecurrence(taskRef, updateData);
+  else if (hasTaskDateChange(updateData)) await db.runTransaction(async tx => {
+    const current = await tx.get(taskRef);
+    if (!current.exists) throw new Error('NOT_FOUND');
+    assertTaskDates({ ...current.data(), ...updateData });
+    tx.update(taskRef, updateData);
+  });
+  else await taskRef.update(updateData);
 
   const task = await getProjectTaskInternal(projectId, taskId);
   if (!task) {
@@ -721,6 +763,7 @@ export async function createProjectTaskComment(
     throw new Error('NOT_FOUND');
   }
 
+  if(existingTask.parentTaskId)throw new Error('INVALID_SUBTASK_COMMENT_USE_PARENT');
   const now = new Date();
   const commentRef = await db
     .collection('projects')

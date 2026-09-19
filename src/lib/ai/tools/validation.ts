@@ -4,6 +4,7 @@
  */
 
 import { hasCircularDependency } from '@/lib/utils/task';
+import { taskDateError } from '@/lib/task/dateValidation';
 import type { Task } from '@/types';
 
 /**
@@ -53,13 +54,8 @@ export function validateTaskDateFields(args: DateFieldValidationArgs): Validatio
   }
 
   // Check: dueDate < startDate
-  if (startDate && dueDate) {
-    const start = new Date(startDate);
-    const due = new Date(dueDate);
-    if (due < start) {
-      errors.push('期限（dueDate）は開始日（startDate）より後の日付を指定してください。');
-    }
-  }
+  const dateError = taskDateError({ startDate, dueDate });
+  if (dateError) errors.push(dateError);
 
   // Warning: durationDays with explicit dueDate (will be ignored if startDate is set)
   if (durationDays !== undefined && durationDays !== null && dueDate && startDate) {

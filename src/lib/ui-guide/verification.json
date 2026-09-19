@@ -1,0 +1,411 @@
+{
+  "checks": [
+    {
+      "sample": "text",
+      "sourceHash": "066c3e97681e4f21cfbffad3e2f99d4e75387874372e2c07b298bd0d8f8cc4ab",
+      "where": "ガイド・実際の設定／プロフィール（広幅・390px）",
+      "result": "共有見出しと補足、長い日本語、外観の継承を確認。既存のすべての文章をこの役割へ移行したわけではありません。"
+    },
+    {
+      "sample": "button",
+      "sourceHash": "05e8d2aefbcdf92a81e45f99a17fd2847762b8df87964fb2957211c18c933cdf",
+      "where": "ガイドの基本部品・実際の設定",
+      "result": "選択状態のaria-pressed、操作不可、操作結果とアイコン名を確認。"
+    },
+    {
+      "sample": "input",
+      "sourceHash": "a9eb9372b4ebbf4d3ee19df1ec5d628bcad36a84ced41be6577d297843f25646",
+      "where": "ガイドの設定・詳細（390px）",
+      "result": "担当を変更し、説明へ入力。入力した値を保存失敗後も保持。実画面への試験入力・保存はしていません。"
+    },
+    {
+      "sample": "navigation",
+      "sourceHash": "ff26b88f686daf9bb04073b0ecc78d639f1fc254920698a072159335ed7464c0",
+      "where": "実際のNeo／ガイド",
+      "result": "今日→カレンダー→タスク一覧→モアイの提案が同じ共通部品で並ぶ。実Neoで提案へ切替を確認。"
+    },
+    {
+      "sample": "card",
+      "sourceHash": "45e5f78860db9ee17292c35508fb1a416a01c759c18176516b88915233655e61",
+      "where": "ガイド・実プロフィール・実設定",
+      "result": "共通CSS一か所を16→20→16pxへ一時変更し、ガイド2枚／プロフィール3枚と設定内の共通カードへ反映を確認。設定10枚の最終余白16pxを確認。"
+    },
+    {
+      "sample": "states",
+      "sourceHash": "98f0a3c9a870e9f899016e149db761df4398ab000272c47aa7ad68e3c7e94f00",
+      "where": "ガイド／実アクティビティ",
+      "result": "見本で取得中・0件・失敗を区別し、再取得で架空一覧へ復帰。実アクティビティの正常取得を確認。実通信の失敗は誘発していません。"
+    },
+    {
+      "sample": "outline",
+      "sourceHash": "8a06014d6466f7929d53727caa9afdd22a1e18b16367735fd8e3b6b53500769d",
+      "where": "ガイド・展示会出展の計画リスト（広幅・390px）",
+      "result": "長い日本語・12項目・子の展開を見本で確認。実際の親子も展開。見つかった子タイトルの詰まりを共通行で修正し再確認。試作12pxは見本内だけ、戻すと6px。"
+    },
+    {
+      "sample": "table",
+      "sourceHash": "fe416e531158ccd653e4e89ef839d5d53b33e5fe29f6ecf5df73762bf3c4a063",
+      "where": "ガイド・展示会出展のテーブル（390px）",
+      "result": "見本は幅323px内の855px表を532px、実画面は302px内の855px表を553px横スクロールでき、右側の期限・優先度へ到達。"
+    },
+    {
+      "sample": "proposal",
+      "sourceHash": "061e52bc87e9dc4e1827e449d1d284ed15f01134c4e331b4e673b82eb1f54c2e",
+      "where": "ガイド／実Neoのモアイの提案",
+      "result": "架空の長文提案で保留→失敗→再試行成功。実Neoは未決定0件、既存の判断・記録12件を確認。実データの提案カード反映・保留は未操作。"
+    },
+    {
+      "sample": "bubble",
+      "sourceHash": "0a85d435cecb3d9405bd1ef6b8a7b64255c873818e81d574f90a446177da90ae",
+      "where": "ガイド／実設定の声かけプレビュー（390px）",
+      "result": "同じGreetingContentとCompanionBubbleで声かけを表示し閉じる。実画面は表示プレビューのみで設定は保存していません。"
+    },
+    {
+      "sample": "setting",
+      "sourceHash": "6c610fc4c483e2b8dbc76da0f698fd408884ceb41e5a469895e649ff72e624cc",
+      "where": "ガイド／展示会出展のプロジェクト設定（390px）",
+      "result": "実欄の名称・選択・保存ボタン・補足の配置を確認。架空の担当変更→保存中→失敗→選択保持→再保存成功を確認。"
+    },
+    {
+      "sample": "list-layout",
+      "sourceHash": "50341b7e557326998cf930b80b925553822a46cea963631a989cfdf1d8dce76c",
+      "where": "ガイド・展示会出展（広幅・390px）",
+      "result": "計画リストとテーブル、子の展開、詳細への入口、テーブルの内部横スクロールを確認。"
+    },
+    {
+      "sample": "detail-layout",
+      "sourceHash": "042e029bbaa686cb7198f90d86ac678227a7982ef650c72e06fe9953e8ffd945",
+      "where": "ガイド／実タスク詳細（広幅・390px）",
+      "result": "共通ヘッダー・スクロール領域・下部操作を確認。実詳細は390px中356px、横はみ出しなし。長い説明が折り返される。"
+    },
+    {
+      "sample": "settings-layout",
+      "sourceHash": "616833678312a244e2e9eb593e8d984b00be867ee1cbb7d4667d2dfa08a03685",
+      "where": "ガイド／実設定・プロフィール・プロジェクト設定（広幅・390px）",
+      "result": "設定の共通幅・カード・主担当欄を確認。AI設定・APIキー管理のカード接続はコード検査の範囲です。"
+    },
+    {
+      "sample": "card",
+      "sourceHash": "9a5ebb6f0ab34f3f80cef675e7c65c8238115fa169e97961d91febd4f3effd30",
+      "where": "2026-09-16 点検後の追加確認：実Google設定390/1501px、ガイドcompact390px",
+      "result": "共通Cardの上下16px・左右20px・間隔12px・見出し16pxを両方で計測。実Google4枚がcompactを使用。画像06/20/24。 証跡：b719 outputs/ui-ux-fixes-2026-09-16/。"
+    },
+    {
+      "sample": "states",
+      "sourceHash": "340cbf9e6db1d5b122b46e8d1ef22757e9af7481f69a9fdd82127ca2be2189c4",
+      "where": "2026-09-16 点検後の追加確認：ガイド390px／実共通検索／実アクティビティ",
+      "result": "ガイドで失敗→再取得→0件を操作。実検索は再入力でタスク結果を保持しEnterで詳細へ到達。実履歴は正常取得。検索部分失敗・入力保持・不足分のみ再試行・古い応答無視はモックテスト。実通信失敗は誘発していない。画像04/08/09/25/26。 証跡：b719 outputs/ui-ux-fixes-2026-09-16/。"
+    },
+    {
+      "sample": "outline",
+      "sourceHash": "d606ca2f6a111759b38d407a2b0c32f454d3b3cf2cb6a66bfe5a0e069150f5d0",
+      "where": "2026-09-16 点検後の追加確認：実計画リスト390/1501px、ガイド390px長文12項目、実進捗390/768/1501px",
+      "result": "共通TaskChildrenSummary修正後、実際の子を展開。ガイドの長い日本語の親子行を展開し折り返し確認。進捗は文書横はみ出しなし。モアイ重なりは残る。画像10/14/15/16/17/22。 証跡：b719 outputs/ui-ux-fixes-2026-09-16/。"
+    },
+    {
+      "sample": "table",
+      "sourceHash": "dff64bdda0fb6e9857c04ffc9620fcc9330501bba9b8e4fda9653ea759fccc51",
+      "where": "2026-09-16 点検後の追加確認：実テーブル390px、ガイド390px長文12項目",
+      "result": "実表の子要約を展開。317px内の855px表を右端へ横スクロールし開始日・期限・優先度へ到達。ガイド長文行を目視。文書全体の横はみ出しなし。内部横スクロールを保持。画像12/13/23。 証跡：b719 outputs/ui-ux-fixes-2026-09-16/。"
+    },
+    {
+      "sample": "list-layout",
+      "sourceHash": "2b86c6a9d42c22379c53545b1bd2bf2f695791ecf318b0dd05b8ea07ec573412",
+      "where": "2026-09-16 点検後の追加確認：実計画リストとテーブル390px",
+      "result": "共通の子要約の位置基準修正を両画面で確認。親子展開と表の右端への横スクロールを確認。新しい配置案は未実装。画像12/13/14。 証跡：b719 outputs/ui-ux-fixes-2026-09-16/。"
+    },
+    {
+      "sample": "detail-layout",
+      "sourceHash": "9c43c0e58d697f8092a008cd4e63b8e4bdb624609c9312e3c85a83c7df0f185e",
+      "where": "2026-09-16 点検後の追加確認：実タスク詳細390px",
+      "result": "再入力した共通検索からEnterで詳細へ到達。長い説明・下部操作・削除ボタン名「タスクを削除」を確認。削除は未操作。全アイコン命名/全編集状態の検証ではない。画像04/05。 証跡：b719 outputs/ui-ux-fixes-2026-09-16/。"
+    },
+    {
+      "sample": "settings-layout",
+      "sourceHash": "6458f4f75a5f2870724ec412c04cca1a1f31182f1117b80b4cf4788646422dcf",
+      "where": "2026-09-16 点検後の追加確認：実API管理390/768/1501px、実Google設定390/1501px",
+      "result": "APIの幅・見出し折り返し・0件を確認。390pxで作成ダイアログを開きキャンセル。作成しない。Googleの4枚compactと「Neoに戻る」の/neo到達を確認。全設定の再確認ではない。画像02/06/18/20/27/28。 証跡：b719 outputs/ui-ux-fixes-2026-09-16/。"
+    },
+    {
+      "sample": "navigation",
+      "sourceHash": "3d128ce279fa7f6911d75482023a25fe9f0deac1e85c947959ceaff8ff366e6b",
+      "where": "2026-09-16 Neo http://localhost:3003/neo（1501px・390px）",
+      "result": "ユーザー指定により上部切替名を「タスク一覧」から「タスク」に変更。1501pxで新ラベル・カレンダー右隣の順序・クリックによる一覧表示と選択状態を確認。390pxでもラベルが欠けず折り返すことを目視。内容見出し「タスク一覧」は保持。共通ViewSwitcher/スタイル/保存処理は未変更。この追記は他のタブやメニュー全体の再検証を意味しません。"
+    },
+    {
+      "sample": "search",
+      "sourceHash": "cd6e7da5c51d466ebb4d6489a9c6ad2a6b2af7008150468f5a3bcf38d17b3cfd",
+      "where": "2026-09-16 ガイド検索見本 localhost:3003/ui-guide?sample=search（埋め込み表示）",
+      "result": "「仕事・プロジェクトを検索（架空）」ラベルをblock表示・下余白4pxへ調整し、入力欄との間隔が約3pxから約4pxになったことを確認。入力高さ36px、架空2件、キーボード選択・取得状態表示は維持。ガイド内試作であり、共通Input/検索フック/実画面への反映・ユーザー採用は未実施。"
+    },
+    {
+      "sample": "neo-brief-row-trial",
+      "sourceHash": "1548670f850ee9f71eb1508a10f7c704b92b71fd4ad77ec077cebb70d1f0efd2",
+      "where": "2026-09-16 ガイドNeo行見本 localhost:3003/ui-guide?sample=neo-brief-row-trial（広幅・390px）",
+      "result": "共有NeoBriefTaskHeadingへ架空データを渡し、塊間16px・アイコン/優先度まわり4pxの未採用案を表示。長いタイトル、未着手、分類、期限、複数担当者を確認し、実Neo・共通行部品・保存処理は変更していない。ガイド試作・採用決定・実画面反映/検証は別状態で、採用は未決定。"
+    },
+    {
+      "sample": "settings-layout",
+      "sourceHash": "f0cea3bf88d7e6e68a19e09c094adaf9719e0b7368277802d146693e06694d0a",
+      "where": "2026-09-16 新規継続タスク / localhost:3003 / 1501px・390px。証跡 outputs/qa-2026-09-16-continuation/",
+      "result": "プロジェクト設定のアーカイブ1件を正常取得・再表示。390pxで本文/日時を全幅、操作を次行に折り返し、1501pxの横並びを保持。AI設定390/1501px、操作名と設定へ戻る入口を確認。業務保存なし。"
+    },
+    {
+      "sample": "card",
+      "sourceHash": "e6a7fb81d6b6e664a2a31884b0d6807e603c7e0be0283ef2c6deb711e83dd69e",
+      "where": "2026-09-16 新規継続タスク / localhost:3003 / 1501px・390px。証跡 outputs/qa-2026-09-16-continuation/",
+      "result": "AI設定4枚のcompact Cardの上下16px/gap12pxを確認。設定内アーカイブカードも広幅/390pxで確認。新しい密度値は導入していない。"
+    },
+    {
+      "sample": "states",
+      "sourceHash": "538ace6cc6b9e8ff4eb7f8c74fa004a0cf77a1a157a07a68d1d7059408544dd3",
+      "where": "2026-09-16 新規継続タスク / localhost:3003 / 1501px・390px。証跡 outputs/qa-2026-09-16-continuation/",
+      "result": "アーカイブは最終版で実在1件の取得成功を確認。失敗→再取得の実画面確認はクエリー修正前の中間版。最終版の失敗/再試行/入力保持/旧応答破棄は回帰テスト。実通信障害を最終版で誘発した証拠とはしない。"
+    },
+    {
+      "sample": "outline",
+      "sourceHash": "536281976fa15243c4f20a42d0d680d1d1e1fe2bb47c805b80ab7d1e8947a02e",
+      "where": "2026-09-16 新規継続タスク / localhost:3003 / 1501px・390px。証跡 outputs/qa-2026-09-16-continuation/",
+      "result": "計画リスト390/1501pxで実在する子2件を展開、子なし行に矢印なし、長い日本語と詳細への入口を確認。チェックリスト変換なし。狭幅のモアイ重なりは残る。"
+    },
+    {
+      "sample": "detail-layout",
+      "sourceHash": "cd01329cce65552947410f623008cc6e1c205aa7b96c0de13527f22e31c5ac91",
+      "where": "2026-09-16 新規継続タスク / localhost:3003 / 1501px・390px。証跡 outputs/qa-2026-09-16-continuation/",
+      "result": "一覧から詳細を390/1501pxで開き、説明・親子・操作を確認。閉じて一覧へ戻る。投稿/保存/完了なし。タイトル編集は単一行、モアイ重なり等の未確認・残存は保持。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "3efb007173dc78ec82aebbe0fda366f7e4bd8f5222ead01dab3004d005069636",
+      "where": "2026-09-17 ガイド・タスク行の一行表示案 localhost:3003/ui-guide?sample=task-row-one-line-trial（通常幅・長文・390px・many）",
+      "result": "ガイド試作として短い親タスク名と付随情報、🗿、個別枠、サブタスク1件1行を確認。ユーザー採用は指定カンバンカードの展開サブタスクで、タイトル・担当者・状態・期限を一つの視覚行に置く要件だけ。二段表示は条件を満たさない。親タスクの他の配置、具体的な行高・余白、狭幅時の処理、他ビューへの適用は未採用。長文・390pxではガイド試作の折返しとmanyの7件を確認。実TaskChildrenSummaryへの反映・保存・ドラッグ動作はこのタスクでは未実施。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "8e4095bbb9bf3b920693c63792160617332fd6ea14ae912d2c1d3ac082c3ed45",
+      "where": "2026-09-17 機能改善タスク 01a0a9a6-da7b-7030-88e0-8bad10bfe1be の報告・bde4実装元・JIMU委託カンバン（1501px/390px）",
+      "result": "機能改善担当が実画面反映を報告し、実装差分と関連検証を照合。TaskChildrenSummaryのrowLayout=single-lineをBoardListのカンバンカードとBoardViewの分類不明カードに指定。タイトル・状態・担当者・期限を同じ行に並べ、1501px/390pxで給与振込設定を含む対象カード、長めの周辺施設の写真作成・登録、折りたたみ/再展開を確認したとの報告。その他の利用先は既定stacked。TaskChildrenSummary/BoardList/AlternateTaskViewsの43テスト、対象4ファイルのESLint、TypeScript、ui:check成功。今回のテスト実行ではBoardListのタスク追加テストでReact act(...)警告が出たが、43件は成功。実業務データの変更なし。ガイド内試作・採用範囲は別状態で、複合見本全体はtrialのまま."
+    },
+    {
+      "sample": "proposal-review-flow-trial",
+      "sourceHash": "d48a2c3cd26a83425543f1f30ca60e63a743d6fcfd62b3e3267f4d12012a883b",
+      "where": "2026-09-16 ガイド・モアイの提案／次の確認の流れ案 localhost:3003/ui-guide?sample=proposal-review-flow-trial（通常幅・長文・390px）",
+      "result": "行動見出し→理由→対象と担当・期限の変更→詳細の順、優先度の色・アイコン・事実理由、前へ／ほかの件を見ると件数、一巡までの重複なし、「今は決めない」、本人が選んだ日時・条件の再表示理由、「どういうこと？」を確認。ガイド内の架空状態だけで、実画面・採用／保存・期限／進捗・通知・条件検知は未実施。"
+    },
+    {
+      "sample": "neo-brief-row-trial",
+      "sourceHash": "cf18e5beb0d3e4b56a5071844c6dbf1cd29ba1206138c216fe8e071c4bd1c88f",
+      "where": "2026-09-17 ガイド状態表示・操作見本 localhost:3003/ui-guide?sample=neo-brief-row-trial（広幅・長文・390px）＋機能改善タスク報告",
+      "result": "複合見本全体はtrial、採用済み範囲はNEO_TASK_ROW_CLASS直利用のNeoMorningBrief/NeoDashboard行の上下各4px、実装は機能改善タスク報告に基づき完了と別表示。ガイド見本の広幅と390px/長文で上下4px wrapper、長文の折返し、未採用16/4px比較案を確認。実Neoの1501px表示は機能改善タスクが確認。390pxは3010の隔離CSS試験行の計測で、実データNeoの狭幅表示は未確認。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "57689b51a5c38e148beb273a622b7dc454707f9e74de42fe371abda565963360",
+      "where": "2026-09-17 ガイド状態表示・操作見本 localhost:3003/ui-guide?sample=task-row-one-line-trial（広幅・長文・項目多数・390px）＋機能改善タスク報告",
+      "result": "複合見本全体はtrial、採用範囲は指定カンバンカードの展開サブタスク1件1行、実装完了は機能改善タスク報告と別表示。架空の7件・未完了6件の各行にタイトル・担当者・状態・期限を表示し、長文/390pxでは必要箇所を折り返すことを確認。JIMU委託の実カンバン1501px/390px表示確認は機能改善タスク報告に基づく。"
+    },
+    {
+      "sample": "neo-brief-row-trial",
+      "sourceHash": "306bdb0d9698c56fb824132d7c6726549e884bac46ac8ec733b8ca5b02b9871f",
+      "where": "2026-09-17 機能改善タスク01a0a9a6-da7b-7030-88e0-8bad10bfe1beのメイン側bde4報告・現行コード照合・Neo対象行390px確認",
+      "result": "最新採用値は上下各2px、横20px、内側min-h-8（32px）。メイン側がNEO_TASK_ROW_CLASSをpy-1からpy-0.5へ更新し、NeoMorningBriefとNeoDashboardの対象行だけに反映したことをコード照合。機能改善タスク報告では19テスト、ESLint、tsc、ui:refresh、ui:checkが成功し、390px対象行の上下各2px・横スクロールなし・折返し・内側高さ32pxを確認。前回4pxの実装履歴は旧checkに保持。ガイド専用見本も上下2px・横20px・最低32pxへ更新したが、今回のガイド画面の描画は独立したブラウザー目視では未確認。"
+    },
+    {
+      "sample": "neo-brief-row-trial",
+      "sourceHash": "4bd667c630dfbb2d11f414435dd9fe80880a41bd051bf5f307d586188fee9fa8",
+      "where": "2026-09-17 機能改善タスク01a0a9a6-da7b-7030-88e0-8bad10bfe1beのメイン側bde4報告・現行コード照合・Neo対象行390px確認",
+      "result": "採用値は上下各2px、横20px、内側min-h-8（32px）。メイン側がNEO_TASK_ROW_CLASSをpy-1からpy-0.5へ更新し、NeoMorningBriefとNeoDashboardの対象行だけに反映したことをコード照合。機能改善タスク報告では19テスト、ESLint、tsc、ui:refresh、ui:checkが成功し、390px対象行の上下各2px・横スクロールなし・折返し・内側高さ32pxを確認。旧4px実装・検証は過去checkに保持。現在のガイド見本も上下各2px・横20px・最低32pxへ更新。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "f31ee956004ed2102f00e0a05e14d70107f34ed94e104803cd41d63b5cf80d3b",
+      "where": "2026-09-17 機能改善タスク01a0a9a6-da7b-7030-88e0-8bad10bfe1beのメイン側bde4報告・現行コード照合・BoardList/BoardView実画面1280px/390px確認",
+      "result": "採用済みは指定カンバンカードのサブタスクをタイトル・担当者・状態・期限を含む1件1行で表示すること。追加の上下余白縮小依頼に対する28pxは機能改善タスクの実装解釈で、独立したユーザー採用ではない。TaskChildrenSummaryのsummary + rowLayout=single-lineのタイトルだけmin-h-7、対象はBoardListとBoardViewの2箇所。メイン側報告では3テストファイル34件、対象ESLint、TypeScript、ui:refresh、ui:check成功。実画面1280px/390pxで行高28px、タイトル・状態・期限の横切れなし、documentWidth=390、データ変更なしを確認。ガイド架空行は28pxの試作表示、複合見本全体のstatusはtrial。"
+    },
+    {
+      "sample": "neo-brief-row-trial",
+      "sourceHash": "22625906e89ae2983052ffaac0a63cade66cdaa3e43b9f84752dcb069be83302",
+      "where": "2026-09-17 localhost:3003/ui-guide?sample=neo-brief-row-trial（通常幅・390px、catalog ui-guide-2026-09-17.3）",
+      "result": "ガイド試作の採用済み上下余白を更新後の見本で再確認。通常幅の行は幅907px・上下padding各2px、狭幅は行幅330px・上下padding各2pxで、長い補足が折り返される。行高は複数行メタのため70px。実Neoへの新しい変更を確認したものではない。共有ExtendedPreviews CSSの別クラス.oneLineRowへタスク行専用の遷移を追加し、.briefRowAdoptedの採用2px表示は維持。16/4px比較案は未採用。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "537a252f76fc7adfd5f482ee9b3c08bcc12c178116b6550c6ea8c649ea673f25",
+      "where": "2026-09-17 localhost:3003/ui-guide?sample=task-row-one-line-trial（wide・390px/長文・hover・Tab focus、catalog ui-guide-2026-09-17.3）",
+      "result": "ガイド見本で通常幅のサブタスク行915×28px、390px・長文条件では幅331px・高さ49pxで内容と付随情報が保持され折り返すことを確認。行をpointer-hoverすると控えめなmuted背景が適用され、color/background-color transitionは0.15s。キーボードTabで行へ移動するとfocus-visibleの2px ringが表示された。150ms/色値・行高28pxは見本または機能改善側の具体値で、独立した採用値ではない。複合見本はtrial、今回の実画面反映・検証は機能改善タスク待ち。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "eb88a170181d5b7726014f2b7fa55062d591b7d6f77488155ba7c84d9c15af79",
+      "where": "2026-09-17 localhost:3003/ui-guide?sample=task-row-one-line-trial（wide・390px、many=true）",
+      "result": "ガイド試作をwide・390pxで確認。AX上で架空サブタスク7件・未完了6件、それぞれ独立した1ボタン/枠の行にタイトルと担当者・状態・期限を含む。wide/390pxの見本で各サブタスクが独立行を保ち、狭幅では行内のタイトルと付随情報を折り返して保持する。完了済み1件のdetails summaryは閉じた状態で表示。実画面・共通部品・業務データ・保存/ドラッグ処理へは接続しない。複合見本全体はtrial。"
+    },
+    {
+      "sample": "neo-brief-row-trial",
+      "sourceHash": "299c44699e61e6e664eb978382f0438210d54c0b9fc0d1afd1602bf375b081e5",
+      "where": "2026-09-17 localhost:3003/ui-guide?sample=neo-brief-row-trial（390px・長文・複数担当者）",
+      "result": "既存のガイド見本を再確認。埋め込み幅388pxでdocumentWidth=388、担当者ヘッダー幅364px・高さ144px、担当者アイコン24×24px。担当者は架空データのみ。サイズ採用はNeoの今日の仕事・期限行だけで、候補フィルター内アバターの採用とは別。"
+    },
+    {
+      "sample": "neo-brief-assignee-filter-trial",
+      "sourceHash": "1b22b96ad5633bb173ccdecb026b73c942215b58a6003af23790544d3bb49150",
+      "where": "2026-09-17 localhost:3003/ui-guide?sample=neo-brief-assignee-filter-trial（390px・長文・多数、折返し/省略の2案）",
+      "result": "ガイド試作で本人を先頭かつ初期選択、架空担当者名の後に全員を表示。折返し案のdocumentWidth=373px（埋め込みviewport=388px）、省略案はdocumentWidth=388px。長い名前の全体はaccessible nameに維持し、「全員」は最後。架空タスクの絞り込みのみでリンク・通信・保存なし。見本は未採用trial。"
+    },
+    {
+      "sample": "neo-shared-countdown-trial",
+      "sourceHash": "7ee3d21619516dd6822412c243cb862cb48ab20ab825c3cfdcc6aaca7e906487",
+      "where": "2026-09-17 localhost:3003/ui-guide?sample=neo-shared-countdown-trial（390px・長文）",
+      "result": "390px見本の埋め込みviewport/document/body幅は388px。カード左paddingは24px（pl-6）。日数・架空タスク名にリンク0、ボタン0で、表示専用を確認。24pxは実装具体化値であり、採用は左余白を少し増やす方向まで。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "eb88a170181d5b7726014f2b7fa55062d591b7d6f77488155ba7c84d9c15af79",
+      "where": "2026-09-17 機能改善タスク報告・現行TaskChildrenSummary読取照合・JIMU委託カンバン広幅確認",
+      "result": "§13.24の限定反映だけを別状態で記録。機能改善タスク報告ではTaskChildrenSummaryの「完了済み N件」summaryにpy-1のみを適用し、computed height 24px・上下padding各4px、直上の見出し24pxを確認。アーカイブ/取りやめsummaryと他画面の余白は未変更。TaskChildrenSummary.test.tsx 6件、ESLint、TypeScript、ui:refresh、ui:check成功との報告。UIガイドタスクは実画面コードを編集していない。サンプルstatus=trial、複合implementation=pending。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "027a197ad3add430aac273263ddb361508ffbe1441a331ea9918aa95d9e99732",
+      "where": "2026-09-18 Luna*Lis Browserコメント（ユーザー提供画像・画面検証とは数えない）＋catalog ui-guide-2026-09-18.14の使い捨て統合コピーでガイドテスト",
+      "result": "この画面例は§13.16の既採用要件（全プロジェクトのカンバン展開サブタスクを各1件1行）の範囲内。7件の架空previewを7つの独立行として検証し、ExtendedPreviews.test.tsxとGuidePreview.test.tsxの計48テストが成功。新しいビュー・行高・余白値は採用しない。ユーザー画像自体はガイドタスク側の独立した実画面検証ではない。catalogでは試作trial、採用limited、実画面実装pendingを分離。"
+    },
+    {
+      "sample": "neo-home-layout-trial",
+      "sourceHash": "7dd36c98fa3b265b53a73fa484f3949e016257631d7109d4d720b14b87953e4c",
+      "where": "2026-09-18 catalog ui-guide-2026-09-18.14の使い捨て統合コピーでExtendedPreviews.test.tsxとGuidePreview.test.tsx",
+      "result": "期限／作業期間中の分類・並び・将来開始と完了済みの除外・保存済み進捗と日付の保持・親prefix省略・保留/待ちの別欄・30分予定と期限チップ同高を架空データとDOMテストで確認。48テスト成功。25pxは実装参照値で独立採用寸法ではない。ブラウザー描画・目視は未確認。ガイド試作trial、採用limited、実画面反映partial（CDP目視保留）を分離。"
+    },
+    {
+      "sample": "calendar",
+      "sourceHash": "fac3fc11cafcb8d37019c639b37467fd03c00f54ac49ff16f8c69099dba1f67e",
+      "where": "2026-09-18 catalog ui-guide-2026-09-18.14の使い捨て統合コピーでExtendedPreviews.test.tsxとGuidePreview.test.tsx",
+      "result": "完了済みと未完了の架空予定にチェック/丸印と「完了」/「未完了」の文言を表示し、両状態の行操作を含むDOMテストを確認。関連2ファイルの計48テスト成功。ブラウザー描画・目視と実画面反映確認は別状態で未完了。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "ead901272e6216bcdd687323ba0b93ff87033813ad664433cc52b5adbc5eeb09",
+      "where": "2026-09-18 ui-guide-2026-09-18.16の使い捨て統合コピー（d30fガイドTSX/CSS/catalog + bde4参照ソース/依存）：ExtendedPreviews.test.tsx、GuidePreview.test.tsx",
+      "result": "現行d30fガイドソースのReact DOMテスト48/48件が成功。専用テストで架空サブタスク7件を7つの独立したli/button行として確認し、各行にタイトル・担当者・状態・期限を表示。これはDOMテストであり、ブラウザー描画・実画面反映の確認ではない。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "2462015747a07129ec22ec6c2c8cb6695e827060e8471b0ef24c9770adfa989c",
+      "where": "2026-09-18 Luna*Lis Browserコメント（ユーザー提供画像）・d30fガイドDOMテスト",
+      "result": "コメントの「1サブタスク1行」は§13.16の全プロジェクトのカンバン内展開サブタスクへ適用する既採用範囲。架空見本は7件を各1つのli/button行としてテストし、タイトル・担当・状態・期限を同じ行に保持。Browser画像はユーザー提供の画面証拠で、独立したガイドブラウザー検証や機能画面実装確認とは数えない。機能改善タスクへ当該画面の実装確認を依頼済み。"
+    },
+    {
+      "sample": "neo-brief-row-trial",
+      "sourceHash": "cce7abdd83d072318a2451a2d55d54356de643398a615fb715fdbcd16f575b35",
+      "where": "2026-09-18 統合コピーのExtendedPreviews.test.tsx",
+      "result": "採用関係をDOMで確認。タイトル側gap-x-3を保ち、付随情報群のgap-x-2を見本の標準variantで表示。以前の16/4px比較variantを分離。値は実装参照で採用寸法ではない。ブラウザー描画は未確認。"
+    },
+    {
+      "sample": "neo-home-layout-trial",
+      "sourceHash": "fd7d28f0fc660dfbd440c03a76f9cbcd370372b132ecb8f135e505db9c8ab3ec",
+      "where": "2026-09-18 統合コピーのExtendedPreviews.test.tsx",
+      "result": "提案がある状態の履歴を折りたたみ、開くと5件を新しい順に縦表示し、各件が個別枠であること、反映済み変更にモアイコメントがあることをDOMテストで確認。提案なし時の1件表示は別variant。実Neo画面の目視とは別。"
+    },
+    {
+      "sample": "neo-shared-countdown-trial",
+      "sourceHash": "b0bd445def359651879b8de49929c880dde8154c73af82c094b83ad4a890ea82",
+      "where": "2026-09-18 統合コピーのExtendedPreviews.test.tsx",
+      "result": "採用variantが左端・上下余白・アイコンと内容の間隔の関係を表示し、pl-3/py-3/gap-x-3を実装参照値として案内することをDOMで確認。情報表示はリンク/ボタンを持たない。以前のpl-6参照variantは比較用。ブラウザー描画は未確認。"
+    },
+    {
+      "sample": "calendar-task-create-trial",
+      "sourceHash": "7b129e40168545a58443d43cb5d06e8c33467f36bfcfca2f4c930d8ebd4bf737",
+      "where": "2026-09-18 統合コピーのExtendedPreviews.test.tsx",
+      "result": "架空日付からガイド専用Dialogを開き、選択日が見出しと期限欄へ渡ること、キャンセルは閉じるだけで通信/保存しないことをDOMテストで確認。既存calendar参考見本とは別で、実TaskCreationFormをマウントしない。"
+    },
+    {
+      "sample": "task-structure-guidance-trial",
+      "sourceHash": "e3ed2f921340a708102b90863d8b44f8191a3072f4614d72a90473c275695d54",
+      "where": "2026-09-18 統合コピーのExtendedPreviews.test.tsx",
+      "result": "架空の親タスク、子Task、親内チェックリストを区別して説明し、文章だけでは関係不明な例で分類を決めず確認することをDOMテストで確認。変換/保存やデータ取得はない。一般閾値を追加しない。"
+    },
+    {
+      "sample": "neo-brief-row-trial",
+      "sourceHash": "cce7abdd83d072318a2451a2d55d54356de643398a615fb715fdbcd16f575b35",
+      "where": "2026-09-18 機能改善タスク報告とbde4現行ソース読み取り照合",
+      "result": "NeoBriefTaskRowではタイトル・付随情報のgap-x-3を維持し、付随情報群はgap-x-2。6 Vitestファイル179件、対象ESLint、TypeScript、git diff --check成功との報告。コード・自動テスト状況であり、ガイドDOMテストや画面目視とは別。"
+    },
+    {
+      "sample": "neo-home-layout-trial",
+      "sourceHash": "fd7d28f0fc660dfbd440c03a76f9cbcd370372b132ecb8f135e505db9c8ab3ec",
+      "where": "2026-09-18 機能改善タスク報告とOrganizationReviewInbox.tsx読み取り照合",
+      "result": "判断・記録をcreatedAt新しい順、縦表示、初期折りたたみ、各件枠付きで表示し、反映済みはauthorLabel=モアイのコメントとして示す実装を照合。6 Vitestファイル179件、対象ESLint、TypeScript、git diff --check成功との報告。Neoホーム履歴の独立画面目視完了とは扱わない。"
+    },
+    {
+      "sample": "neo-shared-countdown-trial",
+      "sourceHash": "b0bd445def359651879b8de49929c880dde8154c73af82c094b83ad4a890ea82",
+      "where": "2026-09-18 機能改善タスク報告とSharedCountdown.tsx読み取り照合",
+      "result": "左pl-3、上下py-3、アイコンと内容gap-x-3を適用。ログイン・読み込み表示にも同じ間隔関係。6 Vitestファイル179件、対象ESLint、TypeScript、git diff --check成功との報告。数値は実装値で、独立採用寸法ではない。"
+    },
+    {
+      "sample": "calendar-task-create-trial",
+      "sourceHash": "7b129e40168545a58443d43cb5d06e8c33467f36bfcfca2f4c930d8ebd4bf737",
+      "where": "2026-09-18 機能改善タスク報告とTaskCalendarView.tsx読み取り照合",
+      "result": "日付押下で既存TaskCreationFormをDialogに表示し、見出しと保存時期限へ選択日を渡す。キャンセルは未保存で閉じる。機能改善タスクから画面確認と関連テスト成功の報告あり。ガイドDOMテストとは別に記録。"
+    },
+    {
+      "sample": "task-structure-guidance-trial",
+      "sourceHash": "e3ed2f921340a708102b90863d8b44f8191a3072f4614d72a90473c275695d54",
+      "where": "2026-09-18 機能改善タスク報告とTaskOrganizer/organizationAnalysis/OrganizationProposalCard読み取り照合",
+      "result": "既存の会議内容・Task・コメント・チェック項目に根拠を求め、根拠がない一般論や件数だけで構成を決めない指示、提案カード上のモアイ説明と理由表示を確認。6 Vitestファイル179件、対象ESLint、TypeScript、git diff --check成功との報告。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "2462015747a07129ec22ec6c2c8cb6695e827060e8471b0ef24c9770adfa989c",
+      "where": "2026-09-18 追加カンバンBrowserコメント（ユーザー提供画像・独立検証とは数えない）＋最新ガイドを照合した使い捨て統合コピーのDOM/管理テスト",
+      "result": "1サブタスク1行は§13.16の既採用範囲で、プロジェクトを問わずカンバンカード内で展開する一覧に適用。現在の架空7件は各1つのli/button行で、タイトル・担当者・状態・期限を同じ行に表示することを確認。ExtendedPreviews.test.tsx＋GuidePreview.test.tsx 55/55、scripts/ui-guide.test.mjs 12/12、対象ESLint、tsc --noEmit --incremental false成功。これはガイドDOM/管理テストであり、ブラウザー表示・実画面反映確認ではない。見本全体trial、採用limited、実画面実装確認は別状態。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "3bc9919400383d1ce3f04810e6122701d1d9cddf01a92305b15784189ad8f3ee",
+      "where": "2026-09-18 狭幅サブタスク見本の修正後、使い捨て統合コピーでDOM/管理テスト・UIガイド検査、bde4で読み取りのみのUIガイド検査",
+      "result": "520px以下でサブタスク行を強制的に縦積みにしていたガイドCSSを、内容が収まる場合は横並びを保ち、長い文字は自然に折り返す見本へ修正。これは狭幅の具体寸法・配置を新たに採用するものではない。React DOMテスト55/55、静的管理テスト12/12成功。ui:refreshはbde4のNeoRecentChanges.tsxにある未登録`py-1 pb-4`で停止し書き込み前に終了、ui:checkは同指定とusage/release staleを報告。bde4での読み取り専用ui:checkは加えてOrganizationReviewInbox.tsxの6指定を報告。正本§13.5.3と正確な指定値の未採用を踏まえ、例外登録・生成物更新は行わない。直接のブラウザー描画・実画面反映確認とは区別し、見本はtrial、採用はlimited、他プロジェクトの実画面確認は機能改善タスク待ち。"
+    },
+    {
+      "sample": "neo-home-layout-trial",
+      "sourceHash": "ee6bbf5d60d8551511846820f8dab7c35ebc36276454a0626ba88832a69d9180",
+      "where": "2026-09-18 ガイドの履歴Card/一覧下端関係の更新後、bde4依存を使った使い捨て統合コピーのReact DOM/管理テスト・UIガイド検査",
+      "result": "過去の記録各件を共有Card density=compactで包み、独自枠border/radius/paddingを外した。task listの下端とpanel間gapはガイド専用変数で同じ値を参照する関係として表し、具体寸法は採用しない。正本とcatalogはNEO_TASK_LIST_END_CLASSを実装参照として記録。React DOMテスト55/55、静的管理テスト12/12、対象ESLint、tsc --noEmit --incremental false成功。ui:refreshはNeoRecentChanges.tsxの未登録py-1 pb-4で生成前に停止、ui:checkは同指定とusage/release staleを報告。読み取り専用の現行bde4 ui:checkではOrganizationReviewInbox.tsxの6指定も確認。例外登録・生成物更新は行わない。ユーザー提供画像は独立ブラウザー検証ではなく、実画面反映・確認は機能改善タスクの別状態。見本trial、採用limitedを維持。"
+    },
+    {
+      "sample": "task-row-one-line-trial",
+      "sourceHash": "912d322b905e3ecc17f9547c1b4052d30bfee551f1a288011399d3b9bb6bcc1d",
+      "where": "2026-09-18 機能改善タスクの統合後検査報告（bde4 usage.generated.json revision ui-guide-2026-09-18.17 とsourceHashを照合）",
+      "result": "全プロジェクトのカンバン展開サブタスクを1件1行にするガイド見本を含む現行catalog/specimen/TSX/CSSが統合先ソースと一致したとの報告。ui:refresh成功（34見本、legacy stylingは150ファイルに残存）、ui:check成功（新たな未登録overrideなし）。ガイドReact/Vitest 55/55、npm run ui:test 12/12、全体Vitest 305ファイル/2689件、TypeScript、ESLint、build、E2E smokeも成功との報告。これは統合後のソースと自動検証の記録で、今回のLuna*Lis画像に対する独立したブラウザー目視確認ではない。複合見本全体trial、採用limited、実画面確認を別状態で保持する。"
+    }
+  ],
+  "remaining": [
+    "既存の独自指定175ファイルは段階移行です。カンバン・ガント・カレンダーの専用配置、詳細内の一部編集欄、APIキー管理等の広い設定枠は用途上の違いを残しています。",
+    "AI設定・APIキー管理のカードは共通compactに接続済みですが、今回の実画面確認は未実施です。声かけ以外の通知・軽い確認の吹き出し内容は見本未収録（外枠は共有）です。",
+    "実データの提案採用・設定保存、実通信の失敗・競合は画面上で誘発していません。ガイドの架空データと関連テストで保存失敗・再試行を確認しました。",
+    "プロジェクト設定のアーカイブ取得でFirestoreの複合インデックス不足を確認しました。アーカイブ一覧の内容確認は未完了です。",
+    "390pxでは移動可能なモアイが一覧の一部と重なる場合があります。位置決定は今回の共有の見た目とは別に残しています。",
+    "適用済みはbde4のローカル3003です。b719とのファイル照合は不一致を検出し、未反映として扱っています。別作業ツリー・本番への反映、本人の使いやすさの承認は未実施です。",
+    "2026-09-16追記（旧記録を保持）：APIキー管理の実表示は今回390/768/1501pxで確認した。AI設定の今回の再確認は未実施。Google設定も390/1501pxで確認。旧「API未確認」の確認範囲を今回分だけ更新する。",
+    "2026-09-16追記：現在の生成台帳は172ファイル。catalogの追跡対象追加を含むため、175→172を3画面移行完了と扱わない。用途上の専用配置と詳細内の一部独自欄は残る。",
+    "2026-09-16追記：モアイ重なり・狭幅見出し/フィルター占有・名前列固定・履歴の対象への入口は、ガイド側の未採用案。新しい構成を実画面へ採用済み扱いにしない。",
+    "2026-09-16追記：通知などの8追加見本はガイド担当の参考/試作。会議提案・実タスク編集全項目は未収録。進捗見本は実TaskProgressView/TaskCardの再現ではない。",
+    "2026-09-16追記：詳細内には削除ボタン以外に無名アイコンが残る。全アクセシビリティ対応完了ではない。実機SR、全テーマ/条件、全テストスイート、production buildは今回未確認。",
+    "2026-09-16追記：Pro資料レビューは非公開情報を含む資料の送信が自動承認レビューで拒否され未実施。添付済み未送信下書きがある。",
+    "2026-09-16継続タスク追記：アーカイブの複合インデックス依存を解消し、JIMUの実在1件を取得/再表示確認。AI設定は390/1501pxで今回確認済み。旧未確認記録は当時の証拠として保持。全302ファイル2595テスト成功。実業務保存・本人承認・Codex実画面比較・モアイ重なり等は未確認/残存。",
+    "task-row-one-line-trial：§13.24の完了済みsummary余白は実画面反映・検証済み。複合実装はpendingで、全プロジェクトのカンバン展開サブタスク1件1行の適用・確認、および同役割行hover/focusの実画面反映が残る。28pxは実装解釈で独立したユーザー採用ではなく、色値・遷移時間の具体値も採用基準ではない。",
+    "最終確認時の共有bde4ではui:refresh/ui:checkが実画面ファイル17件のUnregistered display overrideを検出。ガイド範囲外の実画面をこのタスクで編集せず、legacy-styles baselineを再生成・変更しない。 【当時の履歴・現在の未解決事項ではない】後続の2026-09-18統合検査ではui:refresh/ui:checkが成功し、新たな未登録overrideはない（最新check参照）。",
+    "2026-09-17追記・ui-guide-2026-09-17.4：サブタスク1件1行の適用範囲を全プロジェクトのカンバンカード内で展開する一覧へ拡張。ガイドの架空サブタスク見本は以前のrevision .3で通常幅・390px/長文・7件を確認済みで、描画コードは今回変更していない。別プロジェクトを含む実画面への反映・検証は機能改善タスク待ち。名前付きdensity役割スタイルの参照追加は正本・管理テストのみ。",
+    "ui-guide-2026-09-17.4の最終管理確認：`npm run ui:check`は実画面17ファイルの未登録display overrideに加え、catalog・正本更新後のusage/release生成物staleを報告。実画面utilityをbaselineへ一括登録したり生成物を手編集したりせず、採用ルールと管理テストの範囲を維持する。 【当時の履歴・現在の未解決事項ではない】後続の2026-09-18統合検査ではui:refresh/ui:checkが成功し、生成情報も更新済み（最新check参照）。",
+    "2026-09-17追記：機能改善タスクへ採用範囲・検証依頼・未登録overrideの照合を含む内部メッセージを送信しようとしたが、自動審査が拒否。理由は別タスクへの内部実装状況・パス・未登録override情報の共有で、具体的な許可が確認できないため。迂回送信せず、実画面側はpendingのまま。 【当時の送信結果の履歴】その後の機能改善タスク報告で統合と自動検証が完了した。現在の残件は独立したブラウザー目視確認。",
+    "2026-09-17追記：最終確認 `npm run ui:check` は実画面2ファイルの未登録display overrideを7件（NeoRecentChanges.tsx 1件、OrganizationReviewInbox.tsx 6件）検出し、usage.generated.json/release.generated.json staleも報告。機能画面・legacy-styles baseline・生成ファイルは変更しない。 【当時の履歴・現在の未解決事項ではない】後続の2026-09-18統合検査ではui:refresh/ui:checkが成功し、新たな未登録overrideはない（最新check参照）。",
+    "2026-09-18追記：task-row-one-line-trialの架空サブタスクpreviewを1200x900・390x844で目視。両幅で7件それぞれ独立枠、document scrollWidth=viewport幅。広幅はタイトル・付随情報が同一行。390pxは長い項目の内部で折り返す。狭幅での細かな配置は採用基準に追加しない。実カンバン反映・確認は機能改善タスク待ち。",
+    "2026-09-18追記：機能改善タスクからの実装報告に基づき、neo-home-layout-trialの見出しを現行NeoToday表示のtext-lg（18px）・Sunrise size-5（20px）へ一致させ、CSS/DOMテストと直接previewを確認。1200px・390px双方でfont-size 18px、icon 20x20px、document scrollWidth=viewport幅。寸法はユーザー採用基準ではなく実装参照値。catalog revision ui-guide-2026-09-17.12。",
+    "2026-09-18追記：ui:checkの未登録7指定は、NeoRecentChanges.tsxが「最近の変更」リストの余白、OrganizationReviewInbox.tsxが過去の判断・記録の表示。後者の1件ずつの枠は試作状態で、いずれも今回採用基準で根拠づけられないためlegacy-stylesへ登録しない。実装元での採否と全体確認は機能改善タスク担当。 【当時の判断記録】最新ui:checkは成功し、新たな未登録overrideなし。検査用baselineへの例外追加をしない判断は維持。",
+    "2026-09-18 UIガイド調整d30f: catalog revision ui-guide-2026-09-17.13に、提案なし時のNeo過去記録1件表示/モアイコメント、担当者アイコン・自分初期値・全員アイコン、カード上のモアイ文字ラベル非表示、設定のダッシュボード選択先頭を記録。架空見本・テスト・正本も更新。JSON、catalog ID、TSX/CSS構文を確認し、node --test scripts/ui-guide.test.mjsは10/10成功、変更TSX/静的テストのESLintも成功。React/Vitestはd30fに共有typography sourceがなく、ui-guide preview pageのalias解決にも失敗して開始できず。ui:refresh/ui:checkはcatalog依存source欠落と現行7 overrideのため統合先bde4で機能改善タスクが確認するまで未実施。生成usage/releaseとlegacy-stylesは手編集せず、未登録7指定を追加登録していない。 【当時の実行不能記録・現在は後続検査で更新】ガイドDOM/管理テストに加え、統合先のui:refresh/ui:check、lint/build/E2E smokeも成功との報告（最新check参照）。",
+    "2026-09-18後続確認：d30fのガイドTSX/CSS/catalogと実行対象ファイルの一致を照合した使い捨て統合コピーで、ExtendedPreviews.test.tsx＋GuidePreview.test.tsxは48/48、scripts/ui-guide.test.mjsは10/10成功。d30f単独にNext依存や共有ソースがないという先行記録はそのまま保持し、ブラウザー描画の完了とは扱わない。",
+    "2026-09-18後続確認：使い捨て統合コピーでnode scripts/ui-guide.mjsを実行し、未登録display override 7指定（NeoRecentChanges.tsx 1、OrganizationReviewInbox.tsx 6）とusage.generated.json/release.generated.jsonのstaleを検出。実画面・legacy-styles baseline・生成物は変更しない。d30fからのNext dev起動はlisten EPERM: operation not permitted 127.0.0.1:3004で失敗し、ガイドpreviewのブラウザー目視は未完了。 【当時の失敗記録・現在は後続検査で更新】後続の機能改善タスク報告ではui:refresh/ui:checkが成功し、新たな未登録overrideなし。生成物staleは解消済み（最新check参照）。",
+    "2026-09-18後続：機能改善タスク報告に基づき、TaskChildrenSummaryのsingle-lineタイトル行はmin-h-7→min-h-6、外枠px-2.5 py-1と行間mt-1 space-y-0.5維持、通常幅/390pxで短いタイトル一行を確認済みと記録。24pxは実装参照で未採用。d30fのガイド試作も24px・外枠上下4px/左右10px・行間4px/2pxに更新。catalog .15時点ではReact/Vitest未実施と記録していたが、その後のcatalog .16相当ソースを使った使い捨て統合コピーで48/48件成功（checks[]参照）。直接のブラウザー描画・目視は未確認。",
+    "2026-09-18統合後：機能改善タスクは自動検証の成功を報告したが、独立したブラウザー目視確認は未実施。E2E smoke成功を画面の目視確認とは扱わない。"
+  ]
+}
