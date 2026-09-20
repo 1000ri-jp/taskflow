@@ -151,7 +151,7 @@
     },
     {
       "path": "src/components/ai/CompanionAvatar.tsx",
-      "sha256": "1da40a7aefb0ac172a66ac6951bc10ed04e9879a51c3cd3661923aba9ab121c4"
+      "sha256": "ae4d25e180f2d36df8042bfd3fb368af40ac7524d0de1f687f4620633b5e2035"
     },
     {
       "path": "src/components/ai/CompanionBubble.tsx",
@@ -1687,7 +1687,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "344ba64f88f99d7ab6e78f5fe32f8a658d23055abba702c4e811f20d38750251"
+      "sha256": "5016c64f9be039c32ea253be529de77de9ab248780f875a70e1e0baf52ba4ee4"
     },
     {
       "path": "src/lib/ui-guide/verification.json",

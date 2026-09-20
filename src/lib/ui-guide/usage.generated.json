@@ -2592,7 +2592,7 @@
       ]
     },
     "proposal-review-flow-trial": {
-      "sourceHash": "628e8796bc25ef5aa31e07ccadea1e092194d929d164043502da22d59087f90d",
+      "sourceHash": "41e67ac37692cad28e6ca29cdd99b118068c359331340d4d0e1d95de3272608c",
       "direct": [
         "src/app/(dashboard)/layout.tsx",
         "src/components/dashboard/NeoDashboard.tsx",

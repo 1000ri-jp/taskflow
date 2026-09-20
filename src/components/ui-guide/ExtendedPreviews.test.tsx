@@ -11,7 +11,7 @@ vi.mock('@/hooks/useNotifications', () => ({ useNotifications: () => { throw new
 vi.mock('@/hooks/useTaskWorkflow', () => ({ useTaskWorkflow: () => { throw new Error('task workflow mounted'); } }));
 
 const options: PreviewOptions = { sample: 'search', long: false, many: false, disabled: false, selected: false, fetchState: 'ready', variant: 'standard' };
-afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe('additional isolated guide specimens', () => {
   it('keeps incomplete retrieval distinct from no results, retries and supports keyboard selection', () => {
@@ -58,6 +58,8 @@ describe('additional isolated guide specimens', () => {
   });
 
   it('uses existing calendar period controls without mounting task creation', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-21T09:00:00+09:00'));
     render(<ExtendedPreview {...options} sample="calendar" />);
     fireEvent.click(screen.getByRole('button', { name: '週' }));
     expect(screen.getByRole('button', { name: '週' })).toHaveAttribute('aria-pressed', 'true');
