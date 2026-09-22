@@ -3,13 +3,12 @@ import { useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAISettingsStore } from '@/stores/aiSettingsStore';
 import { requestWorkSupport } from '@/lib/ai/support/workClient';
-import { workSupportContext, workSupportVersion, type WorkPreparation } from '@/lib/ai/support/workContext';
+import { workSupportVersion, type WorkPreparation } from '@/lib/ai/support/workContext';
 import type { Task, Checklist } from '@/types';
 export function WorkSupportPreparation({ task, tasks, userId, purpose, preferenceKey, once, onConsumed, disabled, actions, checklists }: {
   task: Task; tasks: Task[]; userId: string; purpose: string; preferenceKey: string; once: string; onConsumed: () => void; disabled: boolean; actions?: ReactNode; checklists?: readonly Checklist[];
 }) {
   const settings = useAISettingsStore();
-  const context = workSupportContext(task, tasks, userId, purpose);
   const version = workSupportVersion(task, tasks, userId, purpose, checklists) + preferenceKey;
   const [result, setResult] = useState<{ version: string; value: WorkPreparation } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -25,7 +24,7 @@ export function WorkSupportPreparation({ task, tasks, userId, purpose, preferenc
         setResult({ version, value }); onConsumed();
       } catch (error) { setError(error instanceof Error ? error.message : '整理できませんでした。'); }
       finally { guard.current = false; setBusy(false); }
-    }}>{busy ? '確認点を整理中…' : context.role === '確認担当' ? 'AIで確認点を整理' : context.role === '主担当・判断担当' ? 'AIで影響と判断点を整理' : 'AIで次の一歩を整理'}</Button>
+    }}>{busy ? '確認点を整理中…' : 'モアイに相談'}</Button>
     {actions}
     </div>
     {result && !visible && <p className="text-xs text-muted-foreground">仕事または手伝い方が変わりました。最新の内容で整理できます。</p>}

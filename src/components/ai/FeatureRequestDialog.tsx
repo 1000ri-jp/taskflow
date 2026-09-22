@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MessageSquarePlus, Send, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Popover, PopoverTrigger } from '@/components/ui/popover';
+import { CompanionPopoverContent } from '@/components/common/CompanionPopoverContent';
 import { useAISettingsStore } from '@/stores/aiSettingsStore';
 import { organizeFeatureRequest, registerFeatureRequest, requestList } from '@/lib/ai/featureRequest/client';
 import { uploadRequestAnnotation } from '@/lib/ai/featureRequest/attachmentUpload';
@@ -17,8 +18,8 @@ import { RequestAnnotations } from './RequestAnnotations';
 import type { Project } from '@/types';
 
 type Submission = { id: string; projectId: string; taskId?: string; uploaded: Set<string> };
-export function FeatureRequestDialog({ open, onOpenChange, userId, projects, projectsLoading, projectsFailed }: {
-  open: boolean; onOpenChange: (open: boolean) => void; userId: string; projects: Pick<Project, 'id' | 'name' | 'isArchived'>[]; projectsLoading: boolean; projectsFailed: boolean;
+export function FeatureRequestDialog({ open, onOpenChange, userId, projects, projectsLoading, projectsFailed, trigger }: {
+  open: boolean; onOpenChange: (open: boolean) => void; userId: string; projects: Pick<Project, 'id' | 'name' | 'isArchived'>[]; projectsLoading: boolean; projectsFailed: boolean; trigger?: ReactNode;
 }) {
   const settings = useAISettingsStore();
   let projectId = '', destinationError = '';
@@ -84,9 +85,11 @@ export function FeatureRequestDialog({ open, onOpenChange, userId, projects, pro
     } finally { lock.current = false; setBusy(false); setProgress(''); }
   };
   if (open && picking) return <ScreenAnnotationPicker onCapture={annotation => { updateAnnotations([...annotations, annotation]); setPicking(false); }} onCancel={() => setPicking(false)} />;
-  return <Dialog open={open} onOpenChange={value => { if (!lock.current) onOpenChange(value); }}>
-    <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl" showCloseButton={!busy} onEscapeKeyDown={event => { event.stopPropagation(); if (busy) event.preventDefault(); }} onInteractOutside={event => { if (busy) event.preventDefault(); }}>
-      <DialogHeader><DialogTitle className="flex items-center gap-2"><MessageSquarePlus className="h-5 w-5" aria-hidden="true" />要望を送る</DialogTitle><DialogDescription>{REQUEST_PROJECT} ＞ {REQUEST_LIST}</DialogDescription></DialogHeader>
+  const content = <>
+      <div className="space-y-1">
+        <p className="flex items-center gap-2 text-sm font-medium"><MessageSquarePlus className="h-4 w-4" aria-hidden="true" />要望を送る</p>
+        <p className="text-sm text-muted-foreground">{REQUEST_PROJECT} ＞ {REQUEST_LIST}</p>
+      </div>
       {receipt ? <div className="space-y-4"><p role="status">要望を登録しました。{annotations.length > 0 && ` 注釈画像 ${annotations.length} 件も送信しました。`}</p><p className="break-all text-xs text-muted-foreground">受付番号：{receipt.id}</p><a className="text-sm underline" href={`/projects/${encodeURIComponent(receipt.projectId)}/board?task=${encodeURIComponent(receipt.id)}`}>追加したタスクを開く</a><div><Button variant="outline" onClick={reset}>別の要望を送る</Button></div></div> : <>
         {(projectsLoading || destination.isFetching) && <p role="status" className="text-sm text-muted-foreground">送信先を確認中…</p>}
         {(projectsFailed || !projectsLoading && destinationError || destination.isError) && <div role="alert" className="space-y-1 text-sm text-destructive"><p>{projectsFailed ? 'プロジェクトを取得できませんでした。' : destinationError || (destination.error instanceof Error ? destination.error.message : '送信先を確認できません。')}</p>{destination.isError && <Button variant="ghost" size="sm" onClick={() => void destination.refetch()}>再取得</Button>}</div>}
@@ -108,6 +111,10 @@ export function FeatureRequestDialog({ open, onOpenChange, userId, projects, pro
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         {projectId && <a className="text-xs underline" href={`/projects/${encodeURIComponent(projectId)}/board`}>要望リストを開く</a>}
       </>}
-    </DialogContent>
-  </Dialog>;
+    </>;
+  const popover = <Popover open={open} onOpenChange={value => { if (!lock.current) onOpenChange(value); }}>
+    {trigger && <PopoverTrigger asChild>{trigger}</PopoverTrigger>}
+    <CompanionPopoverContent aria-label="要望を送る">{content}</CompanionPopoverContent>
+  </Popover>;
+  return popover;
 }

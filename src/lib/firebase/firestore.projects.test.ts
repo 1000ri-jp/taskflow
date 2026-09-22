@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   addDoc: vi.fn(),
+  setDoc: vi.fn(),
   updateDoc: vi.fn(),
   onSnapshot: vi.fn(),
   collection: vi.fn((_db: unknown, ...path: string[]) => path.join('/')),
@@ -10,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   doc: vi.fn(() => 'PROJECT_REF'),
   getDoc: vi.fn(),
   getFirebaseDb: vi.fn(() => 'DB'),
+  serverTimestamp: vi.fn(() => 'SERVER_TIMESTAMP'),
 }));
 
 vi.mock('firebase/firestore', () => ({
@@ -20,12 +22,12 @@ vi.mock('firebase/firestore', () => ({
   deleteDoc: mocks.deleteDoc,
   getDoc: mocks.getDoc,
   getDocs: vi.fn(),
-  setDoc: vi.fn(),
+  setDoc: mocks.setDoc,
   query: vi.fn(),
   where: vi.fn(),
   orderBy: vi.fn(),
   onSnapshot: mocks.onSnapshot,
-  serverTimestamp: vi.fn(),
+  serverTimestamp: mocks.serverTimestamp,
   writeBatch: mocks.writeBatch,
   Timestamp: class Timestamp {},
   documentId: vi.fn(),
@@ -36,7 +38,7 @@ vi.mock('./config', () => ({
   getFirebaseDb: mocks.getFirebaseDb,
 }));
 
-import { createProject, deleteProject, subscribeToArchivedTasks, updateList } from './firestore';
+import { createProject, createReference, deleteProject, subscribeToArchivedTasks, updateList, updateReference } from './firestore';
 import type { Project } from '@/types';
 
 describe('deleteProject', () => {
@@ -74,10 +76,28 @@ it('creates a project without a second priority or progress classification to ma
   mocks.addDoc.mockResolvedValue({ id: 'new-project' });
   const project = { name: '天然石の制作', description: '', ownerId: 'owner', memberIds: ['owner'], isArchived: false } as Omit<Project, 'id' | 'createdAt' | 'updatedAt'>;
   expect(await createProject(project, 'owner')).toBe('new-project');
-  expect(mocks.addDoc.mock.calls.map(([path]) => path)).toEqual(['projects', 'projects/new-project/members']);
+  expect(mocks.addDoc.mock.calls.map(([path]) => path)).toEqual(['projects']);
   expect(mocks.addDoc).toHaveBeenCalledWith('projects', expect.objectContaining({ name: project.name, ownerId: 'owner', memberIds: ['owner'] }));
-  expect(mocks.addDoc).toHaveBeenCalledWith('projects/new-project/members', expect.objectContaining({ userId: 'owner', role: 'admin' }));
+  expect(mocks.doc).toHaveBeenCalledWith('DB', 'projects', 'new-project', 'members', 'owner');
+  expect(mocks.setDoc).toHaveBeenCalledWith('PROJECT_REF', expect.objectContaining({ userId: 'owner', role: 'admin' }));
   expect(mocks.writeBatch).not.toHaveBeenCalled();
+});
+
+it('does not send optional undefined fields when saving list references', async () => {
+  vi.clearAllMocks();
+  mocks.addDoc.mockResolvedValue({ id: 'reference-1' });
+  const input = {
+    listId: 'list-1', title: '会場マップ', body: '確認用', links: [], attachments: [], order: 1,
+    createdBy: 'owner', updatedBy: 'owner', isArchived: false, sourceTaskId: undefined, conversionId: undefined,
+  };
+  expect(await createReference('project-1', input)).toBe('reference-1');
+  const created = mocks.addDoc.mock.calls[0][1] as Record<string, unknown>;
+  expect(created).not.toHaveProperty('sourceTaskId');
+  expect(created).not.toHaveProperty('conversionId');
+  await updateReference('project-1', 'reference-1', { sourceTaskId: undefined, conversionId: undefined });
+  const updated = mocks.updateDoc.mock.calls[0][1] as Record<string, unknown>;
+  expect(updated).not.toHaveProperty('sourceTaskId');
+  expect(updated).not.toHaveProperty('conversionId');
 });
 
 it('returns archived tasks newest first, keeps undated legacy rows, and forwards retrieval failure', () => {

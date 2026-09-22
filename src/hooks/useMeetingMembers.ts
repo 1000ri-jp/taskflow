@@ -10,6 +10,7 @@ export function useMeetingMembers(projects: { memberIds?: string[]; isArchived?:
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<{ key: string; users: MeetingMember[]; error: boolean }>({ key: '', users: [], error: false });
   useEffect(() => {
+    if (!enabled) return;
     let active = true;
     const ids: string[] = JSON.parse(key);
     // Promise boundary keeps cleanup effective even if the set of IDs is empty.
@@ -21,6 +22,6 @@ export function useMeetingMembers(projects: { memberIds?: string[]; isArchived?:
       }), error: false });
     }).catch(() => { if (active) setState({ key, users: [], error: true }); });
     return () => { active = false; };
-  }, [key, attempt]);
+  }, [enabled, key, attempt]);
   return { users: state.key === key && enabled ? state.users : [], isLoading: enabled && state.key !== key, hasError: enabled && state.key === key && state.error, refresh: () => { setState({ key: '', users: [], error: false }); setAttempt(a => a + 1); } };
 }

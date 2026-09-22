@@ -40,6 +40,7 @@ import type {
   ActivityLog,
   Milestone,
   MilestoneStatus,
+  ListReference,
 } from '@/types';
 
 // Helper to convert Firestore timestamp to Date
@@ -96,7 +97,7 @@ export async function createProject(
   });
 
   // Add owner as admin member
-  await addDoc(collection(db, 'projects', projectRef.id, 'members'), {
+  await setDoc(doc(db, 'projects', projectRef.id, 'members', userId), {
     userId,
     role: 'admin',
     joinedAt: serverTimestamp(),
@@ -308,21 +309,17 @@ export async function addProjectMember(
 ): Promise<void> {
   const db = getFirebaseDb();
 
-  // Add to members subcollection
-  await addDoc(collection(db, 'projects', projectId, 'members'), {
-    userId,
-    role,
-    joinedAt: serverTimestamp(),
-  });
-
-  // Update memberIds array
-  const project = await getProject(projectId);
-  if (project && !project.memberIds.includes(userId)) {
-    await updateDoc(doc(db, 'projects', projectId), {
-      memberIds: [...project.memberIds, userId],
+  const projectRef = doc(db, 'projects', projectId);
+  await runTransaction(db, async tx => {
+    const project = await tx.get(projectRef);
+    if (!project.exists()) throw new Error('プロジェクトが見つかりません。');
+    const memberIds: string[] = project.data().memberIds ?? [];
+    tx.set(doc(db, 'projects', projectId, 'members', userId), { userId, role, joinedAt: serverTimestamp() });
+    tx.update(projectRef, {
+      memberIds: [...new Set([...memberIds, userId])],
       updatedAt: serverTimestamp(),
     });
-  }
+  });
 }
 
 export async function updateMemberRole(
@@ -343,17 +340,18 @@ export async function removeProjectMember(
 ): Promise<void> {
   const db = getFirebaseDb();
 
-  // Remove from members subcollection
-  await deleteDoc(doc(db, 'projects', projectId, 'members', memberId));
-
-  // Update memberIds array
-  const project = await getProject(projectId);
-  if (project) {
-    await updateDoc(doc(db, 'projects', projectId), {
-      memberIds: project.memberIds.filter((id) => id !== userId),
+  if (memberId !== userId) throw new Error('メンバー情報の移行が必要です。管理者へ確認してください。');
+  const projectRef = doc(db, 'projects', projectId);
+  await runTransaction(db, async tx => {
+    const project = await tx.get(projectRef);
+    if (!project.exists()) throw new Error('プロジェクトが見つかりません。');
+    const memberIds: string[] = project.data().memberIds ?? [];
+    tx.delete(doc(db, 'projects', projectId, 'members', userId));
+    tx.update(projectRef, {
+      memberIds: memberIds.filter(id => id !== userId),
       updatedAt: serverTimestamp(),
     });
-  }
+  });
 }
 
 export async function getProjectMembers(
@@ -373,6 +371,78 @@ export async function getProjectMembers(
 }
 
 // ==================== Lists ====================
+
+function convertReferenceDoc(data: DocumentData, id: string): ListReference {
+  return {
+    ...data,
+    id,
+    projectId: String(data.projectId ?? ''),
+    listId: String(data.listId ?? ''),
+    title: String(data.title ?? ''),
+    body: String(data.body ?? ''),
+    comment: String(data.comment ?? ''),
+    links: Array.isArray(data.links) ? data.links : [],
+    attachments: Array.isArray(data.attachments) ? data.attachments.map((attachment: DocumentData) => ({ ...attachment, uploadedAt: toDate(attachment.uploadedAt) })) : [],
+    order: typeof data.order === 'number' ? data.order : 0,
+    createdAt: toDate(data.createdAt),
+    updatedAt: toDate(data.updatedAt),
+    isArchived: data.isArchived === true,
+    archivedAt: data.archivedAt ? toDate(data.archivedAt) : null,
+  } as ListReference;
+}
+
+export function subscribeToProjectReferences(
+  projectId: string,
+  callback: (references: ListReference[]) => void,
+  onError?: (error: Error) => void
+): () => void {
+  const db = getFirebaseDb();
+  const q = query(collection(db, 'projects', projectId, 'references'), orderBy('order', 'asc'));
+  return onSnapshot(q, snapshot => callback(snapshot.docs.map(doc => convertReferenceDoc(doc.data(), doc.id)).filter(reference => !reference.isArchived)), onError);
+}
+
+export async function createReference(
+  projectId: string,
+  data: Omit<ListReference, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>
+): Promise<string> {
+  const db = getFirebaseDb();
+  const reference = await addDoc(collection(db, 'projects', projectId, 'references'), omitUndefinedFields({
+    ...data,
+    projectId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }));
+  return reference.id;
+}
+
+export async function updateReference(
+  projectId: string,
+  referenceId: string,
+  data: Partial<Omit<ListReference, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>>,
+  expectedUpdatedAt?: Date
+): Promise<void> {
+  const db = getFirebaseDb();
+  const referenceRef = doc(db, 'projects', projectId, 'references', referenceId);
+  if (expectedUpdatedAt) {
+    await runTransaction(db, async transaction => {
+      const current = await transaction.get(referenceRef);
+      if (!current.exists()) throw new Error('関連情報が見つかりません。再読み込みしてください。');
+      const actual = toDate(current.data().updatedAt).getTime();
+      if (Math.abs(actual - expectedUpdatedAt.getTime()) > 1000) throw new Error('他の人が更新しました。再読み込みしてから編集してください。');
+      transaction.update(referenceRef, { ...omitUndefinedFields(data as Record<string, unknown>), updatedAt: serverTimestamp() });
+    });
+    return;
+  }
+  await updateDoc(referenceRef, { ...omitUndefinedFields(data as Record<string, unknown>), updatedAt: serverTimestamp() });
+}
+
+export async function archiveReference(projectId: string, referenceId: string, archivedBy?: string): Promise<void> {
+  await updateReference(projectId, referenceId, { isArchived: true, archivedAt: new Date(), archivedBy: archivedBy ?? null });
+}
+
+export async function restoreReference(projectId: string, referenceId: string): Promise<void> {
+  await updateReference(projectId, referenceId, { isArchived: false, archivedAt: null, archivedBy: null });
+}
 
 export async function createList(
   projectId: string,
@@ -406,9 +476,14 @@ export async function updateList(
 
 export async function deleteList(
   projectId: string,
-  listId: string
+  listId: string,
+  targetListId?: string,
 ): Promise<void> {
   const db = getFirebaseDb();
+  const referenceSnapshot = await getDocs(query(collection(db, 'projects', projectId, 'references'), where('listId', '==', listId)));
+  await Promise.all(referenceSnapshot.docs.map(reference => updateDoc(reference.ref, targetListId
+    ? { listId: targetListId, updatedAt: serverTimestamp() }
+    : { isArchived: true, archivedAt: serverTimestamp(), updatedAt: serverTimestamp() })));
   await deleteDoc(doc(db, 'projects', projectId, 'lists', listId));
 }
 
@@ -491,7 +566,8 @@ export async function createTask(
 export async function updateTask(
   projectId: string,
   taskId: string,
-  data: Partial<Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>>
+  data: Partial<Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>>,
+  expectedUpdatedAt?: Date | string
 ): Promise<void> {
   if ('parentTaskId' in data) throw new Error('親の変更は親タスクの選択から操作してください。');
   if (data.isCompleted === true) {
@@ -508,6 +584,11 @@ export async function updateTask(
     const current = await tx.get(ref);
     if (!current.exists()) throw new Error('タスクが見つかりません。開き直してください。');
     const before = current.data();
+    if (expectedUpdatedAt !== undefined) {
+      const expected = expectedUpdatedAt instanceof Date ? expectedUpdatedAt.toISOString() : expectedUpdatedAt;
+      const actual = before.updatedAt instanceof Timestamp ? before.updatedAt.toDate().toISOString() : String(before.updatedAt ?? '');
+      if (actual !== expected) throw new Error('仕事の情報が変わりました。最新の内容を確認してください。');
+    }
     const patch = omitUndefinedFields(data);
     if (hasTaskDateChange(patch)) assertTaskDates({ ...before, ...patch });
     const changes = taskEditChanges(before, patch);

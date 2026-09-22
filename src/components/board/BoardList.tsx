@@ -29,6 +29,7 @@ import type { List, Task, Label, Tag } from '@/types';
 import { ListColorPalette } from './ListColorPalette';
 import { useBoardSortStore } from '@/stores/boardSortStore';
 import { sortBoardTasks } from '@/lib/board/sort';
+import { ListReferencesPanel } from './ListReferencesPanel';
 
 interface BoardListProps {
   projectId: string;
@@ -151,7 +152,8 @@ export function BoardList({
       )}
       data-testid="board-list"
     >
-      {/* List Header */}
+      {/* List Header and related information share the same controller. */}
+      <ListReferencesPanel projectId={projectId} listId={list.id} renderTrigger={trigger => (
       <div className="flex flex-shrink-0 items-center justify-between p-3 pb-2">
         <div className="flex items-center gap-2">
           <button
@@ -183,6 +185,7 @@ export function BoardList({
             </h3>
           )}
           <span className="shrink-0 text-xs text-muted-foreground" title="親タスクの件数。サブタスクは各カードの中に表示します">{tasks.length}件</span>
+          {trigger}
         </div>
 
         <Popover>
@@ -222,6 +225,8 @@ export function BoardList({
         </Popover>
       </div>
 
+      )} />
+
           {/* Add Task - At Top */}
       <div className="flex-shrink-0 px-3 pb-2">
         {taskComposerPosition === 'top' ? (
@@ -229,10 +234,11 @@ export function BoardList({
         ) : (
           <Button
             variant="ghost"
-            className="w-full justify-start text-primary hover:text-primary"
+            size="sm"
+            className="h-7 w-full justify-end px-2 text-xs text-primary hover:text-primary"
             onClick={() => setTaskComposerPosition('top')}
           >
-            <Plus className="mr-1 h-4 w-4" />
+            <Plus className="mr-1 size-3" />
             タスクを追加
           </Button>
         )}

@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { NeoMorningBrief } from './NeoMorningBrief';
+import { NeoMorningBrief, NeoStrictDeadlines } from './NeoMorningBrief';
 import { viewTask } from '@/test/taskViewFixtures';
 import type { Notification } from '@/types';
 
@@ -162,5 +162,18 @@ describe('NeoMorningBrief task visibility', () => {
     for (const task of tasks) expect(section.getByText(task.title)).toBeVisible();
     expect(section.queryByText(/ほか.*件を見る/)).not.toBeInTheDocument();
     expect(section.getByRole('list')).toHaveClass('pb-4');
+  });
+});
+
+describe('NeoStrictDeadlines', () => {
+  it('does not render an empty standalone card', () => {
+    render(<NeoStrictDeadlines {...props} />);
+    expect(screen.queryByRole('region', { name: '期限厳守' })).not.toBeInTheDocument();
+  });
+
+  it('renders the standalone card only when a strict task exists', () => {
+    const strictTask = { ...props.tasks[0], id: 'strict', title: '厳守する作業', deadlinePolicy: 'strict' as const };
+    render(<NeoStrictDeadlines {...props} tasks={[strictTask]} />);
+    expect(screen.getByRole('region', { name: '期限厳守' })).toHaveTextContent('厳守する作業');
   });
 });

@@ -18,9 +18,8 @@
 
 # next.js
 /.next/
-/.next-real/
-/.next-qa-sep16/
-/.next-implementation-validation/
+# Isolated development and verification builds (NEXT_DEV_DIST_DIR).
+/.next-*/
 /out/
 
 # production
@@ -32,6 +31,7 @@
 
 # debug
 npm-debug.log*
+firestore-debug.log
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
@@ -55,3 +55,10 @@ next-env.d.ts
 .env.vercel
 .env.vercel.*
 .env.check
+
+# Local build logs, release evidence, source snapshots and private backups.
+# Keep reusable code, tests and documentation outside this directory.
+/tmp/
+
+# Internal recordings are supplied privately before release, never via public Git.
+/src/assets/help-videos/

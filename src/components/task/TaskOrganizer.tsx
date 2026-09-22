@@ -6,7 +6,9 @@ import { PreviewChanges } from './PreviewChanges';
 export { PreviewChanges } from './PreviewChanges';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { Popover, PopoverTrigger } from '@/components/ui/popover';
 import { MovableDialogContent } from '@/components/ui/movable-dialog';
+import { CompanionPopoverContent } from '@/components/common/CompanionPopoverContent';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAISettingsStore } from '@/stores/aiSettingsStore';
@@ -15,7 +17,7 @@ import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import { organizationLabels, type OrganizationReconsideration, type OrganizationAnalysis, type OrganizationMultiAnalysis, type OrganizationContext, type OrganizationDraft, type OrganizationPreview, type OrganizationSource } from '@/lib/task/organizationTypes';
 import { DraftComparison, draftTitle, OrganizationDraftEditor, type OrganizationTaskOption } from './OrganizationDraftEditor';
 
-type Props = { projectId?: string; projects?: { id: string; name: string }[]; projectName?: string; tasks: OrganizationTaskOption[]; source?: OrganizationSource; initialDraft?: OrganizationDraft; initialRecord?: OrganizationPreview; label?: string; disabled?: boolean; open?: boolean; onOpenChange?: (open: boolean) => void; notice?: ReactNode };
+type Props = { projectId?: string; projects?: { id: string; name: string }[]; projectName?: string; tasks: OrganizationTaskOption[]; source?: OrganizationSource; initialDraft?: OrganizationDraft; initialRecord?: OrganizationPreview; label?: string; disabled?: boolean; open?: boolean; onOpenChange?: (open: boolean) => void; notice?: ReactNode; presentation?: 'dialog' | 'popover'; trigger?: ReactNode };
 type Row = { id: number; projectId: string; requiresBasis?: boolean; draft: OrganizationDraft; sourceKey: string; basis?: OrganizationAnalysis['basis']; selected: boolean; confirmed: boolean; preview?: OrganizationPreview; beforeTasks?: OrganizationTaskOption[]; state: 'ready' | 'applied' | 'held' | 'skipped' | 'failed'; clarifications?: string[]; error?: string; stale?: boolean };
 const statusLabels = { pending: '反映前', held: '保留', applied: '反映済み', undone: '取消済み', skipped: '見送り' };
 const emptyContext: OrganizationContext = { members: [], lists: [] };
@@ -33,7 +35,7 @@ export function TaskOrganizer(props: Props) {
   return <OrganizerSession key={JSON.stringify([props.projectId, props.projects?.map(project => project.id).sort(), props.source, props.initialDraft, props.initialRecord?.id])} {...props} />;
 }
 
-function OrganizerSession({ projectId, projects, projectName, tasks, source: initialSource = emptySource, initialDraft, initialRecord, label = '仕事を整理・反映', disabled = false, open: controlledOpen, onOpenChange, notice }: Props) {
+function OrganizerSession({ projectId, projects, projectName, tasks, source: initialSource = emptySource, initialDraft, initialRecord, label = '仕事を整理・反映', disabled = false, open: controlledOpen, onOpenChange, notice, presentation = 'dialog', trigger }: Props) {
   const multi = projects !== undefined;
   const scopes = projects ?? (projectId ? [{ id: projectId, name: projectName ?? projectId }] : []);
   const projectIds = [...new Set(scopes.map(project => project.id))];
@@ -213,10 +215,11 @@ function OrganizerSession({ projectId, projects, projectName, tasks, source: ini
       {row.preview && terminal && <div className="flex flex-wrap gap-2"><Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => void showOriginal(row.preview!)}>元の資料を開く</Button>{row.state === 'applied' ? <Button type="button" variant="outline" size="sm" disabled={!rowMayWrite} onClick={() => void work(async () => { const result = await requestOrganization<OrganizationPreview>({ action: 'undo', projectId: row.projectId, id: row.preview!.id }); remember(result); updateRow(row.id, { preview: result, state: 'skipped', error: '反映を戻しました。' }); })}>反映を戻す</Button> : <Button type="button" variant="ghost" size="sm" disabled={!rowMayWrite} onClick={() => void reconsider(row.preview!)}>最新の仕事と照合し直す</Button>}</div>}
     </article>;
   };
-  return <>
-    {controlledOpen === undefined && <Button type="button" size="sm" variant="outline" disabled={disabled} onClick={() => setOpen(true)}>{label}</Button>}
-    <Dialog open={open} onOpenChange={setOpen}>{open && <MovableDialogContent title="仕事の整理と反映" description="タスク・サブタスク・チェックリストの使い分けも、根拠がある場合にモアイが提案理由で説明します。変更は確認して採用するまで保存しません。">
-      <div className="space-y-4">
+  const content = <div className="space-y-4">
+        {presentation === 'popover' && <div className="space-y-1">
+          <p className="text-sm font-medium">仕事の整理と反映</p>
+          <p className="text-sm text-muted-foreground">メモを確認して、必要な変更だけを選んで反映します。</p>
+        </div>}
         {notice}
         {multi ? <p className="break-words text-sm font-medium">対象：AIがプロジェクトを仕分け</p> : projectName && <p className="break-words text-sm font-medium">対象：{projectName}</p>}
         {mock && <p className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">架空のデータ・分析例です。反映先はこのブラウザだけです。</p>}
@@ -245,8 +248,16 @@ function OrganizerSession({ projectId, projects, projectName, tasks, source: ini
         {records.length > 0 && <details className="text-xs"><summary className="cursor-pointer">採用・保留の記録（{records.length}件）</summary><div className="mt-2 space-y-2">{[...records].reverse().map(item => <button type="button" key={recordKey(item)} className="block w-full rounded border p-2 text-left" onClick={() => { setRecord(item); setOriginal(null); }}>{multi && `${projectLabel(item.projectId)} · `}{statusLabels[item.status]} · {item.changes[0]?.title ?? item.sourceTitle} · {organizationLabels[item.kind]}</button>)}</div></details>}
 
         {original && <details open className="rounded border p-3 text-xs"><summary className="cursor-pointer">元の資料：{original.title}</summary>{original.occurredAt && <p className="my-2">資料日時：{new Date(original.occurredAt).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}</p>}<p className="mt-2 whitespace-pre-wrap break-words">{original.text}</p></details>}
-      </div>
-    </MovableDialogContent>}</Dialog>
+  </div>;
+  const defaultTrigger = trigger ?? <Button type="button" size="sm" variant="outline" disabled={disabled} onClick={() => setOpen(true)}>{label}</Button>;
+  return presentation === 'popover' ? <Popover open={open} onOpenChange={setOpen}>
+    <PopoverTrigger asChild>{defaultTrigger}</PopoverTrigger>
+    <CompanionPopoverContent aria-label="仕事の整理と反映">{content}</CompanionPopoverContent>
+  </Popover> : <>
+    {controlledOpen === undefined && defaultTrigger}
+    <Dialog open={open} onOpenChange={setOpen}>
+      {open && <MovableDialogContent title="仕事の整理と反映" description="タスク・サブタスク・チェックリストの使い分けも、根拠がある場合にモアイが提案理由で説明します。変更は確認して採用するまで保存しません。">{content}</MovableDialogContent>}
+    </Dialog>
   </>;
 }
 

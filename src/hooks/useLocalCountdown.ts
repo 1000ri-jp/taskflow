@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { DashboardTask } from '@/lib/dashboard/brief';
-import { isCountdownTarget, type CountdownTarget, type SharedCountdownData } from '@/lib/dashboard/countdown';
+import { isCountdownTarget, milestoneSummary, type CountdownMilestone, type CountdownTarget, type SharedCountdownData } from '@/lib/dashboard/countdown';
 
 export const LOCAL_COUNTDOWN_KEY = 'taskflow.testCountdown.v1';
 interface Selection { target: CountdownTarget | null; revision: number }
@@ -14,7 +14,7 @@ function readSelection(): Selection {
   return { target: value.target, revision: value.revision };
 }
 
-export function useLocalCountdown(tasks: DashboardTask[], tasksLoading: boolean) {
+export function useLocalCountdown(tasks: DashboardTask[], tasksLoading: boolean, milestones: CountdownMilestone[] = []) {
   // The local panel mounts only after the client origin has been resolved.
   const [selection, setSelection] = useState<Selection | null>(() => { try { return readSelection(); } catch { return null; } });
   const [error, setError] = useState<Error | null>(() => selection ? null : new Error('このブラウザの保存設定を読み込めません。'));
@@ -29,6 +29,10 @@ export function useLocalCountdown(tasks: DashboardTask[], tasksLoading: boolean)
   }, [refresh]);
   const resolve = (saved: Selection): SharedCountdownData => {
     if (!saved.target) return { ...saved, task: null, status: 'unset' };
+    if (saved.target.milestoneId) {
+      const milestone = milestones.find(item => item.projectId === saved.target!.projectId && item.id === saved.target!.milestoneId);
+      return { ...saved, status: milestone ? 'ready' : 'unavailable', task: milestone ? milestoneSummary(milestone) : null };
+    }
     const task = tasks.find((task) => task.projectId === saved.target!.projectId && task.id === saved.target!.taskId && !task.isArchived);
     if (!task) return { ...saved, task: null, status: 'unavailable' };
     return { ...saved, status: 'ready', task: { title: task.title, projectName: task.projectName, dueDate: task.dueDate && !Number.isNaN(task.dueDate.getTime()) ? task.dueDate.toISOString() : null, isCompleted: task.isCompleted, isAbandoned: task.isAbandoned } };
@@ -43,7 +47,8 @@ export function useLocalCountdown(tasks: DashboardTask[], tasksLoading: boolean)
     save: async ({ target, revision }: Selection) => {
       const current = readSelection();
       if (current.revision !== revision) { await refresh(); throw new Error('別のタブで設定が変わりました。設定を開き直してください。'); }
-      if (target && !tasks.some((task) => task.id === target.taskId && task.projectId === target.projectId && task.dueDate && !Number.isNaN(task.dueDate.getTime()) && !task.isArchived && !task.isCompleted && !task.isAbandoned)) throw new Error('期限のある未完了タスクを選んでください。');
+      if (target?.milestoneId && !milestones.some(item => item.id === target.milestoneId && item.projectId === target.projectId && item.dueDate && Number.isFinite(item.dueDate.getTime()) && item.status !== 'achieved' && item.status !== 'cancelled')) throw new Error('日付のある未達成の節目を選んでください。');
+      if (target?.taskId && !tasks.some((task) => task.id === target.taskId && task.projectId === target.projectId && task.dueDate && !Number.isNaN(task.dueDate.getTime()) && !task.isArchived && !task.isCompleted && !task.isAbandoned)) throw new Error('期限のある未完了タスクを選んでください。');
       const saved = { target, revision: revision + 1 };
       try { localStorage.setItem(LOCAL_COUNTDOWN_KEY, JSON.stringify(saved)); }
       catch { throw new Error('このブラウザに設定を保存できませんでした。'); }

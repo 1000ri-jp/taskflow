@@ -63,7 +63,10 @@ export function useOrganizationLabTasks(enabled: boolean, userId: string | null)
     }).catch(error => { if (active) setSnapshot({ userId, projects: [], tasks: [], projectTaskStatus: new Map(), error: error instanceof Error ? error : new Error('隔離データを取得できません。') }); });
     return () => { active = false; unsubscribe(); };
   }, [enabled, userId]);
-  const current = enabled && snapshot?.userId === userId ? snapshot : null;
+  // Keep the last successful snapshot mounted while the desktop shell is
+  // hidden. Re-showing the mini can then restore its content immediately;
+  // the effect above still removes listeners while inactive.
+  const current = snapshot?.userId === userId ? snapshot : null;
   const allProjectTasks = current?.tasks ?? [];
   const tasks = allProjectTasks.filter(task => !!userId && task.assigneeIds.includes(userId) && !task.isCompleted && !task.isArchived && !task.isAbandoned)
     .sort((a, b) => (a.dueDate?.getTime() ?? Infinity) - (b.dueDate?.getTime() ?? Infinity));

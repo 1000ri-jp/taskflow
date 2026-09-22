@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 import type { Notification } from '@/types';
 import type { DashboardTask } from '@/lib/dashboard/brief';
 import { CompanionAI } from './CompanionAI';
@@ -35,6 +36,7 @@ vi.mock('./ChatMessage', () => ({ ChatMessage: ({ message }: { message: { conten
 vi.mock('./ChatInput', () => ({ ChatInput: () => <textarea aria-label="会話の入力" /> }));
 vi.mock('./ToolConfirmDialog', () => ({ ToolConfirmDialog: () => null }));
 vi.mock('./ScopedConversation', () => ({ ScopedConversation: () => <p>保存済みの返信案</p> }));
+vi.mock('@/components/desktop/DesktopMiniApp', () => ({ DesktopMiniPanel: () => <section aria-label="TaskSlowth Mini">今日のブリーフィングとモアイ</section> }));
 
 beforeEach(() => {
   vi.clearAllMocks(); localStorage.clear(); sessionStorage.clear();
@@ -159,6 +161,17 @@ it('keeps the unread tab badge current and hides counts while loading or failed'
   expect(fake.notices.markAllAsRead).not.toHaveBeenCalled();expect(fake.notices.markAsRead).not.toHaveBeenCalled();
 });
 
+it('offers one native Mini toggle without embedding the app', async () => {
+  render(<CompanionAI projectId={null} autoGreeting={false} quickCheckEnabled={false} />);
+  await act(async () => {});
+  fireEvent.click(screen.getByRole('button', { name: 'AIに相談する' }));
+  fireEvent.click(screen.getByRole('button', { name: 'ミニ' }));
+  expect(screen.getByRole('switch', { name: 'Mac版Miniを別ウィンドウで表示' })).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: /ON・|OFF・/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'TaskSlowth Mini' })).not.toBeInTheDocument();
+  expect(window.location.pathname).toBe('/');
+});
+
 vi.mock('./AISupportAdjust', () => ({ AISupportAdjust: () => <button>手伝い方を変更</button> }));
 
 
@@ -172,7 +185,7 @@ it.each([null, 'project-1'])('uses the existing overdue action once in the conve
   expect(fake.conversation.sendMessage).toHaveBeenCalledExactlyOnceWith('期限切れのタスクはありますか？');
 });
 
-vi.mock('./FeatureRequestDialog', () => ({ FeatureRequestDialog: () => null }));
+vi.mock('./FeatureRequestDialog', () => ({ FeatureRequestDialog: ({ trigger }: { trigger?: ReactNode }) => trigger ?? null }));
 
 
 it('shows comments without AI or read side effects and retains the unsent conversation', async () => {

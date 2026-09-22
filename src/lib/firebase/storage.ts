@@ -220,3 +220,16 @@ export async function uploadCommentAttachment(
     size: file.size,
   };
 }
+
+export async function uploadReferenceAttachment(
+  projectId: string,
+  referenceId: string,
+  file: File,
+): Promise<{ id: string; referenceId: string; url: string; name: string; type: string; size: number; uploadedAt: Date }> {
+  if (file.size > 10 * 1024 * 1024) throw new Error('ファイルサイズは10MB以下にしてください');
+  const storage = getFirebaseStorage();
+  const fileName = createUniqueStorageObjectName(file.name);
+  const fileRef = ref(storage, `projects/${projectId}/references/${referenceId}/attachments/${fileName}`);
+  await uploadBytes(fileRef, file);
+  return { id: fileName, referenceId, url: await getDownloadURL(fileRef), name: file.name, type: file.type, size: file.size, uploadedAt: new Date() };
+}

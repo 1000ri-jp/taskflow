@@ -8,7 +8,8 @@ import { useOrganizationRecords } from '@/hooks/useOrganizationRecords';
 import { OrganizationProposalCard } from './OrganizationProposalCard';
 import { TaskOrganizer } from '@/components/task/TaskOrganizer';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import { requestOrganization } from '@/lib/task/organizationClient';
 import { type OrganizationContext, type OrganizationPreview } from '@/lib/task/organizationTypes';
@@ -117,15 +118,27 @@ function ReviewInbox({ userId, projects, tasks, disabled = false, accessError = 
           <summary className="cursor-pointer"><small><strong>これまでの判断・記録（{history.length}件）</strong></small></summary>
           <ul className="mt-3 space-y-3">
             {history.map(item => <li key={recordKey(item)}>
-              <Card density="compact">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1"><strong>{statusLabels[item.status]}</strong><CardDescription>{projects.find(project => project.id === item.projectId)?.name}</CardDescription><button type="button" disabled={!!busy || disabled} className="break-words text-left hover:underline" onClick={() => setSelected(item)}>{item.changes[0]?.title ?? item.sourceTitle}</button></div>
-                {item.status === 'applied'
-                  ? <CardDescription><strong>🗿 モアイのコメント：</strong>{item.changes.map(change => change.summary).join('・')}</CardDescription>
-                  : <CardDescription>{item.changes.map(change => change.summary).join('・')}</CardDescription>}
-                <CardDescription>資料：{item.sourceTitle}</CardDescription>
-                {item.followUp?.kind === 'at' && <CardDescription>{item.followUp.triggeredAt ? '指定した日時になりました' : `指定日時：${new Date(item.followUp.at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`}</CardDescription>}
-                {item.followUp?.kind === 'when' && <CardDescription>条件を記録：{item.followUp.condition}（自動検知なし）</CardDescription>}
-                {item.status === 'applied' && <CardDescription>{[...new Map(item.changes.map(change => [change.taskId, change])).values()].map((change, index) => <span key={change.taskId}>{index > 0 && <span aria-hidden="true"> ・ </span>}<Link prefetch={false} className="text-primary underline" href={`/projects/${encodeURIComponent(item.projectId)}/board?task=${encodeURIComponent(change.taskId)}`}>反映した仕事を開く{item.changes.length > 1 ? `：${change.title}` : ''}</Link></span>)}</CardDescription>}
+              <Card density="compact" className="min-w-0 [--tf-card-inline:var(--tf-card-block)]">
+                <CardHeader className="min-w-0">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <Badge variant="secondary">{item.status === 'applied' && <Check aria-hidden="true" />}{statusLabels[item.status]}</Badge>
+                    <CardDescription className="min-w-0 break-words">{projects.find(project => project.id === item.projectId)?.name}</CardDescription>
+                    <CardTitle className="min-w-0 pl-1 break-words text-sm font-bold">
+                      <button type="button" disabled={!!busy || disabled} className="max-w-full break-words text-left hover:underline" onClick={() => setSelected(item)}>{item.changes[0]?.title ?? item.sourceTitle}</button>
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="min-w-0 space-y-2 break-words">
+                  {item.status === 'applied'
+                    ? <CardDescription className="rounded-md bg-neutral-100 p-3 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"><span aria-hidden="true">🗿 </span>{item.changes.map(change => change.summary).join('・')}</CardDescription>
+                    : <CardDescription>{item.changes.map(change => change.summary).join('・')}</CardDescription>}
+                  <CardDescription>資料：{item.sourceTitle}</CardDescription>
+                  {item.followUp?.kind === 'at' && <CardDescription>{item.followUp.triggeredAt ? '指定した日時になりました' : `指定日時：${new Date(item.followUp.at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`}</CardDescription>}
+                  {item.followUp?.kind === 'when' && <CardDescription>条件を記録：{item.followUp.condition}（自動検知なし）</CardDescription>}
+                </CardContent>
+                {item.status === 'applied' && <CardFooter className="min-w-0 flex-wrap items-baseline gap-x-3 gap-y-2">
+                  {[...new Map(item.changes.map(change => [change.taskId, change])).values()].map((change, index) => <Link key={change.taskId} prefetch={false} className="max-w-full break-words text-sm text-primary underline underline-offset-4" href={`/projects/${encodeURIComponent(item.projectId)}/board?task=${encodeURIComponent(change.taskId)}`}>{index === 0 && '反映した仕事：'}{change.title}</Link>)}
+                </CardFooter>}
               </Card>
             </li>)}
           </ul>

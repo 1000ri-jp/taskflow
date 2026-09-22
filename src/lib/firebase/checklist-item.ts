@@ -1,6 +1,6 @@
 import { doc, runTransaction } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from './config';
-import { assertChecklistItemScope, mutateChecklistItems, validateChecklistItemDueDate, type ChecklistItemMutation } from '@/lib/utils/checklist-item';
+import { assertChecklistItemScope, mutateChecklistItems, validateChecklistDeadline, validateChecklistItemDueDate, type ChecklistItemMutation } from '@/lib/utils/checklist-item';
 import type { ChecklistItem } from '@/types';
 
 export async function mutateChecklistItem(
@@ -8,6 +8,7 @@ export async function mutateChecklistItem(
 ): Promise<ChecklistItem[]> {
   assertChecklistItemScope(projectId, taskId, checklistId);
   const mutation = action.kind === 'add' ? { ...action, item: { ...action.item } } : { ...action };
+  if (mutation.kind === 'deadline') validateChecklistDeadline(mutation);
   if (mutation.kind === 'dueDate') validateChecklistItemDueDate(mutation.dueDate);
   const userId = getFirebaseAuth().currentUser?.uid;
   if (!userId) throw new Error('ログインし直してください。');
@@ -32,6 +33,10 @@ export async function mutateChecklistItem(
     const next = mutateChecklistItems(items, mutation);
     if (items.length !== next.length || next.some((item, index) => item !== items[index])) {
       transaction.update(checklistRef, { items: next });
+    }
+    // This hint only narrows subscriptions. Completion, text and dates are read live from the checklist.
+    if (mutation.kind === 'deadline' && mutation.deadlinePolicy === 'strict' && !task.hasChecklistDeadlines) {
+      transaction.update(taskRef, { hasChecklistDeadlines: true });
     }
     return next;
   });

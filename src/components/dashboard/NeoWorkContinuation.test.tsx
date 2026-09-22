@@ -11,7 +11,7 @@ import { DEFAULT_AI_SUPPORT } from '@/lib/ai/support/profile';
 import { requestAISupport } from '@/lib/ai/support/client';
 import type { ReactElement } from 'react';
 vi.mock('@/lib/ai/support/client', () => ({ requestAISupport: vi.fn(async () => DEFAULT_AI_SUPPORT) }));
-vi.mock('@/components/ai/WorkSupportPreparation', () => ({ WorkSupportPreparation: ({ actions }: { actions?: import('react').ReactNode }) => <section><button>AIで次の一歩を整理</button>{actions}</section> }));
+vi.mock('@/components/ai/WorkSupportPreparation', () => ({ WorkSupportPreparation: ({ actions }: { actions?: import('react').ReactNode }) => <section><button>モアイに相談</button>{actions}</section> }));
 let client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 function render(ui: ReactElement) { const view = renderRTL(<QueryClientProvider client={client}>{ui}</QueryClientProvider>); return { ...view, rerender: (next: ReactElement) => view.rerender(<QueryClientProvider client={client}>{next}</QueryClientProvider>) }; }
 const state = vi.hoisted(() => ({ task: null as Task | null, loading: false, error: null as string | null, owner: 'worker', comments: [] as Comment[], checklists: [] as Checklist[], toggle: vi.fn() }));
@@ -34,7 +34,7 @@ it('starts from the same job, prepares the completion criteria, and submits only
  await waitFor(() => expect(sendWorkflow).toHaveBeenCalledWith('project-1', 'parent', expect.objectContaining({ action: 'start' })));
  const started = task({ workProgress: 'started', updatedAt: new Date('2026-09-13T01:00:00Z') }); state.task = started;
  ui.rerender(<NeoWorkContinuation {...props([started, next])} />);
- fireEvent.click(screen.getByRole('button', { name: '資料を送って確認してもらう' }));
+ fireEvent.click(screen.getByRole('button', { name: '担当者へ相談' }));
  await waitFor(() => expect(screen.getByRole('textbox', { name: '確認してほしいこと' })).toBeEnabled());
  expect(screen.getByRole('textbox', { name: '確認してほしいこと' })).toHaveValue('次の完了条件を確認してください。\n入稿用PDFの確認が済んでいる');
  const reviewers = within(screen.getByRole('group', { name: '確認する人（複数可）' }));
@@ -48,7 +48,7 @@ it('starts from the same job, prepares the completion criteria, and submits only
 it('requires a new check after the job changes while keeping the authored request intact', async () => {
  const parent = task({ workProgress: 'started' }); state.task = parent;
  const ui = render(<NeoWorkContinuation {...props([parent])} />); await act(async () => {});
- fireEvent.click(screen.getByRole('button', { name: '資料を送って確認してもらう' }));
+ fireEvent.click(screen.getByRole('button', { name: '担当者へ相談' }));
  await waitFor(() => expect(screen.getByRole('textbox', { name: '確認してほしいこと' })).toBeEnabled());
  fireEvent.change(screen.getByRole('textbox', { name: '確認してほしいこと' }), { target: { value: '会場名を確認してください' } });
  fireEvent.click(within(screen.getByRole('group', { name: '確認する人（複数可）' })).getByRole('checkbox', { name: '確認担当' }));
@@ -83,14 +83,14 @@ it('retains a completed selected job and closes actions when its project snapsho
 it('closes the submitted form after a review round and does not reopen it automatically after approval', async () => {
  const parent = task({ workProgress: 'started' }); state.task = parent;
  const ui = render(<NeoWorkContinuation {...props([parent])} />); await act(async () => {});
- fireEvent.click(screen.getByRole('button', { name: '資料を送って確認してもらう' }));
+ fireEvent.click(screen.getByRole('button', { name: '担当者へ相談' }));
  await waitFor(() => expect(screen.getByRole('textbox', { name: '確認してほしいこと' })).toBeEnabled());
  const review = task({ id: 'review', parentTaskId: 'parent', taskKind: 'review_request', assigneeIds: ['reviewer'], review: { round: 1, policy: 'any', request: '確認してください', attachments: [], responses: {}, requestedAt: '2026-09-13T00:00:00Z' } });
  ui.rerender(<NeoWorkContinuation {...props([parent, review])} />);
  expect(screen.queryByRole('textbox', { name: '確認してほしいこと' })).not.toBeInTheDocument();
  const approved = { ...review, isCompleted: true, review: { ...review.review!, responses: { reviewer: { outcome: 'approved' as const, note: '', at: '2026-09-13T01:00:00Z' } } } };
  ui.rerender(<NeoWorkContinuation {...props([parent, approved])} />);
- expect(screen.getByRole('button', { name: '資料を送って確認してもらう' })).toBeVisible();
+ expect(screen.getByRole('button', { name: '担当者へ相談' })).toBeVisible();
  expect(screen.queryByRole('textbox', { name: '確認してほしいこと' })).not.toBeInTheDocument();
  expect(submitTaskComment).not.toHaveBeenCalled();
 });

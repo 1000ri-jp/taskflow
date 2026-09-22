@@ -6,9 +6,37 @@ import type { OrganizationAnalysis, OrganizationDraft, OrganizationFollowUp, Org
 import { assertOrganizationBasis, createOrganizationBasis, organizationChangeContent, organizationComparableWrites, organizationFingerprint, organizationScope, organizationSourceFingerprint } from './organizationIdentity';
 import { addMeetingExampleData, meetingExampleAnalysis, meetingExampleSource } from './meetingExample';
 import { addMeetingMultiExampleData, MEETING_MOCK_PROJECTS, MEETING_MULTI_UNCERTAINTY, meetingMultiExampleProposals, meetingMultiExampleSource, MULTI_PROGRESS_TASK_ID } from './meetingMultiExample';
+import type { ListReference } from '@/types';
 export const ORGANIZATION_MOCK_PROJECT='secretary-demo';
 export const organizationMockKey=(projectId:string)=>`taskflow-organization-lab-v1:${projectId}`;
-export interface OrganizationMock { lists?: import('@/types').List[]; notificationReads?: string[]; data:OrganizationData; entries:(OrganizationPlan & {mockBefore?:string;mockAfter?:string;followUp?:OrganizationFollowUp})[]; activityLogs:Record<string,unknown>[]; milestones?: import('@/types').Milestone[]; automationStates?: Record<string, import('./automationTypes').AutomationState>; automationEvidence?: Record<string, import('./automationTypes').TaskEvidence[]> }
+export const STRICT_DEADLINE_MOCK_TASK_ID = 'payment-transfer-strict';
+export const REFERENCE_INFO_MOCK_TASK_ID = 'reference-info-task';
+export interface OrganizationMock { referenceComments?: Record<string, import('@/types').ReferenceComment[]>; lists?: import('@/types').List[]; notificationReads?: string[]; data:OrganizationData; entries:(OrganizationPlan & {mockBefore?:string;mockAfter?:string;followUp?:OrganizationFollowUp})[]; activityLogs:Record<string,unknown>[]; milestones?: import('@/types').Milestone[]; automationStates?: Record<string, import('./automationTypes').AutomationState>; automationEvidence?: Record<string, import('./automationTypes').TaskEvidence[]> }
+
+export function addStrictDeadlineExampleData(data: OrganizationData) {
+  if (data.tasks[STRICT_DEADLINE_MOCK_TASK_ID]) return;
+  const now = new Date('2026-09-21T00:00:00+09:00');
+  const listId = data.listIds[0] || 'doing';
+  const base = { projectId: 'secretary-demo', listId, description: '', order: Object.keys(data.tasks).length + 1, assigneeIds: ['e2e-mock-user'], labelIds: [], tagIds: [], dependsOnTaskIds: [], priority: 'high' as const, startDate: now, dueDate: new Date('2026-09-24T08:00:00+09:00'), durationDays: null, isDueDateFixed: true, isCompleted: false, completedAt: null, isAbandoned: false, isArchived: false, archivedAt: null, archivedBy: null, createdBy: 'e2e-mock-user', createdAt: now, updatedAt: now };
+  data.tasks['payment-transfer'] = { ...base, title: '支払振込設定', description: '期限厳守の確認用の架空タスクです。', dueDate: null, priority: null, startDate: null };
+  data.tasks[STRICT_DEADLINE_MOCK_TASK_ID] = { ...base, parentTaskId: 'payment-transfer', title: '精算手続きの確認（架空）', description: '期限厳守の表示確認用データです。指定した日時を自動で延長しません。', deadlinePolicy: 'strict' };
+}
+
+export function addListReferenceExampleData(data: OrganizationData) {
+  const listId = data.listIds[0] || 'doing';
+  const now = new Date('2026-09-21T00:00:00+09:00');
+  data.references ??= {};
+  const examples: ListReference[] = [
+    { id: 'reference-venue-map', projectId: 'secretary-demo', listId, title: '展示位置・会場マップ', body: '展示位置を確認するための架空情報です。', comment: '搬入前に最新の位置を確認します。', links: [{ id: 'reference-venue-map-link', label: '展示位置マップ', url: 'https://www.genai-expo.com/vol6/map?booth=C-1%2FC-2' }], attachments: [], order: 1, createdBy: 'e2e-mock-user', createdAt: now, updatedBy: 'e2e-mock-user', updatedAt: now, isArchived: false },
+  ];
+  for (const reference of examples) data.references[reference.id] ??= reference;
+  if (!data.tasks[REFERENCE_INFO_MOCK_TASK_ID]) data.tasks[REFERENCE_INFO_MOCK_TASK_ID] = { projectId: 'secretary-demo', listId, title: '情報', description: '展示位置：https://www.genai-expo.com/vol6/map?booth=C-1%2FC-2\n出展ガイド：https://www.genai-expo.com/vol6/guide', order: Object.keys(data.tasks).length + 1, assigneeIds: ['e2e-mock-user'], labelIds: [], tagIds: [], dependsOnTaskIds: [], priority: null, startDate: null, dueDate: null, durationDays: null, isDueDateFixed: false, isCompleted: false, completedAt: null, isAbandoned: false, isArchived: false, archivedAt: null, archivedBy: null, createdBy: 'e2e-mock-user', createdAt: now, updatedAt: now };
+}
+
+export function addReferenceDemoData(data: OrganizationData) {
+  addListReferenceExampleData(data);
+  addStrictDeadlineExampleData(data);
+}
 const revive=(key:string,value:unknown)=>typeof value==='string' && /^(createdAt|updatedAt|completedAt|achievedAt|archivedAt|dueDate|startDate|uploadedAt)$/.test(key) && /^\d{4}-\d\d-\d\dT/.test(value) ? new Date(value) : value;
 export function readOrganizationMock(projectId=ORGANIZATION_MOCK_PROJECT):OrganizationMock {
   const saved=localStorage.getItem(organizationMockKey(projectId)); if(saved) {

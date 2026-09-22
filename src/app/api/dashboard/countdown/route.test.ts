@@ -23,7 +23,7 @@ describe('shared countdown route', () => {
     expect(readSharedCountdown).toHaveBeenCalledWith('user');
     expect(saveSharedCountdown).not.toHaveBeenCalled();
   });
-  it.each([target, null])('saves only the target and revision', async (value) => {
+  it.each([target, { projectId: 'p1', milestoneId: 'm1' }, null])('saves only the target and revision', async (value) => {
     const response = await PATCH(request({ target: value, revision: 2 }));
     expect(response.status).toBe(200);
     expect(saveSharedCountdown).toHaveBeenCalledWith('user', value, 2);
@@ -42,7 +42,7 @@ describe('shared countdown route', () => {
     expect(readSharedCountdown).not.toHaveBeenCalled();
     expect(saveSharedCountdown).not.toHaveBeenCalled();
   });
-  it.each([['FORBIDDEN', 403], ['INVALID_COUNTDOWN_TASK', 400], ['CONFLICT', 409], ['credential secret details', 503]] as const)('maps %s to safe errors', async (message, status) => {
+  it.each([['FORBIDDEN', 403], ['INVALID_COUNTDOWN_TASK', 400], ['INVALID_COUNTDOWN_MILESTONE', 400], ['CONFLICT', 409], ['credential secret details', 503]] as const)('maps %s to safe errors', async (message, status) => {
     vi.mocked(saveSharedCountdown).mockRejectedValue(new Error(message));
     const response = await PATCH(request({ target, revision: 0 }));
     expect(response.status).toBe(status);

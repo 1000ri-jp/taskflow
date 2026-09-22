@@ -8,7 +8,10 @@ import { workBlockKey } from '@/lib/dashboard/work-blocks';
 
 vi.mock('@/contexts/NotificationContext', () => ({ useNotifications: () => ({ notifications: [] }) }));
 vi.mock('./NeoWorkContinuation', () => ({ NeoWorkContinuation: () => <p>続きの操作</p> }));
-vi.mock('./NeoMorningBrief', () => ({ NeoMorningBrief: ({ taskScope, assigneeFilterId, assigneeFilterName }: { taskScope: string; assigneeFilterId: string | null; assigneeFilterName?: string }) => <p>全体 {taskScope}・担当 {assigneeFilterId ?? '全員'} {assigneeFilterName}</p> }));
+vi.mock('./NeoMorningBrief', () => ({
+  NeoMorningBrief: ({ taskScope, assigneeFilterId, assigneeFilterName }: { taskScope: string; assigneeFilterId: string | null; assigneeFilterName?: string }) => <p>全体 {taskScope}・担当 {assigneeFilterId ?? '全員'} {assigneeFilterName}</p>,
+  NeoStrictDeadlines: () => <section aria-label="期限厳守">期限厳守</section>,
+}));
 const now = new Date(2026, 8, 15, 12);
 const task = { ...viewTask({ assigneeIds: ['me'], dueDate: new Date(2026, 8, 18), startDate: new Date(2026, 8, 15) }), projectName: '出展', projectColor: '', projectIcon: '' };
 const props = { tasks: [task], now, userId: 'me', isLoading: false, error: null, projectTaskStatus: new Map([['project-1', { status: 'ready' as const }]]), onList: vi.fn(), onCalendar: vi.fn() };
@@ -20,6 +23,7 @@ describe('Today essentials', () => {
     const child = { ...task, id: 'child', parentTaskId: parent.id, title: '写真を確認する', isCompleted: false, completedAt: null };
     render(<NeoTodayContent {...props} tasks={[parent, child]} />);
     const issue = screen.getByRole('region', { name: '完了状態の確認' });
+    expect(issue.nextElementSibling).toBe(screen.getByRole('region', { name: '期限厳守' }));
     expect(within(issue).getByText('親は完了ですが、未完了のサブタスクが残っています。')).toBeVisible();
     expect(within(issue).getByRole('link', { name: /展示資料の準備/ })).toHaveAttribute('href', '/projects/project-1/board?task=parent');
     expect(within(issue).getByRole('link', { name: '写真を確認する' })).toHaveAttribute('href', '/projects/project-1/board?task=child');
@@ -64,9 +68,10 @@ describe('Today essentials', () => {
     expect(within(briefing).getByText('全体 all・担当 全員')).toBeVisible();
     const schedule = screen.getByRole('region', { name: '次の予定' });
     const side = schedule.parentElement!;
-    expect(side.children[0]).toBe(schedule);
-    expect(side.children[1]).toBe(screen.getByRole('region', { name: '進めている仕事' }));
-    expect(side.children).toHaveLength(2);
+    expect(side.children[0]).toBe(screen.getByRole('region', { name: '期限厳守' }));
+    expect(side.children[1]).toBe(schedule);
+    expect(side.children[2]).toBe(screen.getByRole('region', { name: '進めている仕事' }));
+    expect(side.children).toHaveLength(3);
     expect(screen.queryByText('今日が期限')).not.toBeInTheDocument();
     expect(briefing.nextElementSibling).toBe(side);
   });

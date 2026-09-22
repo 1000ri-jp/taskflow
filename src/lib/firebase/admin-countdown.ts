@@ -30,18 +30,19 @@ export async function readSharedCountdown(userId: string): Promise<SharedCountdo
     throw error;
   }
   const projectRef = db.collection('projects').doc(saved.target.projectId);
-  const [project, task] = await Promise.all([projectRef.get(), projectRef.collection('tasks').doc(saved.target.taskId).get()]);
+  const [project, task] = await Promise.all([projectRef.get(), projectRef.collection(saved.target.milestoneId ? 'milestones' : 'tasks').doc(saved.target.milestoneId ?? saved.target.taskId!).get()]);
   const projectData = project.data();
   const taskData = task.data();
   if (!projectData || projectData.isArchived || !taskData || taskData.isArchived) return { ...saved, status: 'unavailable', task: null };
   return {
     ...saved, status: 'ready',
     task: {
+      ...(saved.target.milestoneId ? { kind: 'milestone' as const } : {}),
       title: typeof taskData.title === 'string' ? taskData.title : '名称未設定',
       projectName: typeof projectData.name === 'string' ? projectData.name : 'プロジェクト',
       dueDate: dateString(taskData.dueDate),
-      isCompleted: taskData.isCompleted === true,
-      isAbandoned: taskData.isAbandoned === true,
+      isCompleted: saved.target.milestoneId ? taskData.status === 'achieved' : taskData.isCompleted === true,
+      isAbandoned: saved.target.milestoneId ? taskData.status === 'cancelled' : taskData.isAbandoned === true,
     },
   };
 }
@@ -56,10 +57,10 @@ export async function saveSharedCountdown(userId: string, target: CountdownTarge
     if (permissionTarget) await getProjectAccess(userId, permissionTarget.projectId, null, null, 'tasks:write');
     if (target) {
       const projectRef = db.collection('projects').doc(target.projectId);
-      const [project, task] = await Promise.all([transaction.get(projectRef), transaction.get(projectRef.collection('tasks').doc(target.taskId))]);
+      const [project, task] = await Promise.all([transaction.get(projectRef), transaction.get(projectRef.collection(target.milestoneId ? 'milestones' : 'tasks').doc(target.milestoneId ?? target.taskId!))]);
       const taskData = task.data();
-      if (!project.exists || project.data()?.isArchived || !taskData || taskData.isArchived || taskData.isAbandoned || taskData.isCompleted || !dateString(taskData.dueDate)) {
-        throw new Error('INVALID_COUNTDOWN_TASK');
+      if (!project.exists || project.data()?.isArchived || !taskData || taskData.isArchived || taskData.isAbandoned || taskData.isCompleted || (target.milestoneId && ['achieved', 'cancelled'].includes(taskData.status)) || !dateString(taskData.dueDate)) {
+        throw new Error(target.milestoneId ? 'INVALID_COUNTDOWN_MILESTONE' : 'INVALID_COUNTDOWN_TASK');
       }
     }
     // No task title, date, completion state, comment, or notification is written.

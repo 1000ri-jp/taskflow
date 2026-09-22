@@ -16,7 +16,7 @@ it('opens explicit urgent requests once, later keeps an unread bubble, read neve
  expect(screen.getByRole('dialog')).toHaveTextContent('公開してよいか');
  fireEvent.click(screen.getByRole('button',{name:'あとで'}));expect(screen.queryByRole('dialog')).toBeNull();expect(state.markAsRead).not.toHaveBeenCalled();
  ui.unmount();render(<CompanionLauncher {...props}/>);await act(async()=>{});expect(screen.queryByRole('dialog')).toBeNull();
- expect(screen.getByRole('status')).toHaveTextContent('確認してほしい');expect(screen.queryByRole('button',{name:'吹き出しを閉じる'})).toBeNull();
+ expect(screen.getByRole('status')).toHaveTextContent('モアイからのお知らせ');expect(screen.getByRole('button',{name:'吹き出しを閉じる'})).toBeVisible();
  fireEvent.click(screen.getAllByRole('button',{name:'未読の通知1件を開く'})[0]);expect(state.markAsRead).toHaveBeenCalledWith('review');expect(push).toHaveBeenCalledWith(expect.stringContaining('comment=comment'));expect(request.data?.requiresResponse).toBe(true);
 });
 it('does not open a popup for AI-inferred priority, own requests, read or answered requests',async()=>{

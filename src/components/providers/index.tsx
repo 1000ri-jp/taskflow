@@ -37,5 +37,10 @@ export function Providers({ children }: ProvidersProps) {
   if (pathname === '/ui-guide' || pathname?.startsWith('/ui-guide/')) {
     return <AppearanceProvider>{children}</AppearanceProvider>;
   }
+  // The desktop mini window reuses auth/data providers but must not mount the
+  // dashboard-wide automation runners or any full-site chrome.
+  if (pathname === '/desktop-mini' || pathname?.startsWith('/desktop-mini/')) {
+    return <AppearanceProvider><QueryProvider><AuthProvider>{children}</AuthProvider></QueryProvider></AppearanceProvider>;
+  }
   return <BusinessProviders>{children}</BusinessProviders>;
 }

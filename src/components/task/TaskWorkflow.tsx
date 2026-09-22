@@ -53,7 +53,7 @@ export function TaskWorkflow({ task, tasks, userId, names = {}, continuation = f
   const remaining = task.assigneeIds.filter(id => task.review?.responses[id]?.outcome !== 'approved');
   const handsOff = continuation && next && (task.review?.policy !== 'all' || remaining.length === 1);
   if (task.isArchived || task.isAbandoned) return null;
-  return <section aria-label="仕事を進める" className={compact ? 'space-y-2' : 'my-2 space-y-3'}>
+  return <section aria-label="仕事を進める" className={compact ? 'contents' : 'my-2 space-y-3'}>
     {review && <div className="space-y-3 rounded-lg border bg-muted/20 p-3 text-sm">
       <p className="text-xs font-medium">{task.review?.round ?? 1}回目の確認 · {task.review?.policy === 'all' ? '全員の確認OKで完了' : '誰か1人の確認OKで完了'}</p>
       <p className="text-xs text-muted-foreground">{(task.review?.round ?? 1) > 1 ? '提出者が記入した修正内容・今回の確認点' : '依頼者が記入した確認点'}</p>
@@ -73,7 +73,7 @@ export function TaskWorkflow({ task, tasks, userId, names = {}, continuation = f
         {flow.pending?.attachments?.length ? <TaskMaterials files={flow.pending.attachments} label="送信結果を確認中の資料" /> : null}
       </fieldset>}
     </div>}
-    <div className="flex flex-wrap gap-2">
+    <div className={compact ? 'contents' : 'flex flex-wrap gap-2'}>
       {!review && !task.isCompleted && task.workProgress !== 'started' && <Button size="sm" variant="outline" disabled={locked} onClick={() => void perform('start')}>作業を始める</Button>}
       {!review && (!continuation || task.workProgress === 'started' || task.isCompleted) && <Button size="sm" variant="outline" disabled={locked} onClick={() => void perform(task.isCompleted ? 'reopen' : 'complete')}>{task.isCompleted ? '未完了に戻す' : '完了にする'}</Button>}
       {canReply && <><Button size="sm" className="h-auto whitespace-normal" disabled={locked} onClick={() => void perform('approve', note)}>{handsOff ? '確認OK・' + next.title + 'へ渡す' : '確認OK'}</Button>{continuation && !showCorrection ? <Button size="sm" variant="outline" disabled={locked} onClick={() => setShowCorrection(true)}>修正を依頼</Button> : <Button size="sm" variant="outline" disabled={locked || !note.trim()} onClick={() => void perform('request_changes', note)}>修正が必要</Button>}</>}

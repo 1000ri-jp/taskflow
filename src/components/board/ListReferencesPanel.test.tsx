@@ -1,0 +1,60 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+const mocks = vi.hoisted(() => ({ references: [] as unknown[], create: vi.fn(), update: vi.fn(), archive: vi.fn(), canEdit: true }));
+vi.mock('@/hooks/useListReferences', () => ({ useListReferences: () => ({ ...mocks, isLoading: false, error: null }), isSafeReferenceUrl: () => true }));
+vi.mock('@/hooks/useProjects', () => ({ useProject: () => ({ project: { ownerId: 'editor' }, members: [] }) }));
+vi.mock('@/stores/authStore', () => ({ useAuthStore: (selector: (s: unknown) => unknown) => selector({ user: { id: mocks.canEdit ? 'editor' : 'viewer' } }) }));
+vi.mock('@/lib/firebase/testMode', () => ({ isE2EMockAuthEnabled: () => false }));
+vi.mock('@/lib/firebase/storage', () => ({ uploadReferenceAttachment: vi.fn() }));
+vi.mock('./ReferenceComments', () => ({ ReferenceComments: ({ legacyComment }: { legacyComment: string }) => <section aria-label="コメント履歴">{legacyComment}</section> }));
+vi.mock('@/components/task/AttachmentPreview', () => ({ AttachmentPreview: () => null }));
+import { ListReferencesPanel } from './ListReferencesPanel';
+const reference = { id: 'r', title: '出展ガイド', body: '説明 https://example.com', comment: '既存のコメント', links: [], attachments: [], updatedAt: new Date(0) };
+describe('list reference detail', () => {
+  beforeEach(() => { vi.clearAllMocks(); mocks.references = [reference]; mocks.canEdit = true; mocks.update.mockResolvedValue(undefined); });
+  it('opens editing directly from the whole title card and retains previous comments', () => {
+    render(<ListReferencesPanel projectId="p" listId="l" />);
+    expect(screen.queryByText('既存のコメント')).not.toBeInTheDocument();
+    expect(screen.queryByText(/説明 https/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '出展ガイド' }));
+    expect(screen.getByText('既存のコメント')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'タイトル' })).toHaveValue('出展ガイド');
+    expect(screen.getByRole('textbox', { name: '説明' })).toHaveValue(reference.body);
+  });
+  it('opens creation from header paperclip without an empty related-information section', () => {
+    mocks.references = [];
+    render(<ListReferencesPanel projectId="p" listId="l" renderTrigger={trigger => <header>{trigger}</header>} />);
+    const trigger = screen.getByRole('button', { name: '関連情報を追加' });
+    expect(trigger.closest('header')).not.toBeNull();
+    expect(trigger.textContent).toBe('');
+    expect(screen.queryByRole('region', { name: 'このリストの関連情報' })).not.toBeInTheDocument();
+    fireEvent.click(trigger);
+    expect(screen.getByRole('textbox', { name: 'タイトル' })).toBeInTheDocument();
+  });
+  it('saves description without overwriting the previous comment', async () => {
+    render(<ListReferencesPanel projectId="p" listId="l" />);
+    fireEvent.click(screen.getByRole('button', { name: '出展ガイド' }));
+    fireEvent.change(screen.getByRole('textbox', { name: '説明' }), { target: { value: '新しい説明' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith('r', { title: '出展ガイド', body: '新しい説明' }, reference.updatedAt));
+    expect(screen.getByText('既存のコメント')).toBeInTheDocument();
+  });
+  it('allows another reference from the paperclip and opens each title independently', () => {
+    mocks.references = [reference, { ...reference, id: 'r2', title: '会場マップ', body: '2件目の説明', comment: '2件目のコメント' }];
+    render(<ListReferencesPanel projectId="p" listId="l" />);
+    fireEvent.click(screen.getByRole('button', { name: '関連情報を追加' }));
+    expect(screen.getByRole('textbox', { name: 'タイトル' })).toHaveValue('');
+    fireEvent.click(screen.getByRole('button', { name: '閉じる' }));
+    fireEvent.click(screen.getByRole('button', { name: '会場マップ' }));
+    expect(screen.getByText('2件目のコメント')).toBeInTheDocument();
+    expect(screen.queryByText('既存のコメント')).not.toBeInTheDocument();
+  });
+  it('viewer can read detail but cannot edit it', () => {
+    mocks.canEdit = false;
+    render(<ListReferencesPanel projectId="p" listId="l" />);
+    fireEvent.click(screen.getByRole('button', { name: '出展ガイド' }));
+    expect(screen.queryByRole('button', { name: '編集' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '保管' })).not.toBeInTheDocument();
+    expect(screen.getByText('既存のコメント')).toBeInTheDocument();
+  });
+});

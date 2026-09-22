@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ProjectLayout from './layout';
 import { useProject } from '@/hooks/useProjects';
@@ -158,7 +158,7 @@ describe('ProjectLayout', () => {
     expect(screen.queryByAltText('TaskFlow header')).not.toBeInTheDocument();
   });
 
-  it('offers all five views and direct icon shortcuts', () => {
+  it('offers direct icon shortcuts with kanban as the default view', () => {
     mockedUseProject.mockReturnValue({
       project,
       isLoading: false,
@@ -174,27 +174,15 @@ describe('ProjectLayout', () => {
     expect(screen.getByRole('link', { name: 'カレンダー' })).toHaveAttribute('href', '/projects/project-1/board?taskView=board&view=calendar');
     expect(screen.getByRole('link', { name: 'ガントチャート' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'マイルストーン' })).not.toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'カレンダー' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'ガントチャート' })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'タスクの表示切り替え' })).toHaveValue('board');
+    expect(screen.queryByRole('combobox', { name: 'タスクの表示切り替え' })).not.toBeInTheDocument();
   });
 
-  it('switches to and from gantt with the list selection preserved and makes the kanban icon an explicit shortcut', () => {
+  it('preserves the list selection in direct view shortcuts', () => {
     mockedUseProject.mockReturnValue({ project, isLoading: false } as ReturnType<typeof useProject>);
     navigation.query = 'taskView=outline&view=outline&list=show';
-    const page = render(<ProjectLayout><div>content</div></ProjectLayout>);
+    render(<ProjectLayout><div>content</div></ProjectLayout>);
     expect(screen.getByRole('link', { name: 'カンバン' })).toHaveAttribute('href', '/projects/project-1/board?taskView=board&view=board&list=show');
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'gantt' } });
-    expect(navigation.replace).toHaveBeenLastCalledWith('/projects/project-1/gantt?taskView=outline&list=show', { scroll: false });
-
-    navigation.pathname = '/projects/project-1/gantt';
-    navigation.query = 'taskView=outline&list=show';
-    page.rerender(<ProjectLayout><div>gantt</div></ProjectLayout>);
-    expect(screen.getByRole('combobox')).toHaveValue('gantt');
-    fireEvent.click(screen.getByRole('button', { name: '自分の主表示にする' }));
-    expect(useProjectTaskViewStore.getState().byScope[taskViewScope('user-1', 'project-1')]).toBe('gantt');
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'calendar' } });
-    expect(navigation.replace).toHaveBeenLastCalledWith('/projects/project-1/board?taskView=outline&list=show&view=calendar', { scroll: false });
+    expect(screen.getByRole('link', { name: 'カレンダー' })).toHaveAttribute('href', '/projects/project-1/board?taskView=outline&view=calendar&list=show');
   });
 
   it('opens a saved gantt default from a plain project link while explicit views keep priority', () => {
@@ -206,7 +194,6 @@ describe('ProjectLayout', () => {
     navigation.replace.mockClear();
     navigation.query += '&view=calendar';
     page.rerender(<ProjectLayout><div>content</div></ProjectLayout>);
-    expect(screen.getByRole('combobox')).toHaveValue('calendar');
     expect(navigation.replace).not.toHaveBeenCalled();
   });
 });

@@ -11,11 +11,11 @@
     },
     {
       "path": "next.config.ts",
-      "sha256": "4c41e30d2d6b929d571a0691ba45923447137a62224006e476d50a30b78d567d"
+      "sha256": "bdb32657e54a5cde241ce8aba2c5f089b3b1e86133c26e0b3bf521f86be913d9"
     },
     {
       "path": "package.json",
-      "sha256": "43e86103a230b5cdf50d75fed97321cd679ee9669f8fc61b09b4a934110aa368"
+      "sha256": "56b8f4fd621dbb11cdcec443860db92ea370a580cd4998b2840a49325187b678"
     },
     {
       "path": "scripts/ui-guide.mjs",
@@ -30,6 +30,10 @@
       "sha256": "bd8dc3cae41e932be6ae75873d9ea7084b5f1fe585f7d0d363a4909772420c40"
     },
     {
+      "path": "src/app/(dashboard)/help/page.tsx",
+      "sha256": "1564b9f7e09cc74f4101f6d0f34f515d5d3ca19177b1fce01521041be256cea9"
+    },
+    {
       "path": "src/app/(dashboard)/layout.tsx",
       "sha256": "8a1a7942866c9325adae43a484acebcbaae7532264f7633129404e6819ff230b"
     },
@@ -39,7 +43,7 @@
     },
     {
       "path": "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
-      "sha256": "310bf661aa599c970a58348e0f15978814e90b72cce77d58bdbda6b0b6b40236"
+      "sha256": "d5fbd9c919c494ff96f7dbc640abaa81b8b515a62a20ca2efb426392f67e8879"
     },
     {
       "path": "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
@@ -47,7 +51,7 @@
     },
     {
       "path": "src/app/(dashboard)/projects/[projectId]/layout.tsx",
-      "sha256": "0ebd614b7720e1b4b53bd818f7d461bc684921b7c99e39b4d2362d6b42ca2a9c"
+      "sha256": "d4eb6ca90bc3b805ee4218312fb0dc297ee4c8405b42eb12a33e476082248daf"
     },
     {
       "path": "src/app/(dashboard)/projects/[projectId]/milestones/page.tsx",
@@ -55,7 +59,7 @@
     },
     {
       "path": "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
-      "sha256": "df89277a0c32d0a330a9154192e738fe4601a74cb0b219be8273b760c3da3735"
+      "sha256": "aeebbbdc5121c7471659080f0539057cbd407f04cc1071920d0c7de19b320874"
     },
     {
       "path": "src/app/(dashboard)/projects/page.tsx",
@@ -75,7 +79,7 @@
     },
     {
       "path": "src/app/(dashboard)/settings/page.tsx",
-      "sha256": "37a176c6af1caac4d88e522accf261bab0f164576aa319898be79ccfdbad585b"
+      "sha256": "5e213217023be2a3368932c0a71c452e3f3cb9547d0790bd4103c3c2a27cce77"
     },
     {
       "path": "src/app/api/tasks/organize/route.ts",
@@ -87,7 +91,7 @@
     },
     {
       "path": "src/app/layout.tsx",
-      "sha256": "a1d458cd15ac023fe8f49505c209ee33746f8ab008bf1b71211bcbab0a6d0e16"
+      "sha256": "64aff2ce4e11c1d2763b92503eb0f13be148bc394a0e2d1970cd4fcc2d013b95"
     },
     {
       "path": "src/app/neo-appearance.css",
@@ -123,7 +127,7 @@
     },
     {
       "path": "src/components/ai/AISupportAdjust.tsx",
-      "sha256": "b16f99e907778f47e94f2e52f09c7782a4603592264f92056527876389900f55"
+      "sha256": "8206d399e8985bb2c35076ad69416369ad76c384187929f361251c550e7aac6d"
     },
     {
       "path": "src/components/ai/AISupportSettings.tsx",
@@ -143,7 +147,7 @@
     },
     {
       "path": "src/components/ai/CompanionAI.tsx",
-      "sha256": "bb464924eefa53dc75c3880751d4d0d07592fa34241f4aab39d603672ce8680d"
+      "sha256": "f06df908a8820abb9ccb84322073445f0043e3dc40b82c9cb89706b4f92480e0"
     },
     {
       "path": "src/components/ai/CompanionAvatar.module.css",
@@ -151,7 +155,7 @@
     },
     {
       "path": "src/components/ai/CompanionAvatar.tsx",
-      "sha256": "1da40a7aefb0ac172a66ac6951bc10ed04e9879a51c3cd3661923aba9ab121c4"
+      "sha256": "a3ba5f388ca10d9f484687267faf69b1dd7f8801a8e49c039c00d60049403ea5"
     },
     {
       "path": "src/components/ai/CompanionBubble.tsx",
@@ -167,7 +171,7 @@
     },
     {
       "path": "src/components/ai/CompanionLauncher.tsx",
-      "sha256": "e50838416b55dcc1effb4f0f6f2835d2b8c43c6b0fe9d99ec114c5d12945c8f9"
+      "sha256": "a39e12601b74681d9308c7a283e53836e3e830b705d9c52ed6149722d71efde2"
     },
     {
       "path": "src/components/ai/CompanionMascot.tsx",
@@ -179,7 +183,7 @@
     },
     {
       "path": "src/components/ai/CompanionTaskChecks.tsx",
-      "sha256": "e7974389c8df673bde638e879208806d9e925f97116120c09e31c4bad6818d63"
+      "sha256": "28e37592f1c6aa040d3bc6a7a4667a4db429e9a6367830f06dd26fd6ab46884d"
     },
     {
       "path": "src/components/ai/ConversationList.tsx",
@@ -191,7 +195,7 @@
     },
     {
       "path": "src/components/ai/FeatureRequestDialog.tsx",
-      "sha256": "f93e4bcf3336e2cf1ac86521aef358414cd97f1cdc69ac92ba4837f269233c5b"
+      "sha256": "99de4523b4a37eb69990e2b17fced7644b5f521e976108ca18bedef7e3eb663b"
     },
     {
       "path": "src/components/ai/NatalReferenceField.tsx",
@@ -219,7 +223,7 @@
     },
     {
       "path": "src/components/ai/WorkSupportPreparation.tsx",
-      "sha256": "281f598dc49f1429ced6bed16913bc9ad15fc949f42581818f45ee847b41e3da"
+      "sha256": "f5a18b501ad3371cd729644cb61d6b84c63a1cb3065b98548ecaec7065752907"
     },
     {
       "path": "src/components/board/AlternateTaskViews.tsx",
@@ -243,11 +247,11 @@
     },
     {
       "path": "src/components/board/BoardFilterBar.tsx",
-      "sha256": "43fcebad77da3e8bef745fa98e7d9f12d1b6eb1faf7538619c1773f830f84b53"
+      "sha256": "9d526cfb3cf2f41fb1798e271e7af633ad14f624b84ed8971a5a4739dec869ec"
     },
     {
       "path": "src/components/board/BoardList.tsx",
-      "sha256": "aae433d04cde3bc2d335fc5195747f455475fe92eecc72e3a8be2043e4a804da"
+      "sha256": "2922630e55ec64d1a1779785ec684e931a0e9022f6a56de0217983b3422ab109"
     },
     {
       "path": "src/components/board/BoardView.tsx",
@@ -268,6 +272,10 @@
     {
       "path": "src/components/board/ListColorPalette.tsx",
       "sha256": "153f45624935ff43c2a9686572a86c22cbb56e509c75cc847e2461401371e690"
+    },
+    {
+      "path": "src/components/board/ListReferencesPanel.tsx",
+      "sha256": "6ba4031445ef4b9fbc38c0482420270c56b5dcc26187ca780c65687c193fbda7"
     },
     {
       "path": "src/components/board/MilestoneForm.tsx",
@@ -296,6 +304,10 @@
     {
       "path": "src/components/board/ProjectUrlsBar.tsx",
       "sha256": "8f9144e2697f088fad8af036db5f9070a1acaa677ca0de88199edcd984dfe23e"
+    },
+    {
+      "path": "src/components/board/ReferenceComments.tsx",
+      "sha256": "5fb8c7c65d2ccfc91c26a408ae5befcf06afa71ab4a9b722374c699ffc0d71d4"
     },
     {
       "path": "src/components/board/TaskCalendarView.tsx",
@@ -350,8 +362,12 @@
       "sha256": "cc387c2cbe42027b16b948da6fca20d1765d0911c0eb8b33e837882d98ab957a"
     },
     {
+      "path": "src/components/common/CompanionPopoverContent.tsx",
+      "sha256": "e6a5d45c849a920354fc603e8cba596b97be53e0b997fa65d6fb28fe0019248e"
+    },
+    {
       "path": "src/components/common/Header.tsx",
-      "sha256": "4e274455067628692f4539c45b3059454ec9446a85247f2a8fb79d0c1311b504"
+      "sha256": "6a48e016e4f315cd676ec36072a178a71a5c45519559d9ef5f8d43d90f357c45"
     },
     {
       "path": "src/components/common/HistoryPane.tsx",
@@ -407,11 +423,11 @@
     },
     {
       "path": "src/components/dashboard/MeetingIntake.tsx",
-      "sha256": "6725a979886e626b6d177057e16d5dc9b513f2643b1a875be6cc7f1878983224"
+      "sha256": "d5b8b04d458fff3b420959cbd75caff0f54451d55fbba361140deaa76d85d9f8"
     },
     {
       "path": "src/components/dashboard/MeetingIntakeDialog.tsx",
-      "sha256": "7395f3af21d0e6ffd3ca206f9e1a7efb095578ab7e2efe3051b88ac09fa176d4"
+      "sha256": "f8b6c87c84089a27c862368d5f152027af24ee706af6394b9c6b6f54a19d3090"
     },
     {
       "path": "src/components/dashboard/MeetingProposals.tsx",
@@ -427,31 +443,31 @@
     },
     {
       "path": "src/components/dashboard/NeoBriefTaskRow.tsx",
-      "sha256": "0fe02f0542f3c557871a03f12acc0e04effab5fb959f10bdfbc0b11fb052b38c"
+      "sha256": "f4893a69c8e516fb4a2bc92e6ad2c05b16f91d6b52972ea26b92c17518bec580"
     },
     {
       "path": "src/components/dashboard/NeoCalendar.tsx",
-      "sha256": "2b9ebda61dd99582ec008a09564d01fa48197064d9da5bc7108d76a1ce3e5e34"
+      "sha256": "acda509a10d8dd3cffe08932d18e207245bb467f2d2ce72a32ac12cd81c88ef9"
     },
     {
       "path": "src/components/dashboard/NeoDashboard.tsx",
-      "sha256": "267cba8db6420ffbb953282845dad661e63202d876593fd7e83a642a99a3f846"
+      "sha256": "ce0ee9c477a454151013e444afd09d49d0322230fd0f378f2f8843974d9d443f"
     },
     {
       "path": "src/components/dashboard/NeoDayAgenda.tsx",
-      "sha256": "b411d9dc083030c4fddf01ed708ad3383ec472a281ae08d1180ee2268036709b"
+      "sha256": "a3f4a74495f35f69252f44531ab29b5b112b75eeca21cebd6420ad327215a61a"
     },
     {
       "path": "src/components/dashboard/NeoMorningBrief.tsx",
-      "sha256": "2d194dc4d0ec14aae8a069044068309ec1ad7befc18b276fdf4ef45db7f45603"
+      "sha256": "237f07152f63923fd4e97c79011bc9832e55e1a155f66fdc46a38680bb4b3be3"
     },
     {
       "path": "src/components/dashboard/NeoRecentChanges.tsx",
-      "sha256": "f938ffc53b06b191414e1e511e5c68b1876d6d75e391e17bfc8107dd73608921"
+      "sha256": "8f85bf9b9b74a71ea7a55af6352b2e031e678792faac9e484f89e77f4c0cc140"
     },
     {
       "path": "src/components/dashboard/NeoReviewRequests.tsx",
-      "sha256": "0565621a5c2b10f765aaa22e4fe0f3463ea1042f0276c5c0e363c5a997930550"
+      "sha256": "ba3c1536f3f2db1be75eb8937175604a75fb7d0b564e6fa581c09b426594a7c2"
     },
     {
       "path": "src/components/dashboard/NeoScheduleCalendar.tsx",
@@ -459,15 +475,15 @@
     },
     {
       "path": "src/components/dashboard/NeoTaskAttention.tsx",
-      "sha256": "eb30a3dc51c93c274d1910bcb141e9d9d800d71a60432c450866199de5fed7d7"
+      "sha256": "071bc626edf8406e37ce9320cd7766ff4c1d3b3de7f17f805c9943ecfb3e880c"
     },
     {
       "path": "src/components/dashboard/NeoToday.tsx",
-      "sha256": "7e45e29ccf1a98950099d3f5b62dd29fd874dfcb797b43ec0405340a1e07e37f"
+      "sha256": "3ce127cc70db5dd3fc98814f6a4ae109aa26979c505cf004bff81f9a6b0f0051"
     },
     {
       "path": "src/components/dashboard/NeoWorkContinuation.tsx",
-      "sha256": "1912111508aaa501f68dd218688ae2c82183de5fe86d52a6c6429b2e96090fa8"
+      "sha256": "a2c96174c4ba06239607dd3831fe2a02b6a2a9cc180da79154ce29784b1ccb01"
     },
     {
       "path": "src/components/dashboard/OrganizationProposalCard.tsx",
@@ -475,7 +491,7 @@
     },
     {
       "path": "src/components/dashboard/OrganizationReviewInbox.tsx",
-      "sha256": "10ad9c1e939da473d6dbcd0527b9e62316b0b357a8de56067f172fa906f35f44"
+      "sha256": "c9ba302327f33560c9f6c58ba06ef7ba3ecad098656062fe9a0b4d678f139ec1"
     },
     {
       "path": "src/components/dashboard/OverdueTasksAlert.tsx",
@@ -499,7 +515,7 @@
     },
     {
       "path": "src/components/dashboard/SharedCountdown.tsx",
-      "sha256": "0099d6094c476dc4a1474a6c669e468d9e3ca15d15e94d996ad001b6fc585e52"
+      "sha256": "2f282be99c4444f3201fcec5d807ad018055ab0faa27efb6c6c4c528eca191b8"
     },
     {
       "path": "src/components/dashboard/StaleProjectDisplaySettings.tsx",
@@ -518,6 +534,30 @@
       "sha256": "dd00ce0fa1de42e3b27b7042449af0d8e503a2213cdc186e3ae51bb11cedd702"
     },
     {
+      "path": "src/components/desktop/DesktopBriefTaskActions.tsx",
+      "sha256": "2407ddb413647bcdcf8bd5677822965e38a503b8ddaf9ad105201de4efce276c"
+    },
+    {
+      "path": "src/components/desktop/DesktopMiniApp.tsx",
+      "sha256": "ed8ebd8e0858a170045e54a77b6bb21b6c075377045560816724c417aaa4a56d"
+    },
+    {
+      "path": "src/components/desktop/DesktopMiniConnect.tsx",
+      "sha256": "0d19c9753ad0a243f966485060b0d32cce7d71236a6b463b2882320c35703da1"
+    },
+    {
+      "path": "src/components/desktop/DesktopMiniLogin.tsx",
+      "sha256": "0a06b104a754e6682c0de10840fb4187ccbd1cf6cab79678d612f26914b793d7"
+    },
+    {
+      "path": "src/components/desktop/DesktopMoaiEntry.tsx",
+      "sha256": "b08afb1dbdfb2ab7fbd91e05987c721c67565373de6e7edac680f43ad8c36b1d"
+    },
+    {
+      "path": "src/components/desktop/MiniWindowControls.tsx",
+      "sha256": "ef4b98d0c0650d2de244a83c2a2477a517ed4ac47f75279133d614546db8e5e0"
+    },
+    {
       "path": "src/components/gantt/GanttChart.tsx",
       "sha256": "4824f55f8d77a0b22c79a3d49d3c874a687817c80e9b6f7c92d8d490ef678146"
     },
@@ -530,8 +570,12 @@
       "sha256": "edcf1f7a7ea3e79ac567d2ae39b63b475fb48043dcb9a7c2dbd7038162249575"
     },
     {
+      "path": "src/components/help/HelpVideos.tsx",
+      "sha256": "f64617ef15e42a20fd1d61c59f92a09325ab1c2381287d2abaf3d2706d13c206"
+    },
+    {
       "path": "src/components/project/ActivityLogPanel.tsx",
-      "sha256": "52470143fd96abad65f28b70cefc2f7dfd9cc94fe2106403ac3ede5077550e2d"
+      "sha256": "1c9258e178c40c155aba55ecae738e95ed690e03818d9172c8ed62779ccad861"
     },
     {
       "path": "src/components/project/ProjectAssigneeBackfill.tsx",
@@ -571,7 +615,7 @@
     },
     {
       "path": "src/components/providers/index.tsx",
-      "sha256": "a6c49255e04109ce3453fe46357f5914c5f9fd3c4214bbc3ec7e8ea0950d8789"
+      "sha256": "054ad0a83a20bfd487cbe8b32f1458f23dfc987aa33d3f37aedb3923c0581e8a"
     },
     {
       "path": "src/components/providers/ui-guide-isolation.test.tsx",
@@ -611,7 +655,7 @@
     },
     {
       "path": "src/components/task/ChecklistItemDueDate.tsx",
-      "sha256": "9c29245001484c1a0ccaa40ba34693b7f319f81944903438ebec4656178ab9fb"
+      "sha256": "fa81a9db38b664efca334d194771f0d525a54187f727c4d0f59f18bea117b4bb"
     },
     {
       "path": "src/components/task/ChecklistSection.tsx",
@@ -654,8 +698,12 @@
       "sha256": "b3d548c1dbb50d48aa062bf5f44965ba7f5484e802e6b077d37bdcf2508b55e9"
     },
     {
+      "path": "src/components/task/ReferenceMigrationDialog.tsx",
+      "sha256": "3ddc81fb35d8448cbf463302e0f7055cc2cd112174f598f4891240d520ef801a"
+    },
+    {
       "path": "src/components/task/SortableChecklistItems.tsx",
-      "sha256": "08e3d2080818aa572a77dfceb70c6151073415c7378e45f0c7f38a1453c3beb8"
+      "sha256": "a716e6d93e022f507ea9a9d31b417c0984e98c2001e9fe79f79c6fcca7194526"
     },
     {
       "path": "src/components/task/StampPicture.tsx",
@@ -679,7 +727,7 @@
     },
     {
       "path": "src/components/task/TaskDetailModal.tsx",
-      "sha256": "f54209629ddb7cd59d9d54070c781ad705ee5821316485b09866c1c55ff34234"
+      "sha256": "d0778790861f96cc782bd5cc5ad393a770e5356f95680569dbf26f323bae90bb"
     },
     {
       "path": "src/components/task/TaskHistoryTimeline.tsx",
@@ -691,7 +739,7 @@
     },
     {
       "path": "src/components/task/TaskOrganizer.tsx",
-      "sha256": "e7984ff6bb3b4fdf9671c7d92f5ed611793b06e7f08379b87c7892dcb73f401c"
+      "sha256": "50e0788a836102816ad8f09798fb698e3ad449e27cc7aded1e47ef1cef4ab71f"
     },
     {
       "path": "src/components/task/TaskParentPicker.tsx",
@@ -731,7 +779,7 @@
     },
     {
       "path": "src/components/task/TaskWorkflow.tsx",
-      "sha256": "a7dbdcddc30a6e98a95cd1d0bdf804cf97bc3e20a7c830f4209fa5bd838695f3"
+      "sha256": "edb213414dad63c19a3272574f2dd8b4008c3bd71c0c94ae28da01054e6347c2"
     },
     {
       "path": "src/components/ui-guide/ExtendedPreviews.module.css",
@@ -831,7 +879,7 @@
     },
     {
       "path": "src/components/ui/popover.tsx",
-      "sha256": "29a217781737bbf5c430859b3de46097a44ada81c4143c2d05543d2167de0ee1"
+      "sha256": "80c3219ddfdaf040f235ef0274ec68587f343eed1907e4d38e0dc072080ec201"
     },
     {
       "path": "src/components/ui/progress.tsx",
@@ -895,7 +943,7 @@
     },
     {
       "path": "src/contexts/NotificationContext.tsx",
-      "sha256": "31545b31018a0cc081fd743b823a11488e688b060b03ff76981455650b9a62d8"
+      "sha256": "a5ecd61e166bb23fe3353a10c895009e9c665103eacf628ea9dc6f51a675d11f"
     },
     {
       "path": "src/hooks/useAISettings.ts",
@@ -915,7 +963,11 @@
     },
     {
       "path": "src/hooks/useBoard.ts",
-      "sha256": "ce243dd6010cc313fe97ad2456f5fd12b895e5660a53c97a86f07157d8f8c3e1"
+      "sha256": "bd7eb37f81098c52a53fe81ca8421b16b58cefb2642f5d032aa13e9104fbcb79"
+    },
+    {
+      "path": "src/hooks/useChecklistDeadlines.ts",
+      "sha256": "12fa304d66828b2c59f896e0fd287b151dc9b9c11a276b8a1b757dcc598c206f"
     },
     {
       "path": "src/hooks/useCompanionSchedule.ts",
@@ -924,6 +976,10 @@
     {
       "path": "src/hooks/useCompanionState.ts",
       "sha256": "ae1d718382f39950629854d4dc1723f07c9d7496383933fc06c2914838854df7"
+    },
+    {
+      "path": "src/hooks/useCountdownMilestones.ts",
+      "sha256": "cb78e3644a94adddd08a878041aa9cde531c486cc6a8957919bb8056bd11924e"
     },
     {
       "path": "src/hooks/useDashboardComments.ts",
@@ -950,16 +1006,24 @@
       "sha256": "93a1d168a16f1fb5a3498ceca0214f968c6016ffc77bbcb65b9de3dd65e81654"
     },
     {
+      "path": "src/hooks/useListReferences.ts",
+      "sha256": "3b6ed1861a9c93fe55535b92c4dd1df0bafb667e19e91a26fc752a6de43a766e"
+    },
+    {
       "path": "src/hooks/useLocalCountdown.ts",
-      "sha256": "5a374f06c51c1c26098c520cb178fabad609cb5aec34a0a77c86cb3fbd1ed6e9"
+      "sha256": "a4a55f66974ee23c21ca1977ba594cda6b0a784fdd001a95cb5d2dedf82d8ce4"
     },
     {
       "path": "src/hooks/useMeetingMembers.ts",
-      "sha256": "f4e544ee7930cbf0260de33cd57f4a6980d4436162611c44841ab02601d5ebd4"
+      "sha256": "160526dce6fa7698388d167641a9a3ef6dd370d960f0ad11106a6bdeebdd2f1d"
+    },
+    {
+      "path": "src/hooks/useMiniWindowPreference.ts",
+      "sha256": "d1ff8d67852d277086f933ca2455f617aeb05cbc484dbe7d39f5975926a7e272"
     },
     {
       "path": "src/hooks/useMyTasks.ts",
-      "sha256": "2e00a05941a5a6053f913e744de73cdb04d1de91f92ea6476b4a95cc56c73858"
+      "sha256": "d30d58e231592fdafc7983bb789b9e365c5fc2c24ebff9e5e5d4380ef8706dc8"
     },
     {
       "path": "src/hooks/useNotifications.ts",
@@ -971,11 +1035,11 @@
     },
     {
       "path": "src/hooks/useOrganizationLabNotifications.ts",
-      "sha256": "ce50386fbae770f4c7a0f8df969906ca9456da8bfc0f7fbf56b5548f9a5f4812"
+      "sha256": "b1900d2116b314eb10bebc78b706f5579caf222bc271b47691edff9fed3f6ece"
     },
     {
       "path": "src/hooks/useOrganizationLabTasks.ts",
-      "sha256": "ddf8bd7cdb9c7d3209159c2e7f4208f4537cea4e7549ca2df554f4e79c47f322"
+      "sha256": "b68997b23f3a554ca80c813c00a46ed1372f94047ce37b243f2c30fa293a9b3f"
     },
     {
       "path": "src/hooks/useOrganizationRecords.ts",
@@ -995,11 +1059,15 @@
     },
     {
       "path": "src/hooks/useProjects.ts",
-      "sha256": "2c33931b5e65a6f6aad13bc13e69e0a8ca155bccb4ae2ffeb76cc20ed400ff14"
+      "sha256": "70b75cf7dd8e6d3563e81e8c21cf0aebc210e3103c3817d66be7383105c6a654"
     },
     {
       "path": "src/hooks/useRecentTaskChanges.ts",
-      "sha256": "a967048cb5b608e9691d2c27c68fa5dcc1b42d077f3467a5f3cc8e16562e25aa"
+      "sha256": "bba89fb3299cbcadea7c7cc62d8b0c41022e2e5e2442d86e20d971f80e51a53b"
+    },
+    {
+      "path": "src/hooks/useReferenceComments.ts",
+      "sha256": "5cd7e6fca534009620010ab3607f9343879265c717d5229a31d0fedb5c498035"
     },
     {
       "path": "src/hooks/useSecretary.ts",
@@ -1019,7 +1087,7 @@
     },
     {
       "path": "src/hooks/useTaskDetails.ts",
-      "sha256": "9d27b40e8b28b7ee1018dce4f05ba88ab260b6e122f7a01c2d138eac8267525a"
+      "sha256": "f881ab3a97512b96aef1d809154a8267c2a89dfc9b49b19502e908d9e5da0e05"
     },
     {
       "path": "src/hooks/useTaskFlowBrief.ts",
@@ -1047,7 +1115,7 @@
     },
     {
       "path": "src/lib/ai/companionNotices.ts",
-      "sha256": "557cad95439755b4308cd0f260060a7a9189aeec7f49202b07544cc5c5b76bc7"
+      "sha256": "94e4710cd3006df0746d14999fa65dd2243253f4033fa397408d6b8d6cab9543"
     },
     {
       "path": "src/lib/ai/companionSchedule.ts",
@@ -1234,6 +1302,10 @@
       "sha256": "0c6b26dd751995efeeb648af46e24ee711d7c5a61d6cbe4f168ab0ed1dcf0355"
     },
     {
+      "path": "src/lib/auth/miniPairing.ts",
+      "sha256": "d4acbe0f50524a02b2efed8ec0e887edf7e064f4a43563f24a484445ff1dd7eb"
+    },
+    {
       "path": "src/lib/board/autoArchiveClient.ts",
       "sha256": "077ecf1b5ef4961a9f75c35a2ede62218d9ea4efb0c2c13c63cfceeec3b63d18"
     },
@@ -1327,7 +1399,7 @@
     },
     {
       "path": "src/lib/dashboard/countdown.ts",
-      "sha256": "84787198535cf1679b6b36ce3a316383b377fbc72febede1b830c928f7012d6d"
+      "sha256": "5f8395f54e4f48f378468ca2ea6004200a71d69b2b5d7947aa5e60c1e2f62356"
     },
     {
       "path": "src/lib/dashboard/meeting-bundles.ts",
@@ -1351,7 +1423,7 @@
     },
     {
       "path": "src/lib/dashboard/neo-brief.ts",
-      "sha256": "052b6e13ac115d2d10955b3548cc9e76f451fd5c5839a503494e6548844d3c2c"
+      "sha256": "ddd9141b2bede62106d91e5d6b3122c0f99bddc05230569b4254673d10b6c2f0"
     },
     {
       "path": "src/lib/dashboard/neo-calendar.ts",
@@ -1371,7 +1443,7 @@
     },
     {
       "path": "src/lib/dashboard/task-attention.ts",
-      "sha256": "dfa0f9fc20cbbe3c10e8c8c3b4f01caeedd26dc05bd34d15cb015bcac717ebd2"
+      "sha256": "ee976caec203500606d4a79e549c6f0a4049ba16b0eb68395fbf4ce5ff366b61"
     },
     {
       "path": "src/lib/dashboard/upcoming-range.ts",
@@ -1391,7 +1463,7 @@
     },
     {
       "path": "src/lib/firebase/auth.ts",
-      "sha256": "fd9546234e1514088d4d3427768872a27aa1f4be5adf6c6cf37292cdaddf2e4a"
+      "sha256": "6c250f8edd4cf5d7311a223877687c42e3784113f604015cd7fe020470993b09"
     },
     {
       "path": "src/lib/firebase/authToken.ts",
@@ -1399,7 +1471,7 @@
     },
     {
       "path": "src/lib/firebase/checklist-item.ts",
-      "sha256": "19177ec72fe5e96327d84b2444cd9b4215c8fcd66a17580cfadbcfe6e3714d48"
+      "sha256": "25da2cb69963bdd2a5b96c5264023b9cc1979928e9287bc53a2e16d02cf4c295"
     },
     {
       "path": "src/lib/firebase/checklist-order.ts",
@@ -1415,15 +1487,19 @@
     },
     {
       "path": "src/lib/firebase/firestore.ts",
-      "sha256": "ea406832b8748225fc573f750914809bd633cf9e79a9fa420103f3485d6d96d2"
+      "sha256": "49b9b7855c5ca01cb8cc485f81cbf45dc29fee7a982bc4d6585f68db3899aaf4"
     },
     {
       "path": "src/lib/firebase/moaiLabel.ts",
       "sha256": "4b463b6c37eb7f125c79623530079cc6644f8fc2af66b5c57c5cb275d88a9ea5"
     },
     {
+      "path": "src/lib/firebase/reference-comments.ts",
+      "sha256": "9c76f7a7ec8fe7f3e28514ae11603d728d8fc80334e1c5bec7f9dc2b5a42f2d4"
+    },
+    {
       "path": "src/lib/firebase/storage.ts",
-      "sha256": "34f9bb76473932a63d43ef89f4739534c94b4394c02912d79a073aa6a4e8e201"
+      "sha256": "087c100859d1f1a329f9048b99d9b5689fc4c45c5089c14a055c956618baa885"
     },
     {
       "path": "src/lib/firebase/storageKeys.ts",
@@ -1554,8 +1630,12 @@
       "sha256": "fa74c38e281e8d2f1b05a37a61b6d0d9a9fece6505b5907681450fc90b735c82"
     },
     {
+      "path": "src/lib/task/deadlinePolicy.ts",
+      "sha256": "15db89fa7897a7d83085fe4f87d2e15d233a8e98d8b2082acd7233c50e3d4a19"
+    },
+    {
       "path": "src/lib/task/detailMock.ts",
-      "sha256": "e3ba0c28e379f66de305d3b31747fdf40853e53312ab6fe01d3d57bb223389d8"
+      "sha256": "87c64a679d6db75a4c71237c4320da148bda4aeb0a27c83910cd4c43b00d7355"
     },
     {
       "path": "src/lib/task/history/entries.ts",
@@ -1578,6 +1658,10 @@
       "sha256": "7492b195d4cf1a662d7a668bce015a79f723f10a6094827ddf79fafcd4cf2d17"
     },
     {
+      "path": "src/lib/task/miniTaskActions.ts",
+      "sha256": "e72f5a389aa0a19033c309214e60907aa6080fdfe53d6eecd288f55409892458"
+    },
+    {
       "path": "src/lib/task/moaiLabel.ts",
       "sha256": "c4ac90e6af3a8d4a64f56cfa6b42164f71fd8da306227bfae7686b78922bb0df"
     },
@@ -1595,7 +1679,7 @@
     },
     {
       "path": "src/lib/task/organizationEngine.ts",
-      "sha256": "26205ae2ac597e3606ae4a48097ca1f7dd13c47ef3a4f1063135b5c77a8ca5c4"
+      "sha256": "3976378614be3e54bcc1dd5ef6bb1c363bce5ebe0da8064681cc128576773531"
     },
     {
       "path": "src/lib/task/organizationIdentity.ts",
@@ -1603,7 +1687,7 @@
     },
     {
       "path": "src/lib/task/organizationMock.ts",
-      "sha256": "76d29b9bd75dbe88d302f095cf6abbcf55d3c6453fa10013cbb5f0ff76ef4f41"
+      "sha256": "91df5f62e1f534b4049b3ddbe4f156b83cc9548ee5a469573b5ba2fb268016e7"
     },
     {
       "path": "src/lib/task/organizationRepository.ts",
@@ -1683,11 +1767,11 @@
     },
     {
       "path": "src/lib/ui-guide/legacy-styles.json",
-      "sha256": "f6148f858a1080d31c95792edc16f8867fd23bcadfa8477621ba57fb10bf4a86"
+      "sha256": "3e6210a0a4f1695212ad607288bf02e438c5ecbb0f4c62fcc75330b41220c8d2"
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "344ba64f88f99d7ab6e78f5fe32f8a658d23055abba702c4e811f20d38750251"
+      "sha256": "d9e515e793253d752a23a5bfbbf61a20c05aec1fd081187c5bbcbfc09b000d50"
     },
     {
       "path": "src/lib/ui-guide/verification.json",
@@ -1699,7 +1783,7 @@
     },
     {
       "path": "src/lib/utils/checklist-item.ts",
-      "sha256": "242bb25487daddf5e0c5a653f2732278698a241d8468aea57ebe9aa72ecfd052"
+      "sha256": "801e89b703f3a7995a6cca3bfce3127a8389c064265c2ac8896dfac78ee42f5a"
     },
     {
       "path": "src/lib/utils/checklist.ts",
@@ -1819,7 +1903,7 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "94fa3b65bf7907b284b0c04655e43c06878132579d3baf7a39f0376d42127526"
+      "sha256": "077505551703bbc3ae858396d30efb6d6d60d2798dea876758e3a2c90d6cdc9e"
     }
   ]
 }

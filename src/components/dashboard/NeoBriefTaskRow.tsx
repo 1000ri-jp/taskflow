@@ -1,5 +1,8 @@
 'use client';
 
+import Link from 'next/link';
+import type { ReactNode } from 'react';
+
 import { TASK_STATUSES, taskStatus } from '@/lib/task/status';
 import { taskSituation } from '@/lib/task/history/presentation';
 import { format, isBefore, isSameDay, isValid, startOfDay } from 'date-fns';
@@ -14,6 +17,7 @@ import type { DashboardTask } from '@/lib/dashboard/brief';
 import { cn } from '@/lib/utils';
 import { compactRow, taskRowInteraction } from '@/components/ui/density';
 import type { Priority } from '@/types';
+import { isStrictDeadlineTask } from '@/lib/task/deadlinePolicy';
 
 export const NEO_TASK_ROW_CLASS = compactRow + ' py-0.5 rounded-md px-5 ' + taskRowInteraction;
 export const NEO_TASK_LIST_CLASS = 'space-y-0.5';
@@ -56,28 +60,41 @@ export function NeoBriefTaskMeta({ task, members, names, requester, assigneeLimi
 }
 
 /** Shared visual order for ordinary work and review requests; task data stays untouched. */
-export function NeoBriefTaskHeading({ task, now, members, names, requester, assigneeLimit, displayTitle, parentTitle, statusLabel, tasks = [] }: PeopleProps & { now: Date; displayTitle?: string; parentTitle?: string; statusLabel?: string }) {
+export function NeoBriefTaskHeading({ task, now, members, names, requester, assigneeLimit, displayTitle, parentTitle, statusLabel, hideProgress = false, progressControl, scheduleControl, taskHref, taskLinkTarget = '_self', miniLayout = false, tasks = [] }: PeopleProps & { now: Date; displayTitle?: string; parentTitle?: string; statusLabel?: string; hideProgress?: boolean; progressControl?: ReactNode; scheduleControl?: ReactNode; taskHref?: string; taskLinkTarget?: '_self' | '_blank'; miniLayout?: boolean }) {
   const due = task.dueDate && isValid(task.dueDate) ? task.dueDate : null;
   const overdue = due && isBefore(due, startOfDay(now));
   const priority = task.priority ? priorities[task.priority] : null;
+  const strict = isStrictDeadlineTask(task);
   const showSituation = task.review || task.workProgress || task.taskKind === 'decision' || tasks.some(t => t.projectId === task.projectId && t.parentTaskId === task.id && t.review);
   const situation = showSituation ? taskSituation(task, tasks.filter(t => t.projectId === task.projectId), names, []) : null;
   const status = TASK_STATUSES.find(option => option.id === taskStatus(task, tasks))!;
   const hasExplicitProgress = statusLabel === '着手中' || statusLabel === '未着手';
   const duplicateProgressSituation = hasExplicitProgress && (situation?.situation === '着手' || situation?.situation === '未着手');
   return <div className="flex min-h-8 items-center gap-2">
-    <ProjectMark name={task.projectName} icon={task.projectIcon} iconUrl={task.projectIconUrl} color={task.projectColor} />
+    <ProjectMark name={task.projectName} color={task.projectColor} />
     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-      <p className="flex min-w-[min(100%,10rem)] flex-1 flex-wrap items-center gap-x-3 gap-y-1 break-words text-sm"><span className="min-w-0 font-medium">{displayTitle ?? task.title}</span>
+      <p className="flex min-w-[min(100%,10rem)] flex-1 flex-wrap items-center gap-x-3 gap-y-1 break-words text-sm"><span className="min-w-0 font-medium">{taskHref ? <Link prefetch={false} href={taskHref} target={taskLinkTarget} rel={taskLinkTarget === '_blank' ? 'noreferrer' : undefined}>{displayTitle ?? task.title}</Link> : displayTitle ?? task.title}</span>
         <span className="inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          {statusLabel && <span className="inline-flex items-center rounded border border-primary/30 bg-primary/5 px-1.5 text-[10px] leading-5">{statusLabel}</span>}
-          {situation && !duplicateProgressSituation && <span title={`${situation.situation} · ${situation.next}`} className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded border border-current/20 px-1.5 text-[10px] leading-5', status.color)}><span className={cn('size-1.5 rounded-full', status.dot)} aria-hidden="true" />{situation.situation}</span>}
-          {task.listName && <span className={cn('inline-block max-w-full rounded border px-1.5 text-[10px] font-medium leading-5', priority?.className ?? 'bg-muted text-muted-foreground')}>{task.listName}</span>}
-          {parentTitle && <span className="min-w-0 max-w-full break-words text-xs text-muted-foreground" title={`親タスク: ${parentTitle}`}>{parentTitle}</span>}
-          <span className={cn('inline-block text-xs text-muted-foreground', overdue && 'text-rose-700')}>
-            {due ? <time dateTime={format(due, 'yyyy-MM-dd')}>期限 {format(due, 'M/d')}{overdue ? '・期限超過' : ''}</time> : task.dueDate ? '期限を確認できません' : '期限なし'}
+          {statusLabel && !(hideProgress && hasExplicitProgress) && <span className="inline-flex items-center rounded border border-primary/30 bg-primary/5 px-1.5 text-[10px] leading-5">{statusLabel}</span>}
+          {situation && !duplicateProgressSituation && !(hideProgress && ['着手', '未着手'].includes(situation.situation)) && <span title={`${situation.situation} · ${situation.next}`} className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded border border-current/20 px-1.5 text-[10px] leading-5', status.color)}><span className={cn('size-1.5 rounded-full', status.dot)} aria-hidden="true" />{situation.situation}</span>}
+          {!miniLayout && task.listName && <span className={cn('inline-block max-w-full rounded border px-1.5 text-[10px] font-medium leading-5', priority?.className ?? 'bg-muted text-muted-foreground')}>{task.listName}</span>}
+          {!miniLayout && parentTitle && <span className="min-w-0 max-w-full break-words text-xs text-muted-foreground" title={`親タスク: ${parentTitle}`}>{parentTitle}</span>}
+          <span className="inline-flex items-center gap-x-2 whitespace-nowrap">
+          {progressControl}
+          <span className="inline-flex items-center">
+          {strict && !miniLayout && <Badge variant="outline" className="mr-1.5 h-5 rounded border-rose-300 bg-rose-50 px-1.5 py-0 text-[10px] font-semibold text-rose-700">期限厳守</Badge>}
+          {scheduleControl}
+          <span className={cn('inline-flex h-7 items-center text-xs leading-none text-muted-foreground', (overdue || strict) && 'text-rose-700')}>
+            {due ? strict && miniLayout
+              ? <Badge variant="outline" className="mr-1.5 h-5 rounded border-rose-300 bg-rose-50 px-2 py-0 text-[11px] font-semibold text-rose-700"><time dateTime={due.toISOString()}>{format(due, 'M/d H:mm')}{overdue ? '・期限超過' : ''}</time></Badge>
+              : <time dateTime={due.toISOString()}>{strict ? `${format(due, 'M/d H:mm')}に` : `期限 ${format(due, 'M/d')}`}{overdue ? '・期限超過' : ''}</time>
+              : task.dueDate ? '期限を確認できません' : '期限なし'}
             {task.startDate && isValid(task.startDate) && isSameDay(task.startDate, now) && '・今日から'}
           </span>
+          </span>
+          </span>
+          {miniLayout && task.listName && <span className={cn('inline-block max-w-full rounded border px-1.5 text-[10px] font-medium leading-5', priority?.className ?? 'bg-muted text-muted-foreground')}>{task.listName}</span>}
+          {miniLayout && parentTitle && <span className="min-w-0 max-w-full break-words text-xs text-muted-foreground" title={`親タスク: ${parentTitle}`}>{parentTitle}</span>}
         </span>
       </p>
       <span className="ml-auto inline-flex items-center"><NeoBriefTaskMeta task={task} members={members} names={names} requester={requester} assigneeLimit={assigneeLimit} showPriority={false} /></span>

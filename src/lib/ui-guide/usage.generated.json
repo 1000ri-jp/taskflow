@@ -1,14 +1,18 @@
 {
   "revision": "ui-guide-2026-09-18.17",
-  "graphHash": "cef67ed554c13b39d51647f0d367c42a8f722b8a21d69be599c807538abdc603",
+  "graphHash": "1916447f472ada2c4d4075a5cf63f86e887dfceb2391cb818355f16d002e8ef0",
   "entries": {
     "text": {
-      "sourceHash": "7423ee03dfdcf2e468e0d15a31d2df21a8cb0354b994d40a08d270ebdee08fe1",
+      "sourceHash": "8ad99732db01291f041d2f57d139fca5a7ce2ae634a094ccc7d506c9369b876c",
       "direct": [
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/settings/ai/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
         "src/app/layout.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
+        "src/components/board/ReferenceComments.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/task/TaskDetailModal.tsx",
         "src/components/ui/setting-field.tsx"
       ],
@@ -16,11 +20,16 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
+        "src/components/board/BoardList.tsx",
+        "src/components/board/BoardView.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx"
       ],
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -40,7 +49,7 @@
       ]
     },
     "button": {
-      "sourceHash": "88e06e894578624f0e9eb9a29d35fe2976a39f010bc0644ba29fdeb3b3e9d6c8",
+      "sourceHash": "3c81a603b39c626ff9bea7f9ee0fac595b4b637da2b527528edd49015c440032",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -81,12 +90,14 @@
         "src/components/board/BoardView.tsx",
         "src/components/board/ColumnDisplayOptions.tsx",
         "src/components/board/CommentedTasksPopover.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/board/MilestoneForm.tsx",
         "src/components/board/ProgressColumn.tsx",
         "src/components/board/ProgressTaskCard.tsx",
         "src/components/board/ProjectLinks.tsx",
         "src/components/board/ProjectMilestones.tsx",
         "src/components/board/ProjectUrlsBar.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskListPicker.tsx",
         "src/components/board/TaskRelationshipSuggestions.tsx",
@@ -121,8 +132,12 @@
         "src/components/dashboard/TargetGoals.tsx",
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
+        "src/components/desktop/MiniWindowControls.tsx",
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -143,6 +158,7 @@
         "src/components/task/CommentRecipients.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
         "src/components/task/TaskAutomationPanel.tsx",
@@ -165,6 +181,7 @@
         "src/components/ui/view-switcher.tsx"
       ],
       "indirect": [
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/my-dashboard/page.tsx",
         "src/app/(dashboard)/neo/meetings/page.tsx",
@@ -173,6 +190,8 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -183,6 +202,8 @@
         "src/components/dashboard/MeetingIntakeDialog.tsx",
         "src/components/dashboard/NeoMorningBrief.tsx",
         "src/components/dashboard/NeoTaskAttention.tsx",
+        "src/components/desktop/DesktopBriefTaskActions.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/task/CommentStampSettings.tsx",
@@ -191,6 +212,9 @@
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -210,7 +234,7 @@
       ]
     },
     "input": {
-      "sourceHash": "987509d76abf69047db4eba3d0991a5deab75d0d87db8d467e02c7d17d997051",
+      "sourceHash": "5fbd66678770a2cce1907d5ce41a4608592ab531d4e1494076827d78e91464db",
       "direct": [
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
@@ -232,9 +256,11 @@
         "src/components/board/BoardFilterBar.tsx",
         "src/components/board/BoardList.tsx",
         "src/components/board/BoardView.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/board/MilestoneForm.tsx",
         "src/components/board/ProjectLinks.tsx",
         "src/components/board/ProjectUrlsBar.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/dashboard/InboxDisplaySettings.tsx",
         "src/components/dashboard/MeetLinkSettings.tsx",
         "src/components/dashboard/MeetingChecklistItems.tsx",
@@ -250,6 +276,7 @@
         "src/components/gantt/GanttChart.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/task/ChecklistItemAssignees.tsx",
+        "src/components/task/ChecklistItemDueDate.tsx",
         "src/components/task/ChecklistSection.tsx",
         "src/components/task/ChecklistTitle.tsx",
         "src/components/task/CommentComposer.tsx",
@@ -302,6 +329,7 @@
       "routes": [
         "/",
         "/classic",
+        "/help",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -320,7 +348,7 @@
       ]
     },
     "navigation": {
-      "sourceHash": "9d90d7c3bd69eabed1088b7d887484bb74180bbe69ba2161150f9f6698be27c5",
+      "sourceHash": "765725ed8290d9862fcd1646aa6839b67e0efba8b034437987070d1b58e6e6fe",
       "direct": [
         "src/components/common/Header.tsx",
         "src/components/common/NotificationDropdown.tsx",
@@ -336,6 +364,7 @@
       "routes": [
         "/",
         "/classic",
+        "/help",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -354,9 +383,10 @@
       ]
     },
     "card": {
-      "sourceHash": "4ccca8bc6ad37c0d9a4d9d21085a4d0e1979b656a27c09dac0309d437c8f16b0",
+      "sourceHash": "7c2b404a8712b4097d3891b769189de1d3d7725ca36190f61b405fa2d7777f90",
       "direct": [
         "src/app/(auth)/login/page.tsx",
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/api-keys/page.tsx",
@@ -370,7 +400,10 @@
         "src/components/dashboard/OverdueTasksAlert.tsx",
         "src/components/dashboard/PersonalMemo.tsx",
         "src/components/dashboard/ProjectProgress.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectCard.tsx"
       ],
       "indirect": [
@@ -381,6 +414,8 @@
         "src/app/(dashboard)/projects/page.tsx",
         "src/app/(dashboard)/settings/ai/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/ai/AISupportAdjust.tsx",
         "src/components/ai/CompanionAI.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
@@ -389,11 +424,15 @@
         "src/components/dashboard/NeoDashboard.tsx",
         "src/components/dashboard/NeoToday.tsx",
         "src/components/dashboard/NeoWorkContinuation.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/secretary/SecretaryPanel.tsx"
       ],
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -413,7 +452,7 @@
       ]
     },
     "states": {
-      "sourceHash": "25d6b7614a267af5a9dc45ddc5ab575e8129bddb89474539675cb66bd1667e88",
+      "sourceHash": "287880d8903dd432ad179967eb818e08200a13a31d39f399680fefd2ba309ea8",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/components/common/CommandPalette.tsx",
@@ -421,11 +460,15 @@
       ],
       "indirect": [
         "src/app/(dashboard)/layout.tsx",
-        "src/app/(dashboard)/projects/[projectId]/activity/page.tsx"
+        "src/app/(dashboard)/neo/page.tsx",
+        "src/app/(dashboard)/projects/[projectId]/activity/page.tsx",
+        "src/components/dashboard/NeoDashboard.tsx",
+        "src/components/dashboard/NeoRecentChanges.tsx"
       ],
       "routes": [
         "/",
         "/classic",
+        "/help",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -444,7 +487,7 @@
       ]
     },
     "outline": {
-      "sourceHash": "e0631ba3aebfa5e64a530a8d2dcb31dfb25767548f68f44714f72a650d7d2fab",
+      "sourceHash": "2b18bf660995af42e07bc04d2b3a74101d6202e9efd4014e6a4a6e328c1c1f12",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/AutoArchiveSettings.tsx",
@@ -485,18 +528,21 @@
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/BoardFilterBar.tsx",
         "src/components/board/TaskProgressView.tsx",
         "src/components/dashboard/ClassicDashboard.tsx",
         "src/components/dashboard/NeoDashboard.tsx",
         "src/components/dashboard/NeoToday.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/task/TaskDetailModal.tsx",
         "src/components/task/TaskRelations.tsx",
         "src/components/task/TaskWorkDetails.tsx"
       ],
       "routes": [
         "/classic",
+        "/desktop-mini",
         "/my-dashboard",
         "/neo",
         "/projects/[projectId]/activity",
@@ -507,7 +553,7 @@
       ]
     },
     "table": {
-      "sourceHash": "9a1939a83cd420527770dcbce11f4723ea9f0f21b6cb85a39b07db2e1d81c460",
+      "sourceHash": "58aa1db5897eba5bd19be1412af139a1e7884072b20f4cb0a58cc61685cdb266",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/AutoArchiveSettings.tsx",
@@ -543,6 +589,7 @@
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/BoardFilterBar.tsx",
         "src/components/board/BoardList.tsx",
@@ -552,10 +599,12 @@
         "src/components/dashboard/ClassicDashboard.tsx",
         "src/components/dashboard/NeoDashboard.tsx",
         "src/components/dashboard/NeoToday.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/task/TaskWorkDetails.tsx"
       ],
       "routes": [
         "/classic",
+        "/desktop-mini",
         "/my-dashboard",
         "/neo",
         "/projects/[projectId]/activity",
@@ -566,7 +615,7 @@
       ]
     },
     "proposal": {
-      "sourceHash": "f8216cae2bf609ba52f6b150386797cd8fc9f125f0ac6b79ce0d56e7c3daa42b",
+      "sourceHash": "e83cc1662338e58a3fbfce9c1e7d529d15d95172d7ff563168f6fefdfb8b2bbe",
       "direct": [
         "src/components/dashboard/OrganizationReviewInbox.tsx",
         "src/components/task/TaskOrganizer.tsx"
@@ -589,6 +638,7 @@
       "routes": [
         "/",
         "/classic",
+        "/help",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -607,7 +657,7 @@
       ]
     },
     "bubble": {
-      "sourceHash": "4d7eefa84da962d51b13364e1059ad8b011c56b6a0cd645bb46bffa0e625c8ab",
+      "sourceHash": "d8237c71c5dc39390eb9836bacb1fc0b588fcfded8347e81bcbf12cd4b5cbdb7",
       "direct": [
         "src/components/ai/CompanionLauncher.tsx",
         "src/components/ai/CompanionMascot.tsx"
@@ -619,6 +669,7 @@
       "routes": [
         "/",
         "/classic",
+        "/help",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -637,19 +688,22 @@
       ]
     },
     "setting": {
-      "sourceHash": "28bd919d30fab4af86a02e7b7a5712a7081d4e5e63e5919819f5a4dcbd0b17b9",
+      "sourceHash": "d4d6a362b114672f2988913a66eddb20c748b9a41d1ee3897668ca26a3980fa6",
       "direct": [
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx"
       ],
       "indirect": [
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx"
       ],
       "routes": [
+        "/help",
         "/projects/[projectId]/settings"
       ]
     },
     "list-layout": {
-      "sourceHash": "b7314705c5e758db31e659607e12f4b0079cc6c5b187de5d0cbe15c34a70ae36",
+      "sourceHash": "ec3a3dc98ae7d456235d82ada119917df3c9b317e04d41003e4a4e8d5ef9ce1b",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx"
       ],
@@ -661,19 +715,24 @@
       ]
     },
     "detail-layout": {
-      "sourceHash": "1073b9570e91730249e95cfa9b5ffbc5832afac9bab40424841ed5fe84a066d7",
+      "sourceHash": "5745657404807967925735151ca27a3e1d1bbbda3088566278191b863bed7815",
       "direct": [
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/ai/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/task/TaskDetailModal.tsx"
       ],
       "indirect": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
-        "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx"
+        "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
+        "src/components/board/BoardList.tsx",
+        "src/components/board/BoardView.tsx"
       ],
       "routes": [
+        "/help",
         "/profile",
         "/projects/[projectId]/board",
         "/projects/[projectId]/gantt",
@@ -683,9 +742,10 @@
       ]
     },
     "settings-layout": {
-      "sourceHash": "5b30acb146b49161ac35e52e5e00c56c9d16c0b6dffcb50d6401fe669cba5ce0",
+      "sourceHash": "cbb36ead0d926bb5c4fee34918d77d102a0a2b941ac05d4d678e32793dacb854",
       "direct": [
         "src/app/(auth)/login/page.tsx",
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/ai/page.tsx",
@@ -695,12 +755,16 @@
         "src/components/ai/AISupportSettings.tsx",
         "src/components/ai/CompanionScheduleSettings.tsx",
         "src/components/board/AutoArchiveSettings.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/dashboard/MyTasks.tsx",
         "src/components/dashboard/OrganizationReviewInbox.tsx",
         "src/components/dashboard/OverdueTasksAlert.tsx",
         "src/components/dashboard/PersonalMemo.tsx",
         "src/components/dashboard/ProjectProgress.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
         "src/components/task/TaskDetailModal.tsx"
@@ -714,19 +778,27 @@
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/projects/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/ai/AISupportAdjust.tsx",
         "src/components/ai/CompanionAI.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
+        "src/components/board/BoardList.tsx",
+        "src/components/board/BoardView.tsx",
         "src/components/dashboard/ClassicDashboard.tsx",
         "src/components/dashboard/KozueDashboard.tsx",
         "src/components/dashboard/NeoDashboard.tsx",
         "src/components/dashboard/NeoToday.tsx",
         "src/components/dashboard/NeoWorkContinuation.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/secretary/SecretaryPanel.tsx"
       ],
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -746,13 +818,13 @@
       ]
     },
     "settings-dashboard-order-trial": {
-      "sourceHash": "bb9d141b032bc187d2754787d4d8f65fc900159da1d19f4056e4f8884d3f9345",
+      "sourceHash": "42d47c409d15393d4f633e66112bcecb0394b497dca65b3b688691bff1dc5554",
       "direct": [],
       "indirect": [],
       "routes": []
     },
     "search": {
-      "sourceHash": "5a296bb416b3c05205bd74b3f7dc45173eaf37f3ae7e66e499336016ecee49b4",
+      "sourceHash": "792c5f5e458242ff16669844d733a5724b990101e3dfdde2245f6b8c7598965e",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -793,12 +865,14 @@
         "src/components/board/BoardView.tsx",
         "src/components/board/ColumnDisplayOptions.tsx",
         "src/components/board/CommentedTasksPopover.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/board/MilestoneForm.tsx",
         "src/components/board/ProgressColumn.tsx",
         "src/components/board/ProgressTaskCard.tsx",
         "src/components/board/ProjectLinks.tsx",
         "src/components/board/ProjectMilestones.tsx",
         "src/components/board/ProjectUrlsBar.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskListPicker.tsx",
         "src/components/board/TaskRelationshipSuggestions.tsx",
@@ -834,8 +908,12 @@
         "src/components/dashboard/TargetGoals.tsx",
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
+        "src/components/desktop/MiniWindowControls.tsx",
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
@@ -853,6 +931,7 @@
         "src/components/task/CommentRecipients.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
         "src/components/task/TaskAutomationPanel.tsx",
@@ -874,6 +953,7 @@
         "src/components/ui/view-switcher.tsx"
       ],
       "indirect": [
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/my-dashboard/page.tsx",
         "src/app/(dashboard)/neo/meetings/page.tsx",
@@ -882,6 +962,8 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -890,6 +972,8 @@
         "src/components/board/TaskTableView.tsx",
         "src/components/dashboard/MeetingIntakeDialog.tsx",
         "src/components/dashboard/NeoMorningBrief.tsx",
+        "src/components/desktop/DesktopBriefTaskActions.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
@@ -897,6 +981,9 @@
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -916,7 +1003,7 @@
       ]
     },
     "notifications": {
-      "sourceHash": "20b9a6ee851832fa121a13359de807b23474416940e952eaa3d0704e993edef1",
+      "sourceHash": "3e3e4333249110e646f438871a70c0628aa9a00010fcd42241b925b761dc2517",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -957,12 +1044,14 @@
         "src/components/board/BoardView.tsx",
         "src/components/board/ColumnDisplayOptions.tsx",
         "src/components/board/CommentedTasksPopover.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/board/MilestoneForm.tsx",
         "src/components/board/ProgressColumn.tsx",
         "src/components/board/ProgressTaskCard.tsx",
         "src/components/board/ProjectLinks.tsx",
         "src/components/board/ProjectMilestones.tsx",
         "src/components/board/ProjectUrlsBar.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskListPicker.tsx",
         "src/components/board/TaskRelationshipSuggestions.tsx",
@@ -997,8 +1086,12 @@
         "src/components/dashboard/TargetGoals.tsx",
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
+        "src/components/desktop/MiniWindowControls.tsx",
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
@@ -1015,6 +1108,7 @@
         "src/components/task/CommentComposer.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
         "src/components/task/TaskAutomationPanel.tsx",
@@ -1036,6 +1130,7 @@
         "src/components/ui/view-switcher.tsx"
       ],
       "indirect": [
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/my-dashboard/page.tsx",
         "src/app/(dashboard)/neo/meetings/page.tsx",
@@ -1044,6 +1139,8 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -1052,6 +1149,8 @@
         "src/components/board/TaskTableView.tsx",
         "src/components/dashboard/MeetingIntakeDialog.tsx",
         "src/components/dashboard/NeoMorningBrief.tsx",
+        "src/components/desktop/DesktopBriefTaskActions.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
@@ -1059,6 +1158,9 @@
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -1078,7 +1180,7 @@
       ]
     },
     "calendar": {
-      "sourceHash": "20b9a6ee851832fa121a13359de807b23474416940e952eaa3d0704e993edef1",
+      "sourceHash": "3e3e4333249110e646f438871a70c0628aa9a00010fcd42241b925b761dc2517",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1119,12 +1221,14 @@
         "src/components/board/BoardView.tsx",
         "src/components/board/ColumnDisplayOptions.tsx",
         "src/components/board/CommentedTasksPopover.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/board/MilestoneForm.tsx",
         "src/components/board/ProgressColumn.tsx",
         "src/components/board/ProgressTaskCard.tsx",
         "src/components/board/ProjectLinks.tsx",
         "src/components/board/ProjectMilestones.tsx",
         "src/components/board/ProjectUrlsBar.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/board/TaskListPicker.tsx",
         "src/components/board/TaskRelationshipSuggestions.tsx",
         "src/components/board/TaskViewSwitcher.tsx",
@@ -1157,8 +1261,12 @@
         "src/components/dashboard/TargetGoals.tsx",
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
+        "src/components/desktop/MiniWindowControls.tsx",
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -1174,6 +1282,7 @@
         "src/components/task/CommentComposer.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
         "src/components/task/TaskAutomationPanel.tsx",
@@ -1196,6 +1305,7 @@
         "src/components/ui/view-switcher.tsx"
       ],
       "indirect": [
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/my-dashboard/page.tsx",
         "src/app/(dashboard)/neo/meetings/page.tsx",
@@ -1204,6 +1314,8 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -1213,6 +1325,8 @@
         "src/components/common/CommandPalette.tsx",
         "src/components/dashboard/MeetingIntakeDialog.tsx",
         "src/components/dashboard/NeoMorningBrief.tsx",
+        "src/components/desktop/DesktopBriefTaskActions.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/task/CommentStampSettings.tsx",
@@ -1221,6 +1335,9 @@
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -1240,7 +1357,7 @@
       ]
     },
     "gantt": {
-      "sourceHash": "20b9a6ee851832fa121a13359de807b23474416940e952eaa3d0704e993edef1",
+      "sourceHash": "3e3e4333249110e646f438871a70c0628aa9a00010fcd42241b925b761dc2517",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1281,12 +1398,14 @@
         "src/components/board/BoardView.tsx",
         "src/components/board/ColumnDisplayOptions.tsx",
         "src/components/board/CommentedTasksPopover.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/board/MilestoneForm.tsx",
         "src/components/board/ProgressColumn.tsx",
         "src/components/board/ProgressTaskCard.tsx",
         "src/components/board/ProjectLinks.tsx",
         "src/components/board/ProjectMilestones.tsx",
         "src/components/board/ProjectUrlsBar.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskListPicker.tsx",
         "src/components/board/TaskRelationshipSuggestions.tsx",
@@ -1320,8 +1439,12 @@
         "src/components/dashboard/TargetGoals.tsx",
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
+        "src/components/desktop/MiniWindowControls.tsx",
         "src/components/gantt/index.ts",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -1337,6 +1460,7 @@
         "src/components/task/CommentComposer.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
         "src/components/task/TaskAutomationPanel.tsx",
@@ -1359,6 +1483,7 @@
         "src/components/ui/view-switcher.tsx"
       ],
       "indirect": [
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/my-dashboard/page.tsx",
         "src/app/(dashboard)/neo/meetings/page.tsx",
@@ -1367,6 +1492,8 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -1376,6 +1503,8 @@
         "src/components/common/CommandPalette.tsx",
         "src/components/dashboard/MeetingIntakeDialog.tsx",
         "src/components/dashboard/NeoMorningBrief.tsx",
+        "src/components/desktop/DesktopBriefTaskActions.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
@@ -1383,6 +1512,9 @@
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -1402,9 +1534,10 @@
       ]
     },
     "progress": {
-      "sourceHash": "83a14e5e6a8781e78a43e23ddd95f2de2435b886692947f3e95a753b00c8a1f8",
+      "sourceHash": "f1bd8cb2b9461774661e561f3e13bf232ef9efe85d529db4cf0e40a3318cc6cb",
       "direct": [
         "src/app/(auth)/login/page.tsx",
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/layout.tsx",
         "src/app/(dashboard)/projects/[projectId]/milestones/page.tsx",
@@ -1443,12 +1576,14 @@
         "src/components/board/BoardView.tsx",
         "src/components/board/ColumnDisplayOptions.tsx",
         "src/components/board/CommentedTasksPopover.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/board/MilestoneForm.tsx",
         "src/components/board/ProgressColumn.tsx",
         "src/components/board/ProgressTaskCard.tsx",
         "src/components/board/ProjectLinks.tsx",
         "src/components/board/ProjectMilestones.tsx",
         "src/components/board/ProjectUrlsBar.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskListPicker.tsx",
         "src/components/board/TaskProgressView.tsx",
@@ -1489,8 +1624,12 @@
         "src/components/dashboard/TargetGoals.tsx",
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
+        "src/components/desktop/MiniWindowControls.tsx",
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -1506,6 +1645,7 @@
         "src/components/task/CommentComposer.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
         "src/components/task/TaskAutomationPanel.tsx",
@@ -1563,6 +1703,8 @@
         "src/app/api/secretary/route.ts",
         "src/app/api/task-automation/route.ts",
         "src/app/api/tasks/organize/route.ts",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/app/layout.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
@@ -1577,6 +1719,9 @@
         "src/components/dashboard/MeetingIntakeDialog.tsx",
         "src/components/dashboard/NeoMorningBrief.tsx",
         "src/components/dashboard/RecentTaskChange.tsx",
+        "src/components/desktop/DesktopBriefTaskActions.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
+        "src/components/desktop/DesktopMoaiEntry.tsx",
         "src/components/gantt/index.ts",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/providers/index.tsx",
@@ -1590,9 +1735,12 @@
         "src/hooks/useActivityLog.ts",
         "src/hooks/useArchivedTasks.ts",
         "src/hooks/useBoard.ts",
+        "src/hooks/useChecklistDeadlines.ts",
+        "src/hooks/useCountdownMilestones.ts",
         "src/hooks/useDashboardComments.ts",
         "src/hooks/useGlobalSearch.ts",
         "src/hooks/useLatestTaskActivity.ts",
+        "src/hooks/useListReferences.ts",
         "src/hooks/useMeetingMembers.ts",
         "src/hooks/useMyTasks.ts",
         "src/hooks/useNotifications.ts",
@@ -1605,6 +1753,7 @@
         "src/hooks/useProjectTaskViewNavigation.ts",
         "src/hooks/useProjects.ts",
         "src/hooks/useRecentTaskChanges.ts",
+        "src/hooks/useReferenceComments.ts",
         "src/hooks/useTaskCommentPresence.ts",
         "src/hooks/useTaskDetails.ts",
         "src/hooks/useTaskFlowBrief.ts",
@@ -1658,6 +1807,7 @@
         "src/lib/task/detailMock.ts",
         "src/lib/task/history/presentation.ts",
         "src/lib/task/history/recentChanges.ts",
+        "src/lib/task/miniTaskActions.ts",
         "src/lib/task/organizationAnalysis.ts",
         "src/lib/task/organizationClient.ts",
         "src/lib/task/organizationEngine.ts",
@@ -1680,6 +1830,9 @@
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -1699,7 +1852,7 @@
       ]
     },
     "frame-trial": {
-      "sourceHash": "20b9a6ee851832fa121a13359de807b23474416940e952eaa3d0704e993edef1",
+      "sourceHash": "3e3e4333249110e646f438871a70c0628aa9a00010fcd42241b925b761dc2517",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1740,12 +1893,14 @@
         "src/components/board/BoardView.tsx",
         "src/components/board/ColumnDisplayOptions.tsx",
         "src/components/board/CommentedTasksPopover.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/board/MilestoneForm.tsx",
         "src/components/board/ProgressColumn.tsx",
         "src/components/board/ProgressTaskCard.tsx",
         "src/components/board/ProjectLinks.tsx",
         "src/components/board/ProjectMilestones.tsx",
         "src/components/board/ProjectUrlsBar.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskListPicker.tsx",
         "src/components/board/TaskRelationshipSuggestions.tsx",
@@ -1779,8 +1934,12 @@
         "src/components/dashboard/TargetGoals.tsx",
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
+        "src/components/desktop/MiniWindowControls.tsx",
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -1796,6 +1955,7 @@
         "src/components/task/CommentComposer.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
         "src/components/task/TaskAutomationPanel.tsx",
@@ -1818,6 +1978,7 @@
         "src/components/ui/view-switcher.tsx"
       ],
       "indirect": [
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/my-dashboard/page.tsx",
         "src/app/(dashboard)/neo/meetings/page.tsx",
@@ -1826,6 +1987,8 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -1834,6 +1997,8 @@
         "src/components/common/CommandPalette.tsx",
         "src/components/dashboard/MeetingIntakeDialog.tsx",
         "src/components/dashboard/NeoMorningBrief.tsx",
+        "src/components/desktop/DesktopBriefTaskActions.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/task/CommentStampSettings.tsx",
@@ -1842,6 +2007,9 @@
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -1861,7 +2029,7 @@
       ]
     },
     "table-trial": {
-      "sourceHash": "cf52276b16cb7fd5c66417d853acf9325c1422600f60140f3c169e86e53cc9e8",
+      "sourceHash": "d2ab5948666a6e8b6c6a7dca606ee6e44e9b115b4a3cc3ddb83a7cb7e85a0d68",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1903,12 +2071,14 @@
         "src/components/board/ColumnDisplayOptions.tsx",
         "src/components/board/CommentedTasksPopover.tsx",
         "src/components/board/GroupedTaskView.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/board/MilestoneForm.tsx",
         "src/components/board/ProgressColumn.tsx",
         "src/components/board/ProgressTaskCard.tsx",
         "src/components/board/ProjectLinks.tsx",
         "src/components/board/ProjectMilestones.tsx",
         "src/components/board/ProjectUrlsBar.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskCard.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -1952,8 +2122,12 @@
         "src/components/dashboard/TargetGoals.tsx",
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
+        "src/components/desktop/MiniWindowControls.tsx",
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
@@ -1971,6 +2145,7 @@
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
         "src/components/task/OrganizedWorkFollowUp.tsx",
+        "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
         "src/components/task/TaskAutomationPanel.tsx",
@@ -1994,6 +2169,7 @@
       ],
       "indirect": [
         "src/app/(dashboard)/classic/page.tsx",
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/my-dashboard/page.tsx",
         "src/app/(dashboard)/neo/meetings/page.tsx",
@@ -2002,12 +2178,16 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskProgressView.tsx",
         "src/components/common/CommandPalette.tsx",
         "src/components/dashboard/ClassicDashboard.tsx",
         "src/components/dashboard/MeetingIntakeDialog.tsx",
+        "src/components/desktop/DesktopBriefTaskActions.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
@@ -2015,6 +2195,9 @@
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -2034,7 +2217,7 @@
       ]
     },
     "history-trial": {
-      "sourceHash": "cf52276b16cb7fd5c66417d853acf9325c1422600f60140f3c169e86e53cc9e8",
+      "sourceHash": "d2ab5948666a6e8b6c6a7dca606ee6e44e9b115b4a3cc3ddb83a7cb7e85a0d68",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2076,12 +2259,14 @@
         "src/components/board/ColumnDisplayOptions.tsx",
         "src/components/board/CommentedTasksPopover.tsx",
         "src/components/board/GroupedTaskView.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/board/MilestoneForm.tsx",
         "src/components/board/ProgressColumn.tsx",
         "src/components/board/ProgressTaskCard.tsx",
         "src/components/board/ProjectLinks.tsx",
         "src/components/board/ProjectMilestones.tsx",
         "src/components/board/ProjectUrlsBar.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskCard.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -2125,8 +2310,12 @@
         "src/components/dashboard/TargetGoals.tsx",
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
+        "src/components/desktop/MiniWindowControls.tsx",
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
@@ -2144,6 +2333,7 @@
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
         "src/components/task/OrganizedWorkFollowUp.tsx",
+        "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
         "src/components/task/TaskAutomationPanel.tsx",
@@ -2167,6 +2357,7 @@
       ],
       "indirect": [
         "src/app/(dashboard)/classic/page.tsx",
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/my-dashboard/page.tsx",
         "src/app/(dashboard)/neo/meetings/page.tsx",
@@ -2175,12 +2366,16 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskProgressView.tsx",
         "src/components/common/CommandPalette.tsx",
         "src/components/dashboard/ClassicDashboard.tsx",
         "src/components/dashboard/MeetingIntakeDialog.tsx",
+        "src/components/desktop/DesktopBriefTaskActions.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
@@ -2188,6 +2383,9 @@
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -2207,7 +2405,7 @@
       ]
     },
     "neo-brief-row-trial": {
-      "sourceHash": "c8fc0fdc50a628ffb015ac66c2a48a159e5cf8b3ad232b388582c5541fc32f50",
+      "sourceHash": "a4ccb170db6d362cc4a17d3393cf4ad62c283b0245e981f4addb05aac7ec790d",
       "direct": [
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskCard.tsx",
@@ -2216,7 +2414,6 @@
         "src/components/board/TaskTableView.tsx",
         "src/components/dashboard/NeoDashboard.tsx",
         "src/components/dashboard/NeoMorningBrief.tsx",
-        "src/components/dashboard/NeoRecentChanges.tsx",
         "src/components/dashboard/NeoReviewRequests.tsx",
         "src/components/dashboard/NeoWorkContinuation.tsx",
         "src/components/secretary/SecretaryPanel.tsx",
@@ -2227,6 +2424,7 @@
         "src/app/(dashboard)/neo/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/BoardList.tsx",
         "src/components/board/BoardView.tsx",
@@ -2234,10 +2432,12 @@
         "src/components/board/TaskProgressView.tsx",
         "src/components/dashboard/KozueDashboard.tsx",
         "src/components/dashboard/NeoToday.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/task/TaskDetailModal.tsx",
         "src/components/task/TaskRelations.tsx"
       ],
       "routes": [
+        "/desktop-mini",
         "/my-dashboard",
         "/neo",
         "/projects/[projectId]/board",
@@ -2245,7 +2445,7 @@
       ]
     },
     "neo-brief-assignee-filter-trial": {
-      "sourceHash": "a63ec1eb4df2384aaf0eed355d631eb1f0f45a2a191a5d747586c539f4804469",
+      "sourceHash": "6a21a3fc213fc847cca43009edfa1e7916db1db6965a0c628ab0cf1c75683372",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2287,12 +2487,14 @@
         "src/components/board/BoardView.tsx",
         "src/components/board/ColumnDisplayOptions.tsx",
         "src/components/board/CommentedTasksPopover.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/board/MilestoneForm.tsx",
         "src/components/board/ProgressColumn.tsx",
         "src/components/board/ProgressTaskCard.tsx",
         "src/components/board/ProjectLinks.tsx",
         "src/components/board/ProjectMilestones.tsx",
         "src/components/board/ProjectUrlsBar.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskCard.tsx",
         "src/components/board/TaskListPicker.tsx",
@@ -2328,8 +2530,13 @@
         "src/components/dashboard/TargetGoals.tsx",
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
+        "src/components/desktop/MiniWindowControls.tsx",
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -2348,6 +2555,7 @@
         "src/components/task/CommentRecipients.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
         "src/components/task/TaskAutomationPanel.tsx",
@@ -2370,6 +2578,7 @@
         "src/components/ui/view-switcher.tsx"
       ],
       "indirect": [
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/my-dashboard/page.tsx",
         "src/app/(dashboard)/neo/meetings/page.tsx",
@@ -2378,6 +2587,8 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
         "src/components/board/TaskOutlineView.tsx",
@@ -2385,6 +2596,7 @@
         "src/components/board/TaskTableView.tsx",
         "src/components/common/CommandPalette.tsx",
         "src/components/dashboard/MeetingIntakeDialog.tsx",
+        "src/components/desktop/DesktopBriefTaskActions.tsx",
         "src/components/gantt/index.ts",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/task/CommentStampSettings.tsx",
@@ -2393,6 +2605,9 @@
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -2412,7 +2627,7 @@
       ]
     },
     "neo-shared-countdown-trial": {
-      "sourceHash": "0ce07068383bebcc24ce9ae65a6072e19a32465663fb1ffb13dfdef5f3b428a9",
+      "sourceHash": "cc4bea6ea92c2ac16546ed3d09cfe593d2f72b8973dbbda907729e684d31b306",
       "direct": [
         "src/components/dashboard/KozueDashboard.tsx",
         "src/components/dashboard/NeoDashboard.tsx"
@@ -2427,7 +2642,7 @@
       ]
     },
     "task-row-one-line-trial": {
-      "sourceHash": "912d322b905e3ecc17f9547c1b4052d30bfee551f1a288011399d3b9bb6bcc1d",
+      "sourceHash": "bc867ab5e121c97a57c7b363f4568e79a40c3ebffc0f13598a2a56c991a86d74",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
@@ -2453,6 +2668,7 @@
         "src/components/dashboard/OverdueTasksAlert.tsx",
         "src/components/dashboard/RecommendedTargets.tsx",
         "src/components/dashboard/TargetTasks.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/secretary/SecretaryPanel.tsx",
         "src/components/task/OrganizedWorkFollowUp.tsx",
@@ -2466,6 +2682,7 @@
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/BoardFilterBar.tsx",
         "src/components/board/TaskProgressView.tsx",
@@ -2476,6 +2693,7 @@
       ],
       "routes": [
         "/classic",
+        "/desktop-mini",
         "/my-dashboard",
         "/neo",
         "/projects/[projectId]/activity",
@@ -2486,9 +2704,10 @@
       ]
     },
     "neo-home-layout-trial": {
-      "sourceHash": "1ad75386979609985e6aa4015fd6e874d8eefbd8fe8e479d4fc76305e7a3b58c",
+      "sourceHash": "60730ef1f597bf5edf6939cb57b95c7797b5e06272fa9dc315173d3a2c1d94f8",
       "direct": [
         "src/app/(auth)/login/page.tsx",
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/api-keys/page.tsx",
@@ -2500,12 +2719,15 @@
         "src/components/dashboard/KozueDashboard.tsx",
         "src/components/dashboard/MyTasks.tsx",
         "src/components/dashboard/NeoDashboard.tsx",
-        "src/components/dashboard/NeoRecentChanges.tsx",
         "src/components/dashboard/NeoToday.tsx",
         "src/components/dashboard/OverdueTasksAlert.tsx",
         "src/components/dashboard/PersonalMemo.tsx",
         "src/components/dashboard/ProjectProgress.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx",
+        "src/components/desktop/DesktopMiniConnect.tsx",
+        "src/components/desktop/DesktopMiniLogin.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
+        "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectCard.tsx"
       ],
       "indirect": [
@@ -2516,6 +2738,8 @@
         "src/app/(dashboard)/projects/page.tsx",
         "src/app/(dashboard)/settings/ai/page.tsx",
         "src/app/(dashboard)/settings/google/page.tsx",
+        "src/app/desktop-mini/connect/page.tsx",
+        "src/app/desktop-mini/page.tsx",
         "src/components/ai/AISupportAdjust.tsx",
         "src/components/ai/CompanionAI.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
@@ -2526,6 +2750,9 @@
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/desktop-mini/connect",
+        "/help",
         "/login",
         "/my-dashboard",
         "/neo",
@@ -2545,19 +2772,24 @@
       ]
     },
     "detail-header-spacing-trial": {
-      "sourceHash": "dea7aebfa2c520e497c520e8ee9e7a4371a1cb8642b0fbc85ef363ef58b809d5",
+      "sourceHash": "74e8d63665663742f53180cd3417a2d2cf2dd75a1ce5e2abf2f0f7a53c624d06",
       "direct": [
+        "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/ai/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
         "src/components/task/TaskDetailModal.tsx"
       ],
       "indirect": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
-        "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx"
+        "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
+        "src/components/board/BoardList.tsx",
+        "src/components/board/BoardView.tsx"
       ],
       "routes": [
+        "/help",
         "/profile",
         "/projects/[projectId]/board",
         "/projects/[projectId]/gantt",
@@ -2567,7 +2799,7 @@
       ]
     },
     "subtask-view-alignment-trial": {
-      "sourceHash": "fd1d88362fa0d77ad8c1b007e5f9cf09c6b0c307e1b26cc93a0fd5b383bfbd59",
+      "sourceHash": "32efc53986051136ea025dae70b7427eaab50ce13a4d0a8c7ca28f4db667e303",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
@@ -2580,7 +2812,7 @@
       ]
     },
     "task-detail-subtask-order-trial": {
-      "sourceHash": "515ed9dac27119e8d25ba5608dc7df0636cd1fbdea46e172c8af146c7a691379",
+      "sourceHash": "df28945ac990e7dbd12d9fdd1be33499ac7aa72b777be370651324656ae503af",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx"
@@ -2592,7 +2824,7 @@
       ]
     },
     "proposal-review-flow-trial": {
-      "sourceHash": "628e8796bc25ef5aa31e07ccadea1e092194d929d164043502da22d59087f90d",
+      "sourceHash": "a361492866d11a9155dbf5f871d15ad87703bcef0617298efcd431c6624d8e0c",
       "direct": [
         "src/app/(dashboard)/layout.tsx",
         "src/components/dashboard/NeoDashboard.tsx",
@@ -2601,11 +2833,15 @@
         "src/lib/dashboard/neo-brief.ts"
       ],
       "indirect": [
-        "src/app/(dashboard)/neo/page.tsx"
+        "src/app/(dashboard)/neo/page.tsx",
+        "src/app/desktop-mini/page.tsx",
+        "src/components/desktop/DesktopMiniApp.tsx"
       ],
       "routes": [
         "/",
         "/classic",
+        "/desktop-mini",
+        "/help",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -2624,7 +2860,7 @@
       ]
     },
     "calendar-task-create-trial": {
-      "sourceHash": "7084d88751c0e2b72a91f7278806a57e8dcc34de46c45acd8a63b851b28d5349",
+      "sourceHash": "4a29a71379e0847e1ae6ef38d72d71dfd73d075009205622db094db2e684d19a",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/BoardList.tsx",
@@ -2643,7 +2879,7 @@
       ]
     },
     "task-structure-guidance-trial": {
-      "sourceHash": "a7030f3a6fa0959205fd1ee1a799bc896993c432eadcbf8e86d1a7ff062d7cf0",
+      "sourceHash": "8301a72d69a87297fb2df713117d0e2a097f085380bc3e9eaeec3621637dad39",
       "direct": [
         "src/app/api/tasks/organize/route.ts",
         "src/components/board/TaskRelationshipSuggestions.tsx",
@@ -2666,6 +2902,7 @@
       "routes": [
         "/",
         "/classic",
+        "/help",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -2712,7 +2949,7 @@
     },
     {
       "file": "src/components/dashboard/NeoWorkContinuation.tsx",
-      "count": 70
+      "count": 69
     },
     {
       "file": "src/components/board/TaskCard.tsx",
@@ -2768,7 +3005,7 @@
     },
     {
       "file": "src/app/(dashboard)/projects/[projectId]/layout.tsx",
-      "count": 34
+      "count": 35
     },
     {
       "file": "src/components/dashboard/NeoDayAgenda.tsx",
@@ -2819,6 +3056,10 @@
       "count": 23
     },
     {
+      "file": "src/components/ai/FeatureRequestDialog.tsx",
+      "count": 23
+    },
+    {
       "file": "src/components/ai/PurchaseReportDialog.tsx",
       "count": 23
     },
@@ -2835,15 +3076,19 @@
       "count": 22
     },
     {
+      "file": "src/components/dashboard/NeoDashboard.tsx",
+      "count": 22
+    },
+    {
+      "file": "src/components/desktop/DesktopMiniApp.tsx",
+      "count": 22
+    },
+    {
       "file": "src/components/project/ProjectCard.tsx",
       "count": 22
     },
     {
       "file": "src/components/task/TaskRecurrencePanel.tsx",
-      "count": 22
-    },
-    {
-      "file": "src/components/task/TaskWorkflow.tsx",
       "count": 22
     },
     {
@@ -2855,10 +3100,6 @@
       "count": 21
     },
     {
-      "file": "src/components/ai/FeatureRequestDialog.tsx",
-      "count": 21
-    },
-    {
       "file": "src/components/board/ProjectMilestones.tsx",
       "count": 21
     },
@@ -2867,12 +3108,16 @@
       "count": 21
     },
     {
-      "file": "src/components/dashboard/ProjectProgress.tsx",
-      "count": 20
+      "file": "src/components/task/TaskWorkflow.tsx",
+      "count": 21
     },
     {
       "file": "src/components/ai/CompanionLauncher.tsx",
-      "count": 19
+      "count": 20
+    },
+    {
+      "file": "src/components/dashboard/ProjectProgress.tsx",
+      "count": 20
     },
     {
       "file": "src/components/ai/ConversationList.tsx",
@@ -2883,7 +3128,7 @@
       "count": 19
     },
     {
-      "file": "src/components/dashboard/NeoDashboard.tsx",
+      "file": "src/components/board/ReferenceComments.tsx",
       "count": 19
     },
     {
@@ -2911,12 +3156,16 @@
       "count": 17
     },
     {
-      "file": "src/components/task/TaskSituation.tsx",
+      "file": "src/components/board/ListReferencesPanel.tsx",
       "count": 17
     },
     {
-      "file": "src/components/ai/AISupportAdjust.tsx",
-      "count": 16
+      "file": "src/components/common/Header.tsx",
+      "count": 17
+    },
+    {
+      "file": "src/components/task/TaskSituation.tsx",
+      "count": 17
     },
     {
       "file": "src/components/ai/ChatMessage.tsx",
@@ -2927,16 +3176,20 @@
       "count": 16
     },
     {
-      "file": "src/components/common/Header.tsx",
+      "file": "src/components/task/CommentRecipients.tsx",
       "count": 16
     },
     {
-      "file": "src/components/task/CommentRecipients.tsx",
+      "file": "src/components/task/ReferenceMigrationDialog.tsx",
       "count": 16
     },
     {
       "file": "src/components/task/TaskProjectPicker.tsx",
       "count": 16
+    },
+    {
+      "file": "src/components/ai/AISupportAdjust.tsx",
+      "count": 15
     },
     {
       "file": "src/components/project/ProjectFormModal.tsx",
@@ -2955,15 +3208,15 @@
       "count": 14
     },
     {
+      "file": "src/components/desktop/DesktopBriefTaskActions.tsx",
+      "count": 14
+    },
+    {
       "file": "src/components/task/TaskWorkDetails.tsx",
       "count": 14
     },
     {
       "file": "src/app/(auth)/login/page.tsx",
-      "count": 13
-    },
-    {
-      "file": "src/components/dashboard/NeoRecentChanges.tsx",
       "count": 13
     },
     {
@@ -3019,6 +3272,10 @@
       "count": 11
     },
     {
+      "file": "src/components/task/ChecklistItemDueDate.tsx",
+      "count": 11
+    },
+    {
       "file": "src/components/dashboard/OverdueTasksAlert.tsx",
       "count": 10
     },
@@ -3031,10 +3288,6 @@
       "count": 10
     },
     {
-      "file": "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
-      "count": 9
-    },
-    {
       "file": "src/components/ai/NatalReferenceField.tsx",
       "count": 9
     },
@@ -3045,6 +3298,10 @@
     {
       "file": "src/components/common/AppearanceSwitcher.tsx",
       "count": 9
+    },
+    {
+      "file": "src/app/(dashboard)/help/page.tsx",
+      "count": 8
     },
     {
       "file": "src/components/ai/ToolConfirmDialog.tsx",
@@ -3071,6 +3328,10 @@
       "count": 8
     },
     {
+      "file": "src/components/dashboard/NeoRecentChanges.tsx",
+      "count": 8
+    },
+    {
       "file": "src/components/ui/select.tsx",
       "count": 8
     },
@@ -3088,10 +3349,6 @@
     },
     {
       "file": "src/components/secretary/SecretaryRefreshSettings.tsx",
-      "count": 7
-    },
-    {
-      "file": "src/components/task/ChecklistItemDueDate.tsx",
       "count": 7
     },
     {
@@ -3127,6 +3384,10 @@
       "count": 6
     },
     {
+      "file": "src/components/desktop/MiniWindowControls.tsx",
+      "count": 6
+    },
+    {
       "file": "src/components/task/ChecklistTitle.tsx",
       "count": 6
     },
@@ -3143,6 +3404,10 @@
       "count": 5
     },
     {
+      "file": "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
+      "count": 5
+    },
+    {
       "file": "src/components/common/ImageCropperDialog.tsx",
       "count": 5
     },
@@ -3152,6 +3417,10 @@
     },
     {
       "file": "src/components/dashboard/RecentTaskChange.tsx",
+      "count": 5
+    },
+    {
+      "file": "src/components/desktop/DesktopMoaiEntry.tsx",
       "count": 5
     },
     {
@@ -3199,6 +3468,10 @@
       "count": 3
     },
     {
+      "file": "src/components/desktop/DesktopMiniConnect.tsx",
+      "count": 3
+    },
+    {
       "file": "src/components/ui/movable-dialog.tsx",
       "count": 3
     },
@@ -3223,7 +3496,15 @@
       "count": 2
     },
     {
+      "file": "src/components/common/CompanionPopoverContent.tsx",
+      "count": 2
+    },
+    {
       "file": "src/components/dashboard/MeetingIntakeDialog.tsx",
+      "count": 2
+    },
+    {
+      "file": "src/components/desktop/DesktopMiniLogin.tsx",
       "count": 2
     },
     {
@@ -3268,6 +3549,10 @@
     },
     {
       "file": "src/components/ai/CopyableCodeBlock.tsx",
+      "count": 1
+    },
+    {
+      "file": "src/components/help/HelpVideos.tsx",
       "count": 1
     },
     {

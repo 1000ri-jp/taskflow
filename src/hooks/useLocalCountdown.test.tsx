@@ -1,6 +1,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LOCAL_COUNTDOWN_KEY, useLocalCountdown } from './useLocalCountdown';
+import type { CountdownMilestone } from '@/lib/dashboard/countdown';
 import type { DashboardTask } from '@/lib/dashboard/brief';
 
 const task = { id: 't', projectId: 'p', projectName: '展示会', title: '出展準備', dueDate: new Date('2026-09-23T00:00:00+09:00'), isCompleted: false, isAbandoned: false, isArchived: false } as DashboardTask;
@@ -58,4 +59,18 @@ describe('local test countdown', () => {
     await act(async () => { await expect(result.current.save({ target, revision: 0 })).rejects.toThrow('未完了タスク'); });
     expect(localStorage.getItem(LOCAL_COUNTDOWN_KEY)).toBeNull();
   });
+});
+
+it('restores a milestone independently of tasks and observes its current date', async () => {
+  const milestone = { ...task, status: 'planned' } as unknown as CountdownMilestone;
+  const target = { projectId: 'p', milestoneId: 't' };
+  localStorage.removeItem(LOCAL_COUNTDOWN_KEY);
+  const { result, rerender } = renderHook(({ milestones }) => useLocalCountdown([], false, milestones), { initialProps: { milestones: [milestone] } });
+  await act(async () => { await result.current.save({ target, revision: 0 }); });
+  expect(result.current.data?.task).toMatchObject({ kind: 'milestone', title: task.title });
+  rerender({ milestones: [{ ...milestone, dueDate: new Date('2026-09-25') }] });
+  expect(result.current.data?.task?.dueDate).toBe('2026-09-25T00:00:00.000Z');
+  rerender({ milestones: [] });
+  expect(result.current.data?.status).toBe('unavailable');
+  cleanup();
 });

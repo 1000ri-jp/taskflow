@@ -11,7 +11,6 @@ import { useProject } from '@/hooks/useProjects';
 import { useMeetingMembers } from '@/hooks/useMeetingMembers';
 import { ProjectMembers } from '@/components/project/ProjectMembers';
 import { useProjectTaskViewNavigation } from '@/hooks/useProjectTaskViewNavigation';
-import { TaskViewSwitcher } from '@/components/board/TaskViewSwitcher';
 import { ProjectLinks } from '@/components/board/ProjectLinks';
 import { projectViewHref } from '@/lib/board/projectNavigation';
 import { cn } from '@/lib/utils';
@@ -30,7 +29,7 @@ export default function ProjectLayout({
   // A route change may briefly retain the previous subscription's project.
   const project = loadedProject?.id === projectId ? loadedProject : null;
   const memberProfiles = useMeetingMembers(project ? [{ memberIds: project.memberIds }] : [], !!project);
-  const { view, primaryView, changeView, setCurrentViewAsDefault, canSave, persistenceFailed } = useProjectTaskViewNavigation(projectId);
+  const { view, primaryView, changeView, canSave } = useProjectTaskViewNavigation(projectId);
 
   useEffect(() => {
     if (project && !error && canSave && pathname === `/projects/${projectId}/board` && view === 'gantt') changeView('gantt');
@@ -165,7 +164,7 @@ export default function ProjectLayout({
               <History className="h-4 w-4" />
             </Link>
           </ControlHint>
-          {(currentTab === 'board' || currentTab === 'gantt') && <div className="ml-auto"><TaskViewSwitcher view={currentTab === 'gantt' ? 'gantt' : view} primaryView={primaryView} onChange={changeView} onSetDefault={setCurrentViewAsDefault} canSave={canSave} persistenceFailed={persistenceFailed} /></div>}
+          {(currentTab === 'board' || currentTab === 'gantt') && <div id="project-view-extra-controls" className="ml-auto flex min-w-0 flex-nowrap items-center gap-1" />}
         </nav>
       </div>
 

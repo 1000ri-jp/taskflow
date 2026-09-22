@@ -10,6 +10,16 @@
     "text-xs": 2,
     "text-xs text-muted-foreground": 1
   },
+  "src/app/(dashboard)/help/page.tsx": {
+    "mt-8 mb-3 text-lg font-semibold": 1,
+    "mt-4 mb-2 font-medium": 1,
+    "mb-3 text-sm leading-relaxed": 1,
+    "mb-4 space-y-2 pl-5 text-sm": 1,
+    "mb-4": 1,
+    "text-sm": 1,
+    "p-2 font-medium": 1,
+    "p-2": 1
+  },
   "src/app/(dashboard)/layout.tsx": {
     "bg-gray-50 p-4 lg:ml-0 lg:p-6": 1,
     "text-primary": 1
@@ -69,7 +79,8 @@
     "bg-background/80 hover:bg-background/90": 1,
     "bg-muted text-primary": 1,
     "border-b-2": 2,
-    "gap-1": 1,
+    "gap-1": 2,
+    "gap-2": 1,
     "gap-3": 1,
     "gap-x-1 gap-y-2": 1,
     "inline-style:{{\n            backgroundColor: project.headerImageUrl ? undefined : `${project.color}30`,\n          }}": 1,
@@ -79,6 +90,9 @@
     "mb-4": 2,
     "mb-4 gap-x-4 gap-y-2 pl-[72px] sm:pl-20 lg:pl-24": 1,
     "ml-1": 1,
+    "ml-4 gap-1": 1,
+    "ml-8": 1,
+    "ml-8 mr-8": 1,
     "mt-1 text-xs text-muted-foreground": 1,
     "mt-2 text-sm text-muted-foreground": 1,
     "mt-4": 1,
@@ -480,6 +494,8 @@
     "bg-white": 1,
     "border-amber-500 bg-amber-50 text-amber-900": 1,
     "gap-2 border-amber-200 bg-amber-100 px-3 py-2.5 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100": 1,
+    "items-center gap-2 border-amber-200 bg-amber-100 px-3 py-2.5 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100": 1,
+    "ml-2 font-medium": 1,
     "mt-2 text-sm leading-relaxed": 1,
     "mt-3 gap-1 text-sm font-semibold text-amber-900 dark:text-amber-200": 1,
     "pt-0.5 text-sm font-semibold leading-snug": 1,
@@ -490,8 +506,10 @@
     "rounded-lg p-2 hover:bg-amber-200 dark:hover:bg-amber-900": 1,
     "space-y-2 pt-3": 1,
     "text-base font-semibold leading-snug": 1,
+    "text-sm font-semibold leading-snug": 1,
     "text-sm": 1,
     "text-sm font-medium": 1,
+    "mt-2 text-sm font-medium leading-snug text-amber-900 dark:text-amber-200": 1,
     "text-xs text-muted-foreground": 1
   },
   "src/components/ai/CompanionScheduleSettings.tsx": {
@@ -552,14 +570,16 @@
   "src/components/ai/FeatureRequestDialog.tsx": {
     "font-medium": 1,
     "gap-2": 2,
+    "gap-2 text-sm font-medium": 1,
     "mt-2": 1,
+    "space-y-1": 1,
     "space-y-1 text-sm": 2,
     "space-y-1 text-sm text-destructive": 1,
     "space-y-2 rounded-md bg-muted p-3 text-sm": 1,
     "space-y-4": 2,
     "text-sm": 5,
     "text-sm text-destructive": 1,
-    "text-sm text-muted-foreground": 1,
+    "text-sm text-muted-foreground": 2,
     "text-xs": 1,
     "text-xs text-muted-foreground": 3
   },
@@ -688,6 +708,8 @@
   "src/components/board/BoardFilterBar.tsx": {
     "bg-primary text-primary-foreground": 1,
     "gap-2 bg-muted/30 py-2 pl-4": 1,
+    "gap-2": 1,
+    "gap-1": 1,
     "gap-2 px-2 py-1.5 hover:bg-muted": 1,
     "inline-style:{{ backgroundColor: label.color }}": 1,
     "mt-2": 1,
@@ -795,6 +817,21 @@
     "gap-2": 1,
     "inline-style:{{ backgroundColor: color.value }}": 1,
     "rounded-full": 1
+  },
+  "src/components/board/ListReferencesPanel.tsx": {
+    "space-y-2 px-3 py-2": 1,
+    "text-xs text-destructive": 1,
+    "pr-10": 1,
+    "space-y-4": 1,
+    "space-y-3": 1,
+    "space-y-1 text-sm": 3,
+    "text-xs text-muted-foreground": 1,
+    "gap-2": 1,
+    "text-sm font-medium": 1,
+    "mr-1": 2,
+    "text-sm text-primary": 2,
+    "text-sm text-destructive": 1,
+    "p-3": 1
   },
   "src/components/board/MilestoneForm.tsx": {
     "bg-background px-2": 1,
@@ -1068,15 +1105,19 @@
     "text-xs": 1,
     "text-xs text-muted-foreground": 1
   },
+  "src/components/common/CompanionPopoverContent.tsx": {
+    "p-1 text-muted-foreground hover:bg-muted hover:text-foreground": 1,
+    "space-y-4": 1
+  },
   "src/components/common/Header.tsx": {
     "bg-muted px-1.5 py-0.5 text-[10px] font-medium": 1,
     "font-normal": 1,
     "font-semibold": 1,
     "gap-1 sm:gap-2": 1,
-    "gap-2": 1,
+    "gap-2": 2,
     "gap-2 bg-background px-3 sm:gap-4 lg:px-6": 1,
     "gap-2 rounded-md bg-background px-3 text-sm text-muted-foreground hover:bg-accent": 1,
-    "mr-2": 3,
+    "mr-2": 4,
     "rounded-full": 1,
     "rounded-lg bg-primary text-sm font-bold text-primary-foreground": 1,
     "space-y-1": 1,
@@ -1522,7 +1563,11 @@
     "text-sm font-medium": 1,
     "text-xs font-medium text-orange-700": 1,
     "text-xs text-muted-foreground": 2,
-    "text-xs text-muted-foreground hover:text-primary": 1
+    "text-xs text-muted-foreground hover:text-primary": 1,
+    "mb-3 text-sm": 1,
+    "gap-2": 1,
+    "gap-1 pr-5": 1,
+    "pr-0": 1
   },
   "src/components/dashboard/NeoDayAgenda.tsx": {
     "gap-0": 1,
@@ -1574,6 +1619,8 @@
     "text-xs text-muted-foreground": 1
   },
   "src/components/dashboard/NeoRecentChanges.tsx": {
+    "pb-4": 1,
+    "px-2": 1,
     "gap-x-3 gap-y-1": 1,
     "gap-x-3 gap-y-1 px-5 py-2.5": 1,
     "gap-x-3 gap-y-1 px-5 py-2.5 hover:bg-muted/60": 1,
@@ -1690,7 +1737,11 @@
     "text-2xl font-medium tracking-tight": 1,
     "text-base font-medium": 1,
     "text-sm text-muted-foreground": 1,
-    "text-xs text-muted-foreground": 1
+    "text-xs text-muted-foreground": 1,
+    "text-sm": 1,
+    "gap-2 text-lg font-semibold": 1,
+    "p-0": 2,
+    "text-[9px]": 1
   },
   "src/components/dashboard/NeoWorkContinuation.tsx": {
     "border-l-2 pl-3 text-sm": 1,
@@ -1949,6 +2000,69 @@
     "text-xs text-muted-foreground": 4,
     "text-xs text-rose-700": 1
   },
+  "src/components/desktop/DesktopBriefTaskActions.tsx": {
+    "gap-1": 1,
+    "rounded-full text-muted-foreground hover:bg-muted aria-checked:bg-primary/10 aria-checked:text-primary": 1,
+    "bg-background px-1 text-[10px] text-muted-foreground": 1,
+    "text-muted-foreground hover:text-foreground": 1,
+    "p-2": 1,
+    "mb-1 gap-1": 1,
+    "px-2 py-1 text-xs": 1,
+    "bg-primary text-primary-foreground": 1,
+    "text-muted-foreground hover:bg-muted": 1,
+    "p-1": 1,
+    "px-1 pb-1 text-xs text-muted-foreground": 1,
+    "mr-1": 1,
+    "text-destructive": 1,
+    "text-emerald-700": 1
+  },
+  "src/components/desktop/DesktopMiniApp.tsx": {
+    "rounded-md px-2 py-1 text-xs font-medium hover:bg-black/5": 1,
+    "text-xs": 1,
+    "p-5": 1,
+    "rounded-2xl bg-card p-5 text-sm": 1,
+    "font-semibold": 2,
+    "mt-2 text-muted-foreground": 1,
+    "bg-background p-3 text-foreground": 1,
+    "bg-background p-3 text-foreground sm:p-4": 1,
+    "space-y-3": 2,
+    "gap-3 px-1 py-1": 1,
+    "text-primary": 1,
+    "text-xs text-muted-foreground": 1,
+    "text-base font-semibold": 1,
+    "rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground": 1,
+    "gap-2 rounded-lg px-3 py-2 text-xs": 1,
+    "border-emerald-200 bg-emerald-50 text-emerald-900": 1,
+    "border-amber-300 bg-amber-50 text-amber-900": 1,
+    "px-1 text-base leading-none": 1,
+    "rounded-lg border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900": 2,
+    "rounded-lg bg-card px-3 py-2 text-xs text-muted-foreground": 1,
+    "rounded-2xl bg-card": 1,
+    "px-4 py-3": 1,
+    "bg-background p-4 text-xs text-muted-foreground": 1
+  },
+  "src/components/desktop/DesktopMiniConnect.tsx": {
+    "p-5": 1,
+    "space-y-3": 1,
+    "gap-2": 1
+  },
+  "src/components/desktop/DesktopMiniLogin.tsx": {
+    "p-5": 1,
+    "space-y-3": 1
+  },
+  "src/components/desktop/DesktopMoaiEntry.tsx": {
+    "gap-1": 1,
+    "text-muted-foreground hover:text-foreground": 2,
+    "text-amber-700 hover:text-amber-800": 1,
+    "rounded-full bg-rose-600 px-1 py-0.5 text-[10px] font-bold leading-none": 1
+  },
+  "src/components/desktop/MiniWindowControls.tsx": {
+    "space-y-3": 1,
+    "text-sm font-medium": 1,
+    "gap-2": 1,
+    "text-xs text-muted-foreground": 2,
+    "gap-1.5 px-2 text-xs has-[>svg]:px-2": 1
+  },
   "src/components/gantt/GanttChart.tsx": {
     "bg-background": 2,
     "bg-muted/20": 1,
@@ -2022,6 +2136,9 @@
     "text-sm text-amber-800": 3,
     "text-sm text-muted-foreground": 3,
     "text-xs text-muted-foreground": 5
+  },
+  "src/components/help/HelpVideos.tsx": {
+    "space-y-4": 1
   },
   "src/components/project/ActivityLogPanel.tsx": {
     "font-medium": 3,
@@ -2329,7 +2446,11 @@
     "space-y-2 p-3": 1,
     "text-red-600": 1,
     "text-sm font-medium": 1,
-    "text-xs text-destructive": 1
+    "text-xs text-destructive": 1,
+    "space-y-2": 1,
+    "space-y-1 text-xs": 1,
+    "gap-2 text-xs": 1,
+    "text-xs text-muted-foreground": 1
   },
   "src/components/task/ChecklistSection.tsx": {
     "font-medium": 1,
@@ -2483,6 +2604,21 @@
     "text-sm font-semibold": 1,
     "text-xs text-amber-800": 1,
     "text-xs text-muted-foreground": 4
+  },
+  "src/components/task/ReferenceMigrationDialog.tsx": {
+    "text-xs": 1,
+    "mr-1": 2,
+    "space-y-3 text-sm": 1,
+    "rounded-md bg-amber-50 p-3 text-xs text-amber-900": 1,
+    "font-medium": 3,
+    "mt-1 p-2": 1,
+    "mt-1 bg-muted/30 p-2 text-xs": 1,
+    "mt-1 space-y-1": 1,
+    "gap-1 text-xs": 1,
+    "mt-0.5": 1,
+    "mt-1 text-xs text-muted-foreground": 1,
+    "text-xs text-muted-foreground": 1,
+    "text-xs text-destructive": 1
   },
   "src/components/task/SortableChecklistItems.tsx": {
     "bg-muted": 1,
@@ -2978,5 +3114,21 @@
   "src/components/ui/tooltip.tsx": {
     "bg-foreground rounded-[2px]": 1,
     "bg-foreground rounded-md px-3 py-1.5 text-xs": 1
+  },
+  "src/components/board/ReferenceComments.tsx": {
+    "space-y-3": 1,
+    "gap-2 text-sm font-medium": 1,
+    "rounded-lg bg-muted p-3": 2,
+    "text-xs text-muted-foreground": 3,
+    "text-sm text-muted-foreground": 1,
+    "gap-3": 1,
+    "space-y-1": 1,
+    "gap-2": 2,
+    "text-sm font-medium": 1,
+    "space-y-2": 2,
+    "rounded-lg p-3": 1,
+    "mr-1": 1,
+    "gap-2 text-xs": 1,
+    "text-sm text-destructive": 1
   }
 }

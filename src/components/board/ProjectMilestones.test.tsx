@@ -11,6 +11,8 @@ const milestone: Milestone = { id: 'm', projectId: 'project-1', title: '出展�
 afterEach(() => vi.useRealTimers());
 describe('milestones beside project views', () => {
   it('adds an exhibition date only on submit, keeping failed input for retry', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 8, 10, 12));
     const add = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue('new-milestone');
     const select = vi.fn();
     render(<ProjectMilestones projectId="project-1" tasks={[]} milestones={[]} isLoading={false} error={false} selectedId="__new__" onSelect={select} onTaskClick={vi.fn()} onAdd={add} />);

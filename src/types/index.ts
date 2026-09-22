@@ -77,6 +77,45 @@ export interface List {
   updatedAt: Date;
 }
 
+export interface ListReferenceLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
+export interface ListReferenceAttachment {
+  id: string;
+  referenceId: string;
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  uploadedBy: string;
+  uploadedAt: Date;
+}
+
+/** Information kept with a list, not counted as work or a task. */
+export interface ListReference {
+  id: string;
+  projectId: string;
+  listId: string;
+  title: string;
+  body: string;
+  comment?: string;
+  links: ListReferenceLink[];
+  attachments: ListReferenceAttachment[];
+  order: number;
+  createdBy: string;
+  createdAt: Date;
+  updatedBy: string;
+  updatedAt: Date;
+  isArchived: boolean;
+  archivedAt?: Date | null;
+  archivedBy?: string | null;
+  sourceTaskId?: string;
+  conversionId?: string;
+}
+
 // Task types
 export interface TaskWorkState {
   status: 'hold' | 'wait';
@@ -99,6 +138,10 @@ export interface Task {
   mergedIntoTaskId?: string;
   mergedFromTaskIds?: string[];
   automation?: import('@/lib/task/automationTypes').TaskAutomationSummary;
+  /** Explicitly marks a hard deadline; it never changes task completion or dates. */
+  deadlinePolicy?: 'strict';
+  /** Subscription hint; checklist dates remain canonical in their checklist. */
+  hasChecklistDeadlines?: boolean;
   completionPolicy?: import('@/lib/task/automationTypes').AllChildrenCompletionPolicy;
   id: string;
   // Shared review requests reuse the task collection and normal assignee/completion fields.
@@ -163,6 +206,9 @@ export interface ChecklistItem {
   isChecked: boolean;
   order: number;
   dueDate?: string | null;
+  /** Japan time, HH:mm. */
+  dueTime?: string | null;
+  deadlinePolicy?: 'strict' | null;
 }
 
 // Comment types
@@ -180,6 +226,10 @@ export interface Comment {
   attachments?: CommentAttachment[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ReferenceComment extends Omit<Comment, 'taskId' | 'mentions' | 'purpose' | 'reviewTaskId'> {
+  referenceId: string;
 }
 
 // Comment attachment type

@@ -22,12 +22,12 @@ export type ProjectTaskStatus =
   | { status: 'loading' | 'ready' }
   | { status: 'error'; error: Error };
 
-export function useMyTasks() {
+export function useMyTasks(enabled = true) {
   const { user } = useAuthStore();
   const userId = user?.id;
   const mockMode = isE2EMockAuthEnabled();
-  const labTasks = useOrganizationLabTasks(mockMode, userId ?? null);
-  const { projects, isLoading: projectsLoading, error: projectsError } = useProjects();
+  const labTasks = useOrganizationLabTasks(mockMode && enabled, userId ?? null);
+  const { projects, isLoading: projectsLoading, error: projectsError } = useProjects(enabled);
   const scopeKey = JSON.stringify([userId, projects.map((project) => project.id).sort()]);
   // A resumed subscription must receive its own first snapshot, even for the same projects.
   const subscription = useMemo(() => ({
@@ -49,7 +49,7 @@ export function useMyTasks() {
 
   // Subscribe to tasks and list display metadata for each accessible project
   useEffect(() => {
-    if (isE2EMockAuthEnabled() || !subscription.enabled) {
+    if (!enabled || isE2EMockAuthEnabled() || !subscription.enabled) {
       return;
     }
     let active = true;
@@ -90,7 +90,7 @@ export function useMyTasks() {
       active = false;
       unsubscribes.forEach((unsub) => unsub());
     };
-  }, [subscription]);
+  }, [enabled, subscription]);
 
   const projectTaskStatus = useMemo(() => new Map<string, ProjectTaskStatus>(projects.map(project => {
     if (projectsError) return [project.id, { status: 'error', error: projectsError }];
@@ -160,7 +160,7 @@ export function useMyTasks() {
     tasks: myTasks,
     allProjectTasks,
     projectTaskStatus,
-    isLoading: Boolean(userId) && !projectsError && (projectsLoading || (projects.length > 0 && (snapshot.subscription !== subscription || snapshot.settled.size < projects.length))),
+    isLoading: enabled && Boolean(userId) && !projectsError && (projectsLoading || (projects.length > 0 && (snapshot.subscription !== subscription || snapshot.settled.size < projects.length))),
     error: projectsError ?? (snapshot.subscription === subscription ? snapshot.errors.values().next().value ?? null : null),
     taskCount: myTasks.length,
   };
