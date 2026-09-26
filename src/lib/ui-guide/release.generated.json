@@ -727,7 +727,7 @@
     },
     {
       "path": "src/components/task/TaskDetailModal.tsx",
-      "sha256": "d0778790861f96cc782bd5cc5ad393a770e5356f95680569dbf26f323bae90bb"
+      "sha256": "278a85150a792ee71b993a16f046f2e4f6bba1644e2ba386450101af6809335c"
     },
     {
       "path": "src/components/task/TaskHistoryTimeline.tsx",
@@ -767,7 +767,7 @@
     },
     {
       "path": "src/components/task/TaskStatusControl.tsx",
-      "sha256": "c521d5e1acd7eda9415346c17d29f7f4f4cb40c9e8dce6c6526258a81166ce91"
+      "sha256": "74e94e740407f21e1aa5935e537e70423f6c0496aea16ff331670d0024ade471"
     },
     {
       "path": "src/components/task/TaskSubtaskCreator.tsx",
@@ -1771,7 +1771,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "bf6daf0c9a75210c875af4a5f14f5c96a7b69103446e9dbae4e8b8cfe8bfa6ff"
+      "sha256": "bf4b0c9531c6a8133ad4b7d2a8b04ac9c9cd1c249bb8c4eb3a359702333cf269"
     },
     {
       "path": "src/lib/ui-guide/verification.json",
