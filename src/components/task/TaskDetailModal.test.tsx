@@ -122,6 +122,26 @@ describe('TaskDetailModal notification placement', () => {
     expect(dialog.querySelector('.tf-detail-header')).toHaveClass('pt-5', 'pb-1');
   });
 
+  it('completes an ordinary task beside the status menu without adding a new row', async () => {
+    const { onUpdate } = await renderModal();
+    const state = screen.getByRole('group', { name: '状態' });
+    const complete = within(state).getByRole('button', { name: '完了' });
+    expect(within(state).getByRole('combobox', { name: `${task.title}のステータス` }).compareDocumentPosition(complete) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await waitFor(() => expect(complete).toBeEnabled());
+    fireEvent.click(complete);
+    await waitFor(() => expect(sendWorkflow).toHaveBeenCalledWith(task.projectId, task.id, expect.objectContaining({ action: 'complete' })));
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it('explains why a task with an unfinished prerequisite cannot be completed', async () => {
+    const prerequisite = { ...task, id: 'prerequisite', title: '前提の作業' };
+    const dependent = { ...task, dependsOnTaskIds: [prerequisite.id] };
+    await renderModal({ task: dependent, allTasks: [dependent, prerequisite] });
+    expect(screen.getByRole('button', { name: '完了' })).toBeDisabled();
+    expect(screen.getByText('前提の完了待ち：前提の作業')).toBeVisible();
+    expect(sendWorkflow).not.toHaveBeenCalled();
+  });
+
   it('changes its display width without saving and moves lists only after explicit confirmation', async () => {
     const onMoveTask = vi.fn().mockResolvedValue(undefined);
     const { onUpdate } = await renderModal({ onMoveTask, lists: [viewList({ name: '準備' }), viewList({ id: 'done', name: '完了', autoCompleteOnEnter: true })] });
