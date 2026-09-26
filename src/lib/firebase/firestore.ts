@@ -661,6 +661,7 @@ export async function getTask(
   const data = taskDoc.data();
   return {
     ...convertDoc<Task>(data, taskDoc.id),
+    projectId,
     startDate: data.startDate ? toDate(data.startDate) : null,
     dueDate: data.dueDate ? toDate(data.dueDate) : null,
   };
@@ -677,6 +678,7 @@ export async function getProjectTasks(projectId: string): Promise<Task[]> {
       const data = doc.data();
       return {
         ...convertDoc<Task>(data, doc.id),
+        projectId,
         startDate: data.startDate ? toDate(data.startDate) : null,
         dueDate: data.dueDate ? toDate(data.dueDate) : null,
       };
@@ -700,6 +702,7 @@ export function subscribeToProjectTasks(
           const data = doc.data();
           return {
             ...convertDoc<Task>(data, doc.id),
+            projectId,
             startDate: data.startDate ? toDate(data.startDate) : null,
             dueDate: data.dueDate ? toDate(data.dueDate) : null,
           };
@@ -792,6 +795,7 @@ export async function getArchivedTasks(projectId: string): Promise<Task[]> {
     const data = doc.data();
     return {
       ...convertDoc<Task>(data, doc.id),
+      projectId,
       startDate: data.startDate ? toDate(data.startDate) : null,
       dueDate: data.dueDate ? toDate(data.dueDate) : null,
       archivedAt: data.archivedAt ? toDate(data.archivedAt) : null,
@@ -820,6 +824,7 @@ export function subscribeToArchivedTasks(
       const data = doc.data();
       return {
         ...convertDoc<Task>(data, doc.id),
+        projectId,
         startDate: data.startDate ? toDate(data.startDate) : null,
         dueDate: data.dueDate ? toDate(data.dueDate) : null,
         archivedAt: data.archivedAt ? toDate(data.archivedAt) : null,

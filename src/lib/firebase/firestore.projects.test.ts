@@ -38,7 +38,7 @@ vi.mock('./config', () => ({
   getFirebaseDb: mocks.getFirebaseDb,
 }));
 
-import { createProject, createReference, deleteProject, subscribeToArchivedTasks, updateList, updateReference } from './firestore';
+import { createProject, createReference, deleteProject, subscribeToArchivedTasks, subscribeToProjectTasks, updateList, updateReference } from './firestore';
 import type { Project } from '@/types';
 
 describe('deleteProject', () => {
@@ -110,6 +110,15 @@ it('returns archived tasks newest first, keeps undated legacy rows, and forwards
   expect(receive.mock.calls[0][0].map((task: { id: string }) => task.id)).toEqual(['newer', 'older', 'unknown']);
   const reason = new Error('permission-denied'); error(reason);
   expect(failed).toHaveBeenCalledWith(reason); expect(unsubscribe).toBe(stop);
+});
+
+it('uses the containing project for a request task whose stored projectId is absent', () => {
+  vi.clearAllMocks();
+  const receive = vi.fn();
+  subscribeToProjectTasks('project-1', receive);
+  const [, next] = mocks.onSnapshot.mock.calls.at(-1)!;
+  next({ docs: [{ id: 'request-legacy', data: () => ({ title: '要望のタスク', isArchived: false }) }] });
+  expect(receive.mock.calls[0][0][0]).toMatchObject({ id: 'request-legacy', projectId: 'project-1' });
 });
 
 it('validates and saves a list primary assignee through the existing list document', async () => {
