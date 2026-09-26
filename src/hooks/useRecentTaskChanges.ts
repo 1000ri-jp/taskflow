@@ -4,10 +4,11 @@ import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestor
 import { getFirebaseDb } from '@/lib/firebase/config';
 import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import { recentActivityEntry, recentChangeText } from '@/lib/task/history/recentChanges';
+import type { ActivityAction } from '@/types';
 import type { HistoryEntry } from '@/lib/task/history/types';
 import type { DashboardTask } from '@/lib/dashboard/brief';
 
-type SavedChange = { projectId: string; taskId: string; entry: HistoryEntry };
+type SavedChange = { projectId: string; taskId: string; entry: HistoryEntry; action?: ActivityAction };
 export function recordedTaskChange(projectId: string, id: string, data: Record<string, unknown>): SavedChange | null {
   if (data.targetType !== 'task' || typeof data.targetId !== 'string') return null;
   const entry = recentActivityEntry(id, data);
@@ -15,7 +16,7 @@ export function recordedTaskChange(projectId: string, id: string, data: Record<s
   if (entry.changes?.length && entry.changes.every(change => change.before === change.after)) return null;
   const description = recentChangeText(entry);
   if (!description || ['変更項目は記録されていません', 'タスクの変更'].includes(description) || description.includes('内容の変更なし（再保存）')) return null;
-  return { projectId, taskId: data.targetId, entry };
+  return { projectId, taskId: data.targetId, entry, action: typeof data.action === 'string' ? data.action as ActivityAction : undefined };
 }
 export function recentChangedTasks(changes: SavedChange[], tasks: readonly DashboardTask[]) {
   const taskKey = (projectId: string, taskId: string) => JSON.stringify([projectId, taskId]);
@@ -24,7 +25,7 @@ export function recentChangedTasks(changes: SavedChange[], tasks: readonly Dashb
   return [...changes].sort((a,b) => Date.parse(b.entry.recordedAt ?? b.entry.at!) - Date.parse(a.entry.recordedAt ?? a.entry.at!)).flatMap(change => {
     const key = taskKey(change.projectId, change.taskId), task = available.get(key);
     if (!task || found.has(key)) return [];
-    found.add(key); return [{ task, entry: change.entry, parentTitle: task.parentTaskId ? available.get(taskKey(task.projectId, task.parentTaskId))?.title : undefined }];
+    found.add(key); return [{ task, entry: change.entry, action: change.action, parentTitle: task.parentTaskId ? available.get(taskKey(task.projectId, task.parentTaskId))?.title : undefined }];
   });
 }
 export function useRecentTaskChanges(projectIds: string[], userId: string | null, pageSize: number) {

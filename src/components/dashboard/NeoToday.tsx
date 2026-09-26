@@ -15,8 +15,9 @@ import type { MyTask } from '@/hooks/useMyTasks';
 import type { TaskViewMember } from '@/components/board/TaskViewFields';
 import type { NeoReviewRequestsProps } from './NeoReviewRequests';
 import { NeoWorkContinuation } from './NeoWorkContinuation';
-import { NeoMorningBrief } from './NeoMorningBrief';
+import { NeoMorningBrief, NeoStrictDeadlines } from './NeoMorningBrief';
 import { NeoTaskAttention } from './NeoTaskAttention';
+import { DesktopBriefTaskActions, type MiniTaskFeedback, type BriefTaskControlsRenderer } from '@/components/desktop/DesktopBriefTaskActions';
 import { agendaTime } from './NeoDayAgenda';
 
 function CalendarSource({ event }: { event: GoogleItem }) {
@@ -51,9 +52,11 @@ export function NeoTodayContent({ tasks, now, userId, isLoading, error, projectT
   const upcoming = day.events.find(event => !event.allDay && Date.parse(event.at) > now.getTime());
   const ongoing = next && Date.parse(next.at) <= now.getTime();
   const incompleteCalendar = !!calendarError || source?.connected && source.status !== 'ready';
-  const requestProps = { tasks: ready, userId, isLoading, error, projectTaskStatus, members };
+  const [feedback, setFeedback] = useState<MiniTaskFeedback | null>(null);
+  const taskActions = (task: import('@/lib/dashboard/brief').DashboardTask, renderControls?: BriefTaskControlsRenderer) => userId ? <DesktopBriefTaskActions renderControls={renderControls} task={task} allTasks={ready} userId={userId} onFeedback={setFeedback} /> : renderControls?.({ progress: null, schedule: null, actions: null });
+  const requestProps = { tasks: ready, userId, isLoading, error, projectTaskStatus, members, taskActions };
   return <div data-testid="neo-today" className="space-y-4">
-    <NeoTaskAttention {...requestProps} />
+    {feedback && <p role={feedback.ok ? 'status' : 'alert'} className="text-sm">{feedback.task.title}：{feedback.message}</p>}
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(300px,1fr)]">
       <section aria-label="今日のブリーフィング" className="min-w-0 overflow-hidden rounded-2xl border bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-3">
@@ -75,9 +78,11 @@ export function NeoTodayContent({ tasks, now, userId, isLoading, error, projectT
             </Button>
           </div>
         </div>
-        <NeoMorningBrief {...requestProps} taskScope={selectedAssigneeId === null ? 'all' : 'mine'} assigneeFilterId={selectedAssigneeId} assigneeFilterName={selectedAssignee?.displayName} />
+        <NeoMorningBrief {...requestProps} now={now} taskScope={selectedAssigneeId === null ? 'all' : 'mine'} assigneeFilterId={selectedAssigneeId} assigneeFilterName={selectedAssignee?.displayName} showStrict={false} />
       </section>
       <div className="min-w-0 space-y-4">
+        <NeoTaskAttention {...requestProps} />
+        <NeoStrictDeadlines {...requestProps} now={now} taskScope={selectedAssigneeId === null ? 'all' : 'mine'} assigneeFilterId={selectedAssigneeId} />
         <section aria-label="次の予定" className="rounded-2xl border bg-card p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="size-4" />{ongoing ? 'いまの予定' : '次の予定'}</h2><Button size="sm" variant="ghost" onClick={onCalendar}>今日の予定を見る<ArrowRight className="size-3.5" /></Button></div>
           {next ? <><p className="text-2xl font-medium tabular-nums tracking-tight">{agendaTime(next)}</p><div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1"><p className="min-w-0 break-words text-base font-medium">{next.title}</p><CalendarSource event={next} /></div></>

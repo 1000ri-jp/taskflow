@@ -39,7 +39,7 @@ describe('Neo dashboard task views', () => {
     expect(rows[0]).toHaveTextContent('図面作成');
     const link = within(rows[0]).getByRole('link');
     expect(link).toHaveAttribute('href', '/projects/project-1/board?task=done&history=1');
-    expect(within(link).getByText('9/15 21:30')).toHaveAttribute('datetime', updatedAt.toISOString());
+    expect(link.querySelector('time')).toHaveAttribute('datetime', updatedAt.toISOString());
     expect(within(link).getByText('書類')).toBeVisible();
     expect(within(link).getByText('期限：2026/9/16 → 2026/9/18')).toBeVisible();
     expect(within(link).getByText(/同僚/)).toBeVisible();
@@ -49,7 +49,7 @@ describe('Neo dashboard task views', () => {
     // Child URLs open their parent with the child highlighted; do not label parent history as the child's history.
     const child = within(rows[2]).getByRole('link');
     expect(child).toHaveAttribute('href', '/projects/project-1/board?task=child');
-    expect(within(child).getByText('図面作成')).toBeVisible();
+    expect(child).toHaveTextContent('書類 / 図面作成');
   });
 
   it('starts with the briefing and countdown visible, with AI consultation kept in Moai', () => {
@@ -80,7 +80,8 @@ describe('Neo dashboard task views', () => {
     render(<NeoDashboard />);
     const nav = within(screen.getByRole('group', { name: 'タスクの表示' }));
     fireEvent.click(nav.getByRole('button', { name: /^タスク$/ }));
-    const taskListRow = screen.getByRole('link', { name: /自分の作業/ });
+    const taskListLink = screen.getByRole('link', { name: /自分の作業/ });
+    const taskListRow = taskListLink.closest('.tf-compact-row') as HTMLElement;
     expect(taskListRow).toHaveClass('tf-compact-row', 'py-0.5', 'px-5', 'transition-colors', 'hover:bg-muted/60', 'focus-visible:outline-2');
     expect(taskListRow.firstElementChild).toHaveClass('min-h-8');
     expect(taskListRow).toHaveTextContent('給与振込設定');
@@ -91,13 +92,15 @@ describe('Neo dashboard task views', () => {
 
     fireEvent.click(nav.getByRole('button', { name: '今日' }));
     const briefing = within(screen.getByRole('region', { name: '今日の仕事・期限' }));
-    const briefingRow = briefing.getByRole('link', { name: /自分の作業/ });
+    const briefingLink = briefing.getByRole('link', { name: /自分の作業/ });
+    const briefingRow = briefingLink.closest('.tf-compact-row') as HTMLElement;
     expect(briefingRow.className).toBe(taskListRow.className);
     expect(briefingRow).toHaveTextContent('給与振込設定');
     expect(briefingRow).toHaveTextContent('振込設定');
     expect(briefingRow).not.toHaveTextContent(/親[:：]/);
     expect(briefingRow).toHaveTextContent(/期限/);
-    expect(briefingRow).toHaveAttribute('href', taskListRow.getAttribute('href'));
+    expect(briefingLink).toHaveAttribute('href', taskListLink.getAttribute('href'));
+    expect(briefingRow.querySelector('a button')).toBeNull();
   });
 
   it('opens the combined daily agenda from Today and returns to the selected job', () => {

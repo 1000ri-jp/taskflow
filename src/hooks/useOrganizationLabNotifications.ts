@@ -7,6 +7,7 @@ import type { OrganizationMock } from '@/lib/task/organizationMock';
 import {expandTaskReviews, requiresReviewResponse} from '@/lib/task/reviews';
 import {STAGE_LABELS} from '@/lib/task/automationTypes';
 import { reminderDue, requiredChildrenState } from '@/lib/task/automationEngine';
+import { isStrictDeadlineTask } from '@/lib/task/deadlinePolicy';
 
 const iso = (value: unknown) => value instanceof Date && Number.isFinite(value.getTime()) ? value.toISOString() : typeof value === 'string' && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null;
 
@@ -17,7 +18,20 @@ export function organizationLabNotifications(work: OrganizationMock, userId: str
 
   const tasks = expandTaskReviews(Object.entries(work.data.tasks).map(([id, task]) => ({ ...task, id } as unknown as Task)));
   const requests: Notification[] = tasks.filter(t=>t.taskKind==='review_request'&&t.assigneeIds.includes(userId)&&t.sourceCommentId).map(t=>({id:`${t.sourceCommentId}:${userId}`,userId,senderId:t.createdBy,senderName:t.createdBy==='demo-colleague'?'同僚':'本人',type:'review_requested',title:'確認依頼',message:t.review?.request??t.description,projectId:t.projectId,taskId:t.parentTaskId!,taskName:tasks.find(p=>p.id===t.parentTaskId)?.title??t.title,isRead:!!work.notificationReads?.includes(`${t.sourceCommentId}:${userId}`),createdAt:t.createdAt,data:{...(t.dueDate?{dueDate:jstDay(t.dueDate.toISOString())}:{}),urgency:t.review?.urgency,requiresResponse:requiresReviewResponse(t,userId),sourceTaskId:t.parentTaskId,commentId:t.sourceCommentId}}));
-  if (!state || state.uid !== userId) return requests;
+  const strictDeadlines: Notification[] = tasks.filter(t => isStrictDeadlineTask(t) && t.assigneeIds.includes(userId) && !t.isCompleted && !t.isArchived && !t.isAbandoned && !!iso(t.dueDate)).map(t => ({
+    id: `strict-deadline:${t.projectId}:${t.id}`,
+    userId,
+    type: 'due_reminder',
+    title: '期限厳守の仕事があります',
+    message: `「${t.title}」は${new Date(t.dueDate!).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', hour12: false }).replace(/:00$/, '')}に必ず処理。完了するまでモアイに表示します。`,
+    projectId: t.projectId,
+    taskId: t.id,
+    taskName: t.title,
+    isRead: false,
+    createdAt: t.createdAt,
+    data: { strictDeadline: true, requiresResponse: true, dueDate: iso(t.dueDate) },
+  }));
+  if (!state || state.uid !== userId) return requests.concat(strictDeadlines);
   const orders:Notification[]=state.grants.filter(g=>g.rule.order&&g.records.length).flatMap(g=>{
     const record=g.records.at(-1)!;const task=work.data.tasks[g.rule.taskId];if(!task||record.undone)return [];
     const summary=task.automation as import('@/lib/task/automationTypes').TaskAutomationSummary;
@@ -25,7 +39,7 @@ export function organizationLabNotifications(work: OrganizationMock, userId: str
     const late=!!(summary.expectedDate&&iso(task.dueDate)&&summary.expectedDate>jstDay(iso(task.dueDate)!));
     return [{id,userId,type:'task_updated',title:late?'到着予定が仕事の期限を過ぎます':'名刺の状況が変わりました',message:`${g.rule.order!.merchant}の${g.rule.order!.item}：${STAGE_LABELS[summary.stage!]}${summary.expectedDate?`。到着予定は${summary.expectedDate}です`:''}`,projectId:g.rule.projectId,taskId:g.rule.taskId,taskName:String(task.title),isRead:!!work.notificationReads?.includes(id),createdAt:new Date(record.at),data:{automation:true,requiresResponse:late}}];
   });
-  return requests.concat(orders,state.reminders.flatMap(reminder => {
+  return requests.concat(strictDeadlines, orders,state.reminders.flatMap(reminder => {
     const parent = tasks.find(task => task.id === reminder.taskId && task.projectId === reminder.projectId);
     if (!parent || parent.isCompleted || parent.isArchived || parent.isAbandoned || parent.completionPolicy?.grantedBy !== userId) return [];
     const dueDate = iso(parent.dueDate);
@@ -64,6 +78,8 @@ export function useOrganizationLabNotifications(enabled: boolean, userId: string
     }).catch(() => { if (active) setSnapshot({ userId, notifications: [], error: new Error('隔離環境の通知を取得できません。') }); });
     return () => { active = false; unsubscribe(); };
   }, [enabled, userId]);
-  const current = enabled && snapshot?.userId === userId ? snapshot : null;
+  // Preserve the last notification snapshot while the mini is hidden. The
+  // effect unsubscribes while inactive and reads again when it is shown.
+  const current = snapshot?.userId === userId ? snapshot : null;
   return { notifications: current?.notifications ?? [], isLoading: false, error: current?.error ?? null };
 }

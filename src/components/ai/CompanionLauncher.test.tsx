@@ -15,6 +15,14 @@ const notice = (id: string): Notification => ({
   id, userId: 'user-1', type: 'comment_added', title: 'コメントが届きました', message: '確認お願いします',
   projectId: 'project-1', taskId: 'task-1', isRead: false, createdAt: new Date(), data: {},
 });
+const strictNotice = (id: string): Notification => ({
+  id, userId: 'user-1', type: 'due_reminder', title: '期限厳守の仕事があります', message: '長い説明は表示しません',
+  projectId: 'project-1', taskId: 'task-1', taskName: '精算手続きの確認（架空）', isRead: false, createdAt: new Date(),
+  data: { strictDeadline: true, requiresResponse: true, dueDate: '2026-09-23T23:00:00.000Z' },
+});
+const pendingNotice = (id: string): Notification => ({
+  ...notice(id), type: 'review_requested', data: { requiresResponse: true, urgency: 'normal' },
+});
 
 beforeEach(() => {
   sessionStorage.clear(); localStorage.clear(); vi.clearAllMocks();
@@ -259,6 +267,40 @@ describe('Companion position', () => {
     const bubble = screen.getByRole('status');
     expect(bubble).toHaveStyle({ width: '304px', left: '-208px', bottom: '108px' });
     expect(screen.getByText('内容を見る')).toBeVisible();
+  });
+
+  it('keeps strict deadline notices concise and task-focused', () => {
+    state.notifications = [strictNotice('strict-1')]; state.unreadCount = 1;
+    render(<CompanionLauncher {...props} />);
+    const bubble = screen.getByRole('status');
+    expect(bubble).toHaveTextContent('期限厳守');
+    expect(bubble).toHaveTextContent('精算手続きの確認（架空）');
+    expect(bubble).toHaveTextContent('9/24 8:00に');
+    expect(bubble).toHaveTextContent('タスク詳細');
+    expect(bubble).not.toHaveTextContent('長い説明は表示しません');
+    expect(bubble).not.toHaveTextContent('まで');
+    expect(screen.getByText('期限厳守').parentElement).toHaveClass('items-center');
+  });
+
+  it('auto-dismisses a strict deadline bubble while keeping its unread badge', () => {
+    vi.useFakeTimers();
+    state.notifications = [strictNotice('strict-1'), { ...notice('notice-2'), createdAt: new Date(Date.now() - 1000) }]; state.unreadCount = 2;
+    render(<CompanionLauncher {...props} />);
+    expect(screen.getByRole('button', { name: '吹き出しを閉じる' })).toBeVisible();
+    act(() => { vi.advanceTimersByTime(20000); });
+    expect(screen.getByRole('status')).toHaveTextContent('モアイからのお知らせ');
+    expect(screen.getAllByRole('button', { name: '未読の通知2件を開く' }).find(button => button.textContent === '2')).toBeVisible();
+    expect(state.markAsRead).not.toHaveBeenCalled();
+  });
+
+  it('auto-dismisses a response-required bubble while keeping its unread badge', () => {
+    vi.useFakeTimers();
+    state.notifications = [pendingNotice('pending-1')]; state.unreadCount = 1;
+    render(<CompanionLauncher {...props} />);
+    expect(screen.getByRole('button', { name: '吹き出しを閉じる' })).toBeVisible();
+    act(() => { vi.advanceTimersByTime(20000); });
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '未読の通知1件を開く' }).find(button => button.textContent === '1')).toBeVisible();
   });
 
   it.each(['broken', '{"x":"20","y":30}', '{"x":1e309,"y":30}', '[]'])('ignores invalid saved position %s', (value) => {

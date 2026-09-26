@@ -7,12 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Bot, ChevronRight, Key } from 'lucide-react';
+import { Bot, ChevronRight, Key } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { CommentStampSettings } from '@/components/task/CommentStampSettings';
 import { SecretaryRefreshSettings } from '@/components/secretary/SecretaryRefreshSettings';
 import { DashboardViewSettings } from '@/components/dashboard/DashboardViewSettings';
 import { AutoArchiveSettings } from '@/components/board/AutoArchiveSettings';
+import { MiniWindowControls } from '@/components/desktop/MiniWindowControls';
 import { CompanionScheduleSettings } from '@/components/ai/CompanionScheduleSettings';
 
 export default function SettingsPage() {
@@ -22,12 +23,16 @@ export default function SettingsPage() {
       <div>
         <PageHeading>設定</PageHeading>
         <p className="text-muted-foreground">アプリケーションの設定を管理します</p>
-        <Button asChild variant="outline" size="sm" className="mt-3"><Link href="/ui-guide"><BookOpen className="size-4" />TaskFlow UIガイド</Link></Button>
       </div>
 
       <Card density="compact" id="dashboard-view">
         <CardHeader><CardTitle>ダッシュボード</CardTitle><CardDescription>旧版・新版・Neoを選びます。外観とカレンダーの選択は引き継ぎます。</CardDescription></CardHeader>
         <CardContent><DashboardViewSettings /></CardContent>
+      </Card>
+
+      <Card density="compact" id="mini">
+        <CardHeader><CardTitle>TaskSlowth Mini</CardTitle><CardDescription>Macの別ウィンドウに表示します。</CardDescription></CardHeader>
+        <CardContent><MiniWindowControls /></CardContent>
       </Card>
 
       {userId && <CompanionScheduleSettings key={`companion-schedule:${userId}`} userId={userId} />}

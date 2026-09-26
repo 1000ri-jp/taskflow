@@ -1,6 +1,16 @@
 import type { ChecklistItem } from '@/types';
 
+export type ChecklistDeadline = { dueDate: string | null; dueTime: string | null; deadlinePolicy: 'strict' | null };
+
+export function validateChecklistDeadline(value: ChecklistDeadline) {
+  validateChecklistItemDueDate(value.dueDate);
+  if (value.dueTime !== null && (typeof value.dueTime !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value.dueTime))) throw new Error('時刻を HH:mm 形式で指定してください。');
+  if (value.deadlinePolicy !== null && value.deadlinePolicy !== 'strict') throw new Error('期限厳守の指定が正しくありません。');
+  if ((!value.dueDate && value.dueTime) || (value.deadlinePolicy === 'strict' && (!value.dueDate || !value.dueTime))) throw new Error('期限厳守には日付と時刻を設定してください。');
+}
+
 export type ChecklistItemMutation =
+  | ({ kind: 'deadline'; itemId: string } & ChecklistDeadline)
   | { kind: 'dueDate'; itemId: string; dueDate: string | null }
   | { kind: 'text'; itemId: string; text: string; expectedText: string }
   | { kind: 'add'; item: { id: string; text: string } }
@@ -65,10 +75,13 @@ export function mutateChecklistItems(items: readonly ChecklistItem[], action: Ch
       if (item.text !== action.expectedText) throw new Error('項目名が変更されています。入力を控え、タスクを開き直して確認してください。');
       return items.map(candidate => candidate.id === item.id ? { ...candidate, text } : candidate);
     }
+    case 'deadline':
+      validateChecklistDeadline(action);
+      return items.map(candidate => candidate.id === item.id ? { ...candidate, dueDate: action.dueDate, dueTime: action.dueTime, deadlinePolicy: action.deadlinePolicy } : candidate);
     case 'dueDate':
       validateChecklistItemDueDate(action.dueDate);
       if ((item.dueDate ?? null) === action.dueDate) return [...items];
-      return items.map(candidate => candidate.id === item.id ? { ...candidate, dueDate: action.dueDate } : candidate);
+      return items.map(candidate => candidate.id === item.id ? { ...candidate, dueDate: action.dueDate, ...(action.dueDate === null && ('dueTime' in candidate || 'deadlinePolicy' in candidate) ? { dueTime: null, deadlinePolicy: null } : {}) } : candidate);
     case 'toggle':
       if (typeof action.isChecked !== 'boolean') throw new Error('完了状態の指定が正しくありません。');
       if (item.isChecked === action.isChecked) return [...items];

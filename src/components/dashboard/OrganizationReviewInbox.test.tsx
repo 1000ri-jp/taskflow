@@ -45,8 +45,9 @@ it('shows reason, source and actual changes without opening another screen; adop
  expect(items).toHaveLength(4);
  expect(items[0].querySelector('[data-slot="card"]')).toHaveClass('border');
  const adopted=items.find(item=>item.textContent?.includes('仕事1'))!;
- expect(adopted).toHaveTextContent('モアイのコメント');
- expect(within(adopted).getByRole('link',{name:'反映した仕事を開く'})).toHaveAttribute('href','/projects/p/board?task=t');
+ expect(adopted).not.toHaveTextContent('モアイのコメント');
+ expect(within(adopted).getByText('反映した仕事：')).toBeVisible();
+ expect(within(adopted).getByRole('link',{name:'仕事1'})).toHaveAttribute('href','/projects/p/board?task=t');
 });
 it.each(['保留','見送る'])('saves %s once and keeps it out of proposals on reopening',async label=>{
  render(<OrganizationReviewInbox {...props} />);

@@ -23,7 +23,9 @@ interface TaskProps {
   isLoading: boolean;
   error: Error | null;
   scheduleOnly?: boolean;
+  miniLayout?: boolean;
   onList?: () => void;
+  linkTarget?: '_self' | '_blank';
 }
 
 export function NeoCalendar(props: TaskProps) {
@@ -45,7 +47,7 @@ function eventTime(event: GoogleItem, date: Date) {
   return `${startText}–${isSameDay(end, date) ? format(end, 'H:mm') : `${format(end, 'M/d')} ${format(end, 'H:mm')}`}`;
 }
 
-export function NeoCalendarContent({ tasks, isLoading, error, source, calendarLoading = false, calendarError = null, now = new Date(), scheduleOnly = false }: TaskProps & {
+export function NeoCalendarContent({ tasks, isLoading, error, source, calendarLoading = false, calendarError = null, now = new Date(), scheduleOnly = false, linkTarget = '_self', miniLayout = false }: TaskProps & {
   source?: GoogleSource;
   calendarLoading?: boolean;
   calendarError?: string | null;
@@ -77,7 +79,7 @@ export function NeoCalendarContent({ tasks, isLoading, error, source, calendarLo
     {persistenceFailed && <p role="status" className="px-5 pt-3 text-xs text-muted-foreground">表示期間はこの画面でのみ有効です。</p>}
     {isLoading && <p role="status" className="px-5 pt-3 text-xs text-muted-foreground">タスクを読み込み中…</p>}
     {calendarLoading && <p role="status" className="px-5 pt-3 text-xs text-muted-foreground">Google予定を読み込み中…</p>}
-    {notice && <p role="status" className="px-5 pt-3 text-xs text-amber-800">{notice} <Link className="underline" href="/settings/google">Google連携を開く</Link></p>}
+    {notice && <p role="status" className="px-5 pt-3 text-xs text-amber-800">{notice} <Link prefetch={false} target={linkTarget} rel={linkTarget === '_blank' ? 'noreferrer' : undefined} className="underline" href="/settings/google">Google連携を開く</Link></p>}
     <div className="divide-y border-b">
       {days.map((day, index) => {
         const rows = [
@@ -93,8 +95,8 @@ export function NeoCalendarContent({ tasks, isLoading, error, source, calendarLo
             </li>;
           }),
           ...day.tasks.map(task => <li key={`task:${task.projectId}:${task.id}`}>
-            <Link href={`/projects/${encodeURIComponent(task.projectId)}/board?task=${encodeURIComponent(task.id)}`} className={taskRowInteraction + ' flex min-w-0 items-center gap-2 rounded-md py-0.5'}>
-              <ProjectMark name={task.projectName} icon={task.projectIcon} iconUrl={task.projectIconUrl} color={task.projectColor} />
+            <Link prefetch={false} target={linkTarget} rel={linkTarget === '_blank' ? 'noreferrer' : undefined} href={`/projects/${encodeURIComponent(task.projectId)}/board?task=${encodeURIComponent(task.id)}`} className={taskRowInteraction + ' flex min-w-0 items-center gap-2 rounded-md py-0.5'}>
+              <ProjectMark name={task.projectName} color={task.projectColor} />
               <span className="min-w-0 flex-1 break-words text-sm">{task.title}<span className="ml-2 whitespace-nowrap text-xs text-muted-foreground">期限</span><span className="ml-2 text-xs text-muted-foreground">{[...new Set([task.projectName, task.listName].filter(Boolean))].join(' / ')}</span></span>
               <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
             </Link>
@@ -104,13 +106,13 @@ export function NeoCalendarContent({ tasks, isLoading, error, source, calendarLo
           <div className="self-start"><time dateTime={format(day.date, 'yyyy-MM-dd')} className="block text-sm font-semibold tabular-nums">{format(day.date, 'M/d')}</time><p className={cn('mt-0.5 text-xs', day.date.getDay() === 0 ? 'text-rose-700' : day.date.getDay() === 6 ? 'text-sky-700' : 'text-muted-foreground')}>{index === 0 ? '今日' : format(day.date, 'EEEE', { locale: ja })}</p></div>
           <div className="min-w-0">
             {rows.length ? <ul className="space-y-0.5">{rows}</ul>
-              : <p className="py-0.5 text-xs text-muted-foreground">{isLoading || calendarLoading ? '読み込み中…' : error || calendarIncomplete ? scheduleOnly ? '取得できた予定はありません' : '取得できた予定・期限はありません' : connected ? scheduleOnly ? '取得範囲に今日の予定はありません' : '予定・期限なし' : scheduleOnly ? 'Google予定は未連携です' : '期限タスクなし'}</p>}
+              : <p className="py-0.5 text-xs text-muted-foreground">{isLoading || calendarLoading ? '読み込み中…' : error || calendarIncomplete ? scheduleOnly ? '取得できた予定はありません' : '取得できた予定・期限はありません' : connected ? scheduleOnly ? '取得範囲に今日の予定はありません' : '予定・期限なし' : scheduleOnly ? miniLayout ? <Link prefetch={false} target={linkTarget} rel={linkTarget === '_blank' ? 'noreferrer' : undefined} href="/settings/google" className="underline">連携する</Link> : 'Google予定は未連携です' : '期限タスクなし'}</p>}
           </div>
         </section>;
       })}
     </div>
-    {(!scheduleOnly || (!calendarLoading && !connected && !calendarError)) && <div className="space-y-1 px-5 py-3 text-xs text-muted-foreground">
-      {!calendarLoading && !connected && !calendarError && <p>Google予定は未連携です。<Link href="/settings/google" className="ml-1 underline">連携する</Link></p>}
+    {(!scheduleOnly || (!calendarLoading && !connected && !calendarError && !miniLayout)) && <div className="space-y-1 px-5 py-3 text-xs text-muted-foreground">
+      {!miniLayout && !calendarLoading && !connected && !calendarError && <p>Google予定は未連携です。<Link prefetch={false} target={linkTarget} rel={linkTarget === '_blank' ? 'noreferrer' : undefined} href="/settings/google" className="ml-1 underline">連携する</Link></p>}
       {!scheduleOnly && fetchedAt && <p>Google予定の取得：{format(fetchedAt, 'M/d H:mm')}</p>}
       {!scheduleOnly && undated > 0 && <p>期限未設定の{undated}件は一覧で確認できます。</p>}
     </div>}

@@ -58,6 +58,7 @@ export default function ProjectSettingsPage() {
   const router = useRouter();
   const projectId = params.projectId as string;
   const { project, members, isLoading, update, archive, remove, addMember, removeMember, updateRole } = useProject(projectId);
+  const canManageMembers = !!user && (project?.ownerId === user.id || members.some(member => member.userId === user.id && member.role === 'admin'));
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -691,6 +692,7 @@ export default function ProjectSettingsPage() {
                       ) : (
                         <>
                           <Select
+                            disabled={!canManageMembers}
                             value={member.role}
                             onValueChange={(v) => handleRoleChange(member.userId, v as ProjectRole)}
                           >
@@ -707,6 +709,7 @@ export default function ProjectSettingsPage() {
                             size="icon"
                             className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
                             onClick={() => handleRemoveMember(member.id, member.userId)}
+                            disabled={!canManageMembers}
                         aria-label={`${user?.displayName || 'メンバー'}をプロジェクトから削除`}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -720,7 +723,7 @@ export default function ProjectSettingsPage() {
             </div>
             <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="mt-4">
+                <Button variant="outline" className="mt-4" disabled={!canManageMembers}>
                   <UserPlus className="mr-2 h-4 w-4" />
                   メンバーを招待
                 </Button>

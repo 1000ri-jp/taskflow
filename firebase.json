@@ -14,6 +14,9 @@
         "node_modules",
         ".git",
         ".next",
+        ".next-*",
+        ".codex",
+        ".agents",
         ".vercel",
         ".env",
         ".env.*",
@@ -25,7 +28,25 @@
         "playwright-report",
         "coverage",
         "docs",
-        "e2e"
+        "e2e",
+        "tmp",
+        "TaskFlow_UIUX_Current_State*",
+        "taskflow-uiux-mock-*",
+        "taskflow-simple-ui-mock-*",
+        "TaskFlow_*",
+        "/desktop/",
+        "scripts/run-desktop-mini-mac.sh",
+        "scripts/jev-selection-poc",
+        "scripts/migrate-project-members.mjs",
+        "scripts/restore-project-members.mjs",
+        "scripts/member-backup.mjs",
+        "scripts/project-member-migration*",
+        "scripts/firestore-rules.test.mjs",
+        "scripts/prepare-release.mjs",
+        "firebase.emulators.json",
+        "firestore-debug.log",
+        "*.zip",
+        "*.tsbuildinfo"
       ]
     }
   ]

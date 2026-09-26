@@ -7,7 +7,7 @@ import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import type { DetailMockAction } from '@/lib/task/detailMock';
 import { reorderChecklistItem } from '@/lib/firebase/checklist-order';
 import { mutateChecklistItem } from '@/lib/firebase/checklist-item';
-import type { ChecklistItemMutation } from '@/lib/utils/checklist-item';
+import type { ChecklistItemMutation, ChecklistDeadline } from '@/lib/utils/checklist-item';
 import {
   getTask,
   getTaskChecklists,
@@ -203,6 +203,7 @@ export function useTaskDetails(projectId: string | null, taskId: string | null) 
     const version = scopeVersion.current;
     if (isE2EMockAuthEnabled()) {
       if (action.kind === 'text') return mockAction({ kind: 'editItemText', id: checklistId, itemId: action.itemId, text: action.text, expectedText: action.expectedText });
+      if (action.kind === 'deadline') return mockAction({ ...action, kind: 'setItemDeadline', id: checklistId });
       if (action.kind === 'dueDate') return mockAction({ kind: 'setItemDueDate', id: checklistId, itemId: action.itemId, dueDate: action.dueDate });
       if (action.kind === 'add') return mockAction({ kind: 'addItem', id: checklistId, itemId: action.item.id, text: action.item.text });
       if (action.kind === 'toggle') return mockAction({ kind: 'toggleItem', id: checklistId, itemId: action.itemId, isChecked: action.isChecked });
@@ -214,6 +215,11 @@ export function useTaskDetails(projectId: string | null, taskId: string | null) 
       setChecklists(previous => previous.map(checklist => checklist.id === checklistId ? { ...checklist, items } : checklist));
     }
   }, [projectId, taskId, mockAction]);
+
+  const setChecklistItemDeadline = useCallback(
+    (checklistId: string, itemId: string, value: ChecklistDeadline) => saveChecklistItem(checklistId, { kind: 'deadline', itemId, ...value }),
+    [saveChecklistItem]
+  );
 
   const setChecklistItemDueDate = useCallback(
     (checklistId: string, itemId: string, dueDate: string | null) => saveChecklistItem(checklistId, { kind: 'dueDate', itemId, dueDate }),
@@ -359,6 +365,7 @@ export function useTaskDetails(projectId: string | null, taskId: string | null) 
     editChecklistItemText,
     moveChecklistItem,
     setChecklistItemDueDate,
+    setChecklistItemDeadline,
     addComment,
     removeComment,
     editComment,

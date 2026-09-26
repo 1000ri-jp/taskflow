@@ -1,7 +1,7 @@
 import { resolveTaskAssignees } from './assigneeDefaults';
 import { MOAI_LABEL_ID } from './moaiLabel';
 import { completionBlockReason } from './completion';
-import type { Task } from '@/types';
+import type { ListReference, Task } from '@/types';
 import type { OrganizationDraft, OrganizationPreview, OrganizationSource } from './organizationTypes';
 import { canonicalOrganizationValue, organizationScopeIds } from './organizationIdentity';
 
@@ -9,7 +9,7 @@ export class OrganizationError extends Error {
   constructor(message: string, public status = 422) { super(message); }
 }
 export type OrganizationDocument = Record<string, unknown>;
-export interface OrganizationData { defaultAssigneeId?: string | null; listDefaultAssigneeIds?: Record<string, string | null>; tasks: Record<string, OrganizationDocument>; children: Record<string, OrganizationDocument>; listIds: string[]; memberIds: string[] }
+export interface OrganizationData { defaultAssigneeId?: string | null; listDefaultAssigneeIds?: Record<string, string | null>; tasks: Record<string, OrganizationDocument>; children: Record<string, OrganizationDocument>; references?: Record<string, ListReference>; listIds: string[]; memberIds: string[] }
 export interface OrganizationWrite { path: string; before: OrganizationDocument | null; after: OrganizationDocument }
 export interface OrganizationPlan { preview: OrganizationPreview; writes: OrganizationWrite[]; affectedTaskIds: string[]; source: OrganizationSource; draft: OrganizationDraft; confirmed?: boolean }
 export const validOrganizationId = (v: unknown): v is string => typeof v === 'string' && /^[a-zA-Z0-9_-]{1,100}$/.test(v);

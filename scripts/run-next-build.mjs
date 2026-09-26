@@ -8,7 +8,11 @@ const __dirname = path.dirname(__filename);
 const nextBin = path.resolve(__dirname, '../node_modules/next/dist/bin/next');
 const ignoredPrefix = '[baseline-browser-mapping] The data in this module is over two months old.';
 
-const child = spawn(process.execPath, [nextBin, 'build'], {
+const args = process.argv.slice(2);
+// Use the same verified bundler locally and in App Hosting. Turbopack can
+// still be checked explicitly with `npm run build -- --turbopack`.
+const bundler = args.some(arg => ['--webpack', '--turbopack', '--turbo'].includes(arg)) ? [] : ['--webpack'];
+const child = spawn(process.execPath, [nextBin, 'build', ...bundler, ...args], {
   stdio: ['inherit', 'pipe', 'pipe'],
   env: {
     ...process.env,

@@ -3,8 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { GroupedTaskView } from '@/components/board/GroupedTaskView';
-import { ProjectListFilter } from '@/components/board/ProjectListFilter';
 import { ProjectMilestones } from '@/components/board/ProjectMilestones';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { tasksInList } from '@/lib/board/taskHierarchy';
@@ -39,7 +37,6 @@ export default function BoardPage() {
     && (project.ownerId === user.id || members.some(member => member.userId === user.id && (member.role === 'admin' || member.role === 'editor')));
   const { view, canSave: viewSettingsHydrated } = useProjectTaskViewNavigation(projectId);
 
-  const [groupBy, setGroupBy] = useState<'list'|'stage'|'assignee'|'purpose'>('list');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [filters, setFilters] = useState<BoardFilters>({
     keyword: '',
@@ -158,15 +155,11 @@ export default function BoardPage() {
           onFiltersChange={setFilters}
           onTaskClick={handleTaskClick}
           showCardSettings={view === 'board' || view === 'progress'}
-          endControls={<div className="flex min-w-0 items-center gap-2">
-            {['board','outline','table'].includes(view) && <select aria-label="仕事の並べ方" className="h-8 max-w-36 rounded border bg-background px-2 text-xs" value={groupBy} onChange={e => setGroupBy(e.target.value as typeof groupBy)}><option value="list">リスト別</option><option value="stage">状況別</option><option value="assignee">担当者別</option><option value="purpose">目的・節目別</option></select>}
-            <ProjectListFilter lists={lists} />
-          </div>}
           extraControls={<ProjectMilestones iconOnly projectId={projectId} tasks={tasks} {...milestoneState} onSelect={milestoneState.setSelectedId} onTaskClick={handleTaskClick} />}
         />
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
-        {groupBy !== 'list' && ['board','outline','table'].includes(view) && viewSettingsHydrated ? error ? <p role="alert" className="p-3">タスクを取得できませんでした。</p> : isLoading ? <p role="status" className="p-3">読み込み中…</p> : <GroupedTaskView tasks={visibleTasks} allTasks={allTasks} milestones={milestoneState.milestones} groupBy={groupBy} onTaskClick={handleTaskClick} /> : !viewSettingsHydrated || view === 'gantt' ? <p role="status" className="p-4 text-sm text-muted-foreground">表示設定を読み込み中…</p> : view === 'board' ? <BoardView projectId={projectId} onTaskClick={handleTaskClick} filters={filters} listId={listId} /> : error ? <p role="alert" className="p-4 text-sm text-destructive">タスクを取得できませんでした。接続・権限を確認し、ページを再読み込みしてください。</p> : isLoading ? <p role="status" className="p-4 text-sm text-muted-foreground">タスクを読み込み中…</p> : <AlternateTaskViews canEdit={canEditTasks} labels={labels} tags={tags} key={`${user?.id}:${projectId}:${view}`} view={view} projectId={projectId} viewerId={user?.id ?? ''} projectMemberIds={project?.memberIds ?? []} selectedListId={listId} tasks={visibleTasks} allTasks={allTasks} milestones={milestoneState.milestones} onMilestoneClick={milestoneState.setSelectedId} lists={lists} onTaskClick={handleTaskClick} onMoveTask={handleMoveTask} onDateChange={canEditTasks ? handleCalendarDateChange : undefined} onAddTask={handleCalendarAddTask} />}
+        {!viewSettingsHydrated || view === 'gantt' ? <p role="status" className="p-4 text-sm text-muted-foreground">表示設定を読み込み中…</p> : view === 'board' ? <BoardView projectId={projectId} onTaskClick={handleTaskClick} filters={filters} listId={listId} /> : error ? <p role="alert" className="p-4 text-sm text-destructive">タスクを取得できませんでした。接続・権限を確認し、ページを再読み込みしてください。</p> : isLoading ? <p role="status" className="p-4 text-sm text-muted-foreground">タスクを読み込み中…</p> : <AlternateTaskViews canEdit={canEditTasks} labels={labels} tags={tags} key={`${user?.id}:${projectId}:${view}`} view={view} projectId={projectId} viewerId={user?.id ?? ''} projectMemberIds={project?.memberIds ?? []} selectedListId={listId} tasks={visibleTasks} allTasks={allTasks} milestones={milestoneState.milestones} onMilestoneClick={milestoneState.setSelectedId} lists={lists} onTaskClick={handleTaskClick} onMoveTask={handleMoveTask} onDateChange={canEditTasks ? handleCalendarDateChange : undefined} onAddTask={handleCalendarAddTask} />}
       </div>
       {location.missing && <div role="alert" className="m-3 rounded border p-3 text-sm">指定された仕事または親タスクを取得できません。削除・閲覧権限・接続状況を確認してください。<button type="button" className="ml-2 underline" onClick={handleCloseModal}>閉じる</button></div>}
       <TaskDetailModal

@@ -50,6 +50,7 @@ import { AISupportAdjust } from './AISupportAdjust';
 import { FeatureRequestDialog } from './FeatureRequestDialog';
 import PurchaseReportDialog from './PurchaseReportDialog';
 import MeetingIntakeDialog from '@/components/dashboard/MeetingIntakeDialog';
+import { MiniWindowControls } from '@/components/desktop/MiniWindowControls';
 
 // Quick action button types
 interface QuickAction {
@@ -825,8 +826,9 @@ export function CompanionAI({ projectId, autoGreeting = true, quickCheckEnabled 
             <Button variant={activePanel === 'chat' ? 'secondary' : 'ghost'} size="sm" className="h-8 gap-1.5 px-2 text-xs has-[>svg]:px-2" aria-pressed={activePanel === 'chat'} onClick={() => setActivePanel('chat')}><MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />会話</Button>
             <Button variant={activePanel === 'comments' ? 'secondary' : 'ghost'} size="sm" className="h-8 gap-1.5 px-2 text-xs has-[>svg]:px-2" aria-pressed={activePanel === 'comments'} onClick={() => { setCommentsOwner(userId); setActivePanel('comments'); }}><MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" />コメント</Button>
             {supportAdjust}
-            <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs has-[>svg]:px-2" disabled={!userId} onClick={() => setShowFeatureRequest(true)}><MessageSquarePlus aria-hidden="true" className="h-3.5 w-3.5" />要望を送る</Button>
-            <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs has-[>svg]:px-2" disabled={!userId} onClick={() => setMeetingSession({ userId, open: true })}><ClipboardList aria-hidden="true" className="h-3.5 w-3.5" />メモから整理</Button>
+            <FeatureRequestDialog open={showFeatureRequest} onOpenChange={setShowFeatureRequest} userId={userId} projects={projects} projectsLoading={projectsLoading} projectsFailed={!!projectsError} trigger={<Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs has-[>svg]:px-2" disabled={!userId}><MessageSquarePlus aria-hidden="true" className="h-3.5 w-3.5" />要望を送る</Button>} />
+            <MeetingIntakeDialog open={meetingSession?.userId === userId && meetingSession.open} onOpenChange={open => setMeetingSession({ userId, open })} trigger={<Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs has-[>svg]:px-2" disabled={!userId}><ClipboardList aria-hidden="true" className="h-3.5 w-3.5" />メモから整理</Button>} />
+            <MiniWindowControls compact />
             <Button variant={activePanel === 'notifications' ? 'secondary' : 'ghost'} size="icon" aria-label={notificationsError ? '通知：取得エラー' : notificationsLoading ? '通知：読み込み中' : unreadCount > 0 ? `通知：未読${unreadCount}件` : '通知'} title="通知" className={cn('relative ml-auto h-8 w-8 shrink-0', !notificationsLoading && !notificationsError && unreadCount > 0 && 'font-semibold text-red-700 bg-red-50 hover:bg-red-100')} aria-pressed={activePanel === 'notifications'} onClick={openNotifications}>
               <Bell className="h-4 w-4" aria-hidden="true" />
               {!notificationsLoading && !notificationsError && unreadCount > 0 && <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold tabular-nums text-white" aria-label={`未読${unreadCount}件`}>{unreadCount > 99 ? '99+' : unreadCount}</span>}
@@ -1052,8 +1054,6 @@ export function CompanionAI({ projectId, autoGreeting = true, quickCheckEnabled 
       )}
 
       {purchaseSession?.userId===userId&&<PurchaseReportDialog key={purchaseSession.id} userId={userId} open={purchaseSession.open} initialFile={purchaseSession.file} initialText={purchaseSession.text} onOpenChange={open=>setPurchaseSession({...purchaseSession,open})} onRecorded={()=>setPurchaseSent({id:purchaseSession.id,content:purchaseSession.text})}/>}
-      {meetingSession?.userId === userId && <MeetingIntakeDialog key={`meeting:${userId}`} open={meetingSession.open} onOpenChange={open => setMeetingSession({ userId, open })} />}
-      <FeatureRequestDialog key={`request:${userId}`} open={showFeatureRequest} onOpenChange={setShowFeatureRequest} userId={userId} projects={projects} projectsLoading={projectsLoading} projectsFailed={!!projectsError} />
 
       {/* Tool Confirmation Dialog */}
       <ToolConfirmDialog

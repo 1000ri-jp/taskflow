@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => ({
   editChecklist: vi.fn(),
   editChecklistItemText: vi.fn(),
   setChecklistItemDueDate: vi.fn(),
+  setChecklistItemDeadline: vi.fn().mockResolvedValue(undefined),
   moveFromUI: undefined as ((itemId:string,targetId:string)=>void) | undefined,
 }));
 vi.mock('./SortableChecklistItems', async importOriginal => {
@@ -58,6 +59,7 @@ vi.mock('@/hooks/useTaskDetails', () => ({
     editChecklist: mocks.editChecklist,
     editChecklistItemText: mocks.editChecklistItemText,
     setChecklistItemDueDate: mocks.setChecklistItemDueDate,
+    setChecklistItemDeadline: mocks.setChecklistItemDeadline,
     getAllCommentAttachments: () => [],
   }),
 }));
@@ -353,14 +355,15 @@ describe('TaskDetailModal notification placement', () => {
     await waitFor(() => expect(screen.getByRole('button', { name:'箱をドラッグして並べ替え' })).toBeEnabled());
   });
 
-  it('shows checklist text and checkboxes without assignee or deadline controls, preserving legacy data', async () => {
+  it('shows checklist deadlines without creating local assignees or mutating legacy dates', async () => {
     mocks.checklists = [{id:'c',taskId:task.id,title:'準備',order:0,createdAt:new Date(),items:[{id:'i',text:'チケット購入',isChecked:false,order:0,dueDate:'2026-09-15'}]}];
     const original=structuredClone(mocks.checklists);
     const {onUpdate}=await renderModal();
     const checklist = within(screen.getByRole('group', { name: '準備' }));
     expect(checklist.getByRole('checkbox', { name: 'チケット購入の完了' })).toBeVisible();
-    expect(checklist.queryByRole('button', { name: /担当|期限/ })).not.toBeInTheDocument();
-    expect(checklist.queryByText('9/15')).not.toBeInTheDocument();
+    expect(checklist.queryByRole('button', { name: /担当/ })).not.toBeInTheDocument();
+    expect(checklist.getByRole('button', { name: /チケット購入の期限/ })).toBeVisible();
+    expect(checklist.getByText('9/15')).toBeVisible();
     expect(onUpdate).not.toHaveBeenCalled();
     expect(mocks.setChecklistItemDueDate).not.toHaveBeenCalled();
     expect(mocks.checklists).toEqual(original);

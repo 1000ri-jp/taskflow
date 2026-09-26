@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { NeoMorningBrief } from './NeoMorningBrief';
+import { NeoMorningBrief, NeoStrictDeadlines } from './NeoMorningBrief';
 import { viewTask } from '@/test/taskViewFixtures';
 import type { Notification } from '@/types';
 
@@ -163,4 +163,42 @@ describe('NeoMorningBrief task visibility', () => {
     expect(section.queryByText(/ほか.*件を見る/)).not.toBeInTheDocument();
     expect(section.getByRole('list')).toHaveClass('pb-4');
   });
+});
+
+describe('NeoStrictDeadlines', () => {
+  it('does not render an empty standalone card', () => {
+    render(<NeoStrictDeadlines {...props} />);
+    expect(screen.queryByRole('region', { name: '期限厳守' })).not.toBeInTheDocument();
+  });
+
+  it('renders the standalone card only when a strict task exists', () => {
+    const strictTask = { ...props.tasks[0], id: 'strict', title: '厳守する作業', deadlinePolicy: 'strict' as const };
+    render(<NeoStrictDeadlines {...props} tasks={[strictTask]} />);
+    expect(screen.getByRole('region', { name: '期限厳守' })).toHaveTextContent('厳守する作業');
+  });
+});
+
+describe('Mini briefing', () => {
+  it('omits the strict deadline section when no strict task or checklist item exists', () => {
+    render(<NeoMorningBrief {...props} miniLayout />);
+    expect(screen.queryByRole('region', { name: '期限厳守' })).not.toBeInTheDocument();
+  });
+
+  it('shows the strict deadline section when it contains work', () => {
+    const strictTask = { ...props.tasks[0], id: 'strict', title: '厳守する作業', deadlinePolicy: 'strict' as const };
+    render(<NeoMorningBrief {...props} tasks={[strictTask]} miniLayout />);
+    expect(screen.getByRole('region', { name: '期限厳守' })).toHaveTextContent('厳守する作業');
+  });
+});
+
+it.each([false, true])('places the completion control before task content when miniLayout is %s', miniLayout => {
+  const taskActions = (_task: typeof props.tasks[number], renderControls?: import('@/components/desktop/DesktopBriefTaskActions').BriefTaskControlsRenderer) => renderControls?.({
+    actions: <button type="button" role="checkbox" aria-checked="false" aria-label="出展準備を完了にする" />,
+    progress: <button type="button" aria-label="進捗" />,
+    schedule: <button type="button" aria-label="日付を変更" />,
+  });
+  render(<NeoMorningBrief {...props} miniLayout={miniLayout} taskActions={taskActions} />);
+  const checkbox = screen.getByRole('checkbox', { name: '出展準備を完了にする' });
+  const title = screen.getByText('出展準備');
+  expect(checkbox.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });

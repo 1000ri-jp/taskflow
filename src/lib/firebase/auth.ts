@@ -1,5 +1,6 @@
 import {
   signInWithPopup,
+  signInWithCredential,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
@@ -50,6 +51,28 @@ export function isDemoLoginEnabled(): boolean {
  * Only allows users with 1000ri.jp domain email
  */
 export async function signInWithGoogle(): Promise<User> {
+  return (await signInWithGoogleResult()).user;
+}
+
+/** A fresh Google sign-in, used only after the user confirms the Mini code. */
+export async function signInWithGoogleForMini() {
+  const result = await signInWithGoogleResult();
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  if (!credential?.idToken) throw new Error('Googleの認証結果を取得できませんでした。もう一度ログインしてください。');
+  return { user: result.user, googleIdToken: credential.idToken };
+}
+
+export async function completeMiniSignIn(idToken: string, expectedUid: string) {
+  const auth = getFirebaseAuth();
+  const result = await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+  if (result.user.uid !== expectedUid || !result.user.email?.endsWith(`@${ALLOWED_DOMAIN}`)) {
+    await firebaseSignOut(auth);
+    throw new Error('接続するアカウントが一致しません。Miniでやり直してください。');
+  }
+  await createOrUpdateUser(result.user);
+}
+
+async function signInWithGoogleResult() {
   const auth = getFirebaseAuth();
   const result = await signInWithPopup(auth, googleProvider);
 
@@ -64,7 +87,7 @@ export async function signInWithGoogle(): Promise<User> {
   // Create or update user document in Firestore
   await createOrUpdateUser(result.user);
 
-  return result.user;
+  return result;
 }
 
 /**

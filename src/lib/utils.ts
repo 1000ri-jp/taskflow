@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // URL pattern for matching URLs in text
-const URL_REGEX = /(https?:\/\/[^\s<>"{}|\\^`[\]]+)/g;
+const URL_REGEX = /(https?:\/\/[^\s<>"{}|\\^`[\]（）]+)/g;
 
 // Convert text with URLs to React elements with clickable links
 export function linkifyText(text: string): React.ReactNode {

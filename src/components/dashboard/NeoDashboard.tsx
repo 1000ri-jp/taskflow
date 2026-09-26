@@ -15,6 +15,7 @@ import { NeoRecentChanges } from './NeoRecentChanges';
 import { DashboardNavigation } from './DashboardNavigation';
 import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import { useAuthStore } from '@/stores/authStore';
+import { DesktopBriefTaskActions, type MiniTaskFeedback } from '@/components/desktop/DesktopBriefTaskActions';
 import { NeoToday } from './NeoToday';
 import { OrganizationReviewInbox } from './OrganizationReviewInbox';
 import { SharedCountdown } from './SharedCountdown';
@@ -30,8 +31,18 @@ export function NeoDashboard() {
   const [calendarDay, setCalendarDay] = useState<Date | null>(null);
   const [selection, setSelection] = useState<{ userId: string | null; key: string } | null>(null);
   const [today, setToday] = useState(() => new Date());
+  useEffect(() => {
+    if (!isE2EMockAuthEnabled()) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('seed') !== 'strict' && params.get('demo') !== 'references') return;
+    void import('@/lib/task/organizationMock').then(({ addReferenceDemoData, addStrictDeadlineExampleData, mutateOrganizationMock, ORGANIZATION_MOCK_PROJECT }) => mutateOrganizationMock(ORGANIZATION_MOCK_PROJECT, work => {
+      if (params.get('demo') === 'references') addReferenceDemoData(work.data);
+      else addStrictDeadlineExampleData(work.data);
+    })).catch(() => {});
+  }, []);
   useEffect(() => { const timer = window.setInterval(() => setToday(new Date()), 60000); return () => window.clearInterval(timer); }, []);
   const userId = useAuthStore(state => state.user?.id ?? null);
+  const [feedback, setFeedback] = useState<(MiniTaskFeedback & { userId: string }) | null>(null);
   const selectedTaskKey = selection?.userId === userId ? selection.key : null;
   const members = useMeetingMembers(projects.filter(project => projectTaskStatus.get(project.id)?.status === 'ready'), !!userId);
   const memberById = Object.fromEntries(members.users.map(member => [member.id, member]));
@@ -53,9 +64,10 @@ export function NeoDashboard() {
         ]} onChange={view => { if (view === 'calendar') setCalendarDay(null); setTaskView(view); }} />
       </div>
     } />
-    <SharedCountdown tasks={allProjectTasks} tasksLoading={isLoading} tasksError={error} />
+    <SharedCountdown projects={projects} tasks={allProjectTasks} tasksLoading={isLoading} tasksError={error} />
     </div>
     {isE2EMockAuthEnabled() && <p className="mb-3 text-xs text-amber-800">架空データの検証画面です。</p>}
+    {taskView === 'list' && feedback?.userId === userId && <p role={feedback.ok ? 'status' : 'alert'} className="mb-3 text-sm">{feedback.task.title}：{feedback.message}</p>}
     <div data-testid="neo-dashboard-layout" className="min-w-0">
       {taskView === 'proposals' ? <OrganizationReviewInbox key={userId ?? ''} userId={userId} projects={projects} tasks={allProjectTasks} disabled={isLoading} /> : taskView === 'today' ? <NeoToday key={userId ?? ''} now={today} tasks={allProjectTasks} userId={userId} isLoading={isLoading} error={error} projectTaskStatus={projectTaskStatus} members={members.users} selectedTaskKey={selectedTaskKey} onList={() => { setFilter('mine'); setTaskView('list'); }} onCalendar={() => { setCalendarDay(today); setTaskView('calendar'); }} /> : <section id="neo-tasks" aria-label="タスク一覧" className="min-w-0 overflow-hidden rounded-2xl border bg-card shadow-sm">
         {taskView === 'calendar' ? <NeoScheduleCalendar key={userId ?? ''} tasks={tasks} isLoading={isLoading} error={error} onList={() => { setFilter('mine'); setTaskView('list'); }} onContinue={continueTask} initialDay={calendarDay} /> : <>
@@ -64,7 +76,7 @@ export function NeoDashboard() {
           {error && <p role="alert" className="m-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">一部のタスクを取得できません。取得できた分を表示しています。</p>}
           {filter === 'recent' ? <NeoRecentChanges key={userId} tasks={allProjectTasks} userId={userId} isLoading={isLoading} error={error} projectTaskStatus={projectTaskStatus} /> : isLoading ? <div role="status" aria-label="タスクを読み込み中" className="space-y-3 p-5"><Skeleton className="h-12" /><Skeleton className="h-12" /><Skeleton className="h-12" /></div>
             : shown.length === 0 ? <p className="px-5 py-8 text-sm text-muted-foreground">{error ? '取得できたタスクはありません。' : filter === 'mine' ? '未完了の担当タスクはありません。' : filter === 'due' ? '今日までが期限の担当タスクはありません。' : '表示する更新はありません。'}</p>
-            : <ul className={NEO_TASK_LIST_END_CLASS}>{shown.slice(0, limit).map(task => <li key={`${task.projectId}/${task.id}`}><Link href={`/projects/${encodeURIComponent(task.projectId)}/board?task=${encodeURIComponent(task.id)}`} className={`group block ${NEO_TASK_ROW_CLASS}`}><NeoBriefTaskHeading task={task} tasks={allProjectTasks} now={today} members={memberById} names={memberNames} parentTitle={task.parentTitle} /></Link></li>)}</ul>}
+            : <ul className={NEO_TASK_LIST_END_CLASS}>{shown.slice(0, limit).map(task => <li key={`${task.projectId}/${task.id}`}>{userId ? <DesktopBriefTaskActions task={task} allTasks={allProjectTasks} userId={userId} onFeedback={value => setFeedback({ ...value, userId })} renderControls={({ progress, schedule, actions }) => <div className="flex min-w-0 items-center gap-1 pr-5"><div className="min-w-0 flex-1"><div className={`group block ${NEO_TASK_ROW_CLASS} pr-0`}><NeoBriefTaskHeading task={task} tasks={allProjectTasks} now={today} members={memberById} names={memberNames} parentTitle={task.parentTitle} hideProgress completionControl={actions} progressControl={progress} scheduleControl={schedule} taskHref={`/projects/${encodeURIComponent(task.projectId)}/board?task=${encodeURIComponent(task.id)}`} /></div></div></div>} /> : <Link href={`/projects/${encodeURIComponent(task.projectId)}/board?task=${encodeURIComponent(task.id)}`} className={`group block ${NEO_TASK_ROW_CLASS}`}><NeoBriefTaskHeading task={task} tasks={allProjectTasks} now={today} members={memberById} names={memberNames} parentTitle={task.parentTitle} hideProgress={Boolean(userId)} /></Link>}</li>)}</ul>}
           {taskView === 'list' && (filter === 'mine' || filter === 'due') && !isLoading && shown.length > limit && <Button variant="ghost" className="m-2" onClick={() => setLimit(value => value + 12)}>ほかのタスクを見る（残り{shown.length - limit}件）</Button>}
         </>}
       </section>}

@@ -33,6 +33,22 @@ service cloud.firestore {
       return isAllowedUser() && (isProjectMemberByDoc(projectId) || isProjectMemberByArray(projectId));
     }
 
+    function canEditProject(projectId) {
+      return isAllowedUser() && (
+        get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid ||
+        (exists(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid)).data.role in ['admin', 'editor'])
+      );
+    }
+
+    function canManageProject(projectId) {
+      return isAllowedUser() && (
+        get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid ||
+        (exists(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
     // ユーザードキュメント
     match /users/{userId} {
       allow read: if isAllowedUser();
@@ -72,22 +88,59 @@ service cloud.firestore {
       allow read: if canAccessProject(projectId) ||
                      (isAllowedUser() && request.auth.uid in resource.data.memberIds);
       // プロジェクトの作成は許可ドメインの全ユーザー
-      allow create: if isAllowedUser();
+      allow create: if isAllowedUser() && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid];
       // プロジェクトの更新はメンバーのみ
-      allow update: if canAccessProject(projectId);
+      allow update: if canAccessProject(projectId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ownerId'])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['memberIds']) || canManageProject(projectId));
       // 誤削除防止のため、削除はアーカイブ済みプロジェクトに限定
-      allow delete: if canAccessProject(projectId) && resource.data.isArchived == true;
+      allow delete: if canManageProject(projectId) && resource.data.isArchived == true;
 
       // メンバー管理
       match /members/{memberId} {
         // メンバー一覧の読み取りはプロジェクトメンバーのみ
         allow read: if canAccessProject(projectId);
-        // メンバーの追加はプロジェクトメンバーのみ（最初のメンバーはプロジェクト作成時に追加）
-        allow write: if isAllowedUser();
+        // UIDを文書IDに統一。自分で参加・昇格する経路を作らない。
+        allow create, update: if canManageProject(projectId)
+          && memberId == request.resource.data.userId
+          && request.resource.data.role in ['admin', 'editor', 'viewer']
+          && (memberId != get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId
+            || request.resource.data.role == 'admin');
+        allow delete: if canManageProject(projectId)
+          && memberId != get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId;
       }
 
       match /lists/{listId} {
         allow read, write: if canAccessProject(projectId);
+      }
+
+      match /references/{referenceId} {
+        allow read: if canAccessProject(projectId);
+        allow create, update, delete: if canEditProject(projectId);
+
+        match /comments/{commentId} {
+          function activeReference() {
+            return exists(/databases/$(database)/documents/projects/$(projectId)/references/$(referenceId))
+              && get(/databases/$(database)/documents/projects/$(projectId)/references/$(referenceId)).data.get('isArchived', false) == false;
+          }
+          function validComment() {
+            return request.resource.data.keys().hasOnly(['referenceId', 'content', 'authorId', 'authorLabel', 'attachments', 'createdAt', 'updatedAt'])
+              && request.resource.data.referenceId == referenceId
+              && request.resource.data.content is string && request.resource.data.content.size() <= 20000
+              && request.resource.data.authorLabel is string
+              && request.resource.data.attachments is list && request.resource.data.attachments.size() <= 20
+              && (request.resource.data.content.size() > 0 || request.resource.data.attachments.size() > 0);
+          }
+          allow read: if canAccessProject(projectId);
+          allow create: if canEditProject(projectId) && activeReference() && validComment()
+            && request.resource.data.authorId == request.auth.uid
+            && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
+          allow update: if canEditProject(projectId) && activeReference() && validComment()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['content', 'updatedAt'])
+            && request.resource.data.updatedAt == request.time;
+          allow delete: if canEditProject(projectId) && activeReference();
+        }
       }
 
       // Shared archive grants and runner status are written only by the authenticated server.

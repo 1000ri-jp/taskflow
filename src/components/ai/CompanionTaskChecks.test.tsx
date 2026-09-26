@@ -42,6 +42,18 @@ it('defers the same condition for one hour but reconsiders relevant changes', ()
   expect(screen.getByText('オンライン重説 · 未完了サブタスク 2件')).toBeVisible();
   openCheck(); expect(screen.getByRole('region')).toBeVisible();
 });
+it('marks the pre-notification as read until the relevant work changes', () => {
+  const view = render(ui());
+  openCheck();
+  fireEvent.click(screen.getByRole('button', { name: '既読にする' }));
+  expect(screen.queryByText('オンライン重説 · 未完了サブタスク 2件')).not.toBeInTheDocument();
+  view.unmount();
+  const remounted = render(ui());
+  expect(screen.queryByText('オンライン重説 · 未完了サブタスク 2件')).not.toBeInTheDocument();
+  state.tasks = [parent(), { ...child('a'), dueDate: new Date('2026-10-01') }, child('b')];
+  remounted.rerender(ui());
+  expect(screen.getByText('オンライン重説 · 未完了サブタスク 2件')).toBeVisible();
+});
 it('keeps failed saves visible and retries only work not already saved', async () => {
   vi.mocked(recurrenceRequest).mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('接続できません'));
   render(ui()); openCheck(); fireEvent.click(screen.getByRole('button',{name:'サブタスクを完了にする'}));

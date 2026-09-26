@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'TaskFlow - Project Management',
+  title: 'TaskSlowth - Project Management',
   description: 'A Jooto-like project management tool for team collaboration',
 };
 

@@ -3,6 +3,7 @@ import type { DashboardTask } from './brief';
 import { selectNeoReviewRequests } from './review-requests';
 import type { Notification } from '@/types';
 import type { BriefTaskScope } from '@/stores/briefDisplayStore';
+import { isStrictDeadlineTask } from '@/lib/task/deadlinePolicy';
 
 export const neoTaskKey = (task: Pick<DashboardTask, 'projectId' | 'id'>) => JSON.stringify([task.projectId, task.id]);
 const active = (task: DashboardTask) => !task.isCompleted && !task.isArchived && !task.isAbandoned;
@@ -42,7 +43,10 @@ export function buildNeoBrief(tasks: readonly DashboardTask[], notifications: re
   const today = startOfDay(now);
   const reviews = selectNeoReviewRequests(tasks, userId);
   const reviewKeys = new Set(reviews.map(neoTaskKey));
-  const datedWork = scoped.filter(task => !task.workState && !reviewKeys.has(neoTaskKey(task)) && task.taskKind !== 'review_request'
+  const strict = scoped.filter(task => !task.workState && !reviewKeys.has(neoTaskKey(task)) && task.taskKind !== 'review_request'
+    && isStrictDeadlineTask(task) && !!validDay(task.dueDate)).sort(comparePriorityThenDeadline);
+  const strictKeys = new Set(strict.map(neoTaskKey));
+  const datedWork = scoped.filter(task => !strictKeys.has(neoTaskKey(task)) && !task.workState && !reviewKeys.has(neoTaskKey(task)) && task.taskKind !== 'review_request'
     && !!validDay(task.dueDate)
     && (!validDay(task.startDate) || !isAfter(validDay(task.startDate)!, today)));
   const deadlines = datedWork.filter(task => !isAfter(validDay(task.dueDate)!, today)).sort((a, b) => {
@@ -59,7 +63,7 @@ export function buildNeoBrief(tasks: readonly DashboardTask[], notifications: re
     && (task.priority === 'high' || !!task.dueDate && isValid(task.dueDate) && task.dueDate <= endOfDay(addDays(now, 2)))
     && neoDependencyEvidence(task, tasks).length > 0);
   const paused = scoped.filter(task => !!task.workState && task.taskKind !== 'review_request');
-  const displayedKeys = new Set([...reviewKeys, ...homeTaskKeys, ...waiting.map(neoTaskKey), ...paused.map(neoTaskKey)]);
+  const displayedKeys = new Set([...reviewKeys, ...strictKeys, ...homeTaskKeys, ...waiting.map(neoTaskKey), ...paused.map(neoTaskKey)]);
   // Explicit calls and the existing all-child reminder are actionable. Other unread events are not reply requests.
   const calls = notifications.filter(notification => notification.userId === userId && !notification.isRead
     && (isNeoAutomationReminder(notification) || notification.type === 'task_bell' && notification.senderId !== userId && Boolean(notification.senderId)) && notification.taskId
@@ -67,6 +71,6 @@ export function buildNeoBrief(tasks: readonly DashboardTask[], notifications: re
     .sort((a, b) => Number(isNeoAutomationReminder(b)) - Number(isNeoAutomationReminder(a)) || b.createdAt.getTime() - a.createdAt.getTime());
   const uniqueCalls = [...new Map(calls.map(notification => [JSON.stringify([notification.projectId, notification.taskId]), notification] as const).reverse()).values()]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  return { reviews, deadlines, workPeriod, waiting, paused, calls: uniqueCalls.filter(notification => !displayedKeys.has(JSON.stringify([notification.projectId, notification.taskId]))),
+  return { reviews, strict, deadlines, workPeriod, waiting, paused, calls: uniqueCalls.filter(notification => !displayedKeys.has(JSON.stringify([notification.projectId, notification.taskId]))),
     taskCalls: uniqueCalls.filter(notification => displayedKeys.has(JSON.stringify([notification.projectId, notification.taskId]))) };
 }

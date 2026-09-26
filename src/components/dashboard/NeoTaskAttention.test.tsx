@@ -1,17 +1,21 @@
 import { render, screen, within } from '@testing-library/react';
-import { expect, it } from 'vitest';
+import { beforeEach, expect, it } from 'vitest';
 import { NeoTaskAttention } from './NeoTaskAttention';
 import { completedParentIssues } from '@/lib/dashboard/task-attention';
 import { viewTask } from '@/test/taskViewFixtures';
 const parent = {...viewTask({id:'p',title:'オンライン重説',isCompleted:true}),projectName:'JIMU委託',listName:'Bセールス'};
 const child = {...parent,id:'c',parentTaskId:'p',title:'重説内容確認',isCompleted:false};
 const props = {tasks:[parent,child],userId:'me',isLoading:false,error:null,projectTaskStatus:new Map([['project-1',{status:'ready' as const}]])};
-it('shows the mismatch, list and unfinished children without opening the task; disappears when resolved', () => {
+beforeEach(() => localStorage.clear());
+it('shows the mismatch, list and unfinished children without opening the task; disappears when resolved', async () => {
   const view=render(<NeoTaskAttention {...props} />);
   const region=screen.getByRole('region',{name:'完了状態の確認'});
   expect(within(region).getByText('親：完了 ／ サブタスク：未完了 1件')).toBeVisible();
   expect(within(region).getByText('JIMU委託 / Bセールス')).toBeVisible();
   expect(within(region).getByRole('link',{name:'重説内容確認'})).toHaveAttribute('href','/projects/project-1/board?task=c');
+  expect(within(region).queryByRole('button', { name: '既読にする' })).not.toBeInTheDocument();
+  view.rerender(<NeoTaskAttention {...props} />);
+  expect(screen.getByRole('region', { name: '完了状態の確認' })).toBeVisible();
   view.rerender(<NeoTaskAttention {...props} tasks={[parent,{...child,isCompleted:true}]} />);
   expect(screen.queryByRole('region',{name:'完了状態の確認'})).not.toBeInTheDocument();
 });
