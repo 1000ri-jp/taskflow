@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, Search, User, Settings, LogOut } from 'lucide-react';
+import { BookOpen, Menu, Search, User, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -47,7 +47,7 @@ export function Header() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
           TF
         </div>
-        <span className="hidden font-semibold md:inline-block">TaskFlow</span>
+        <span className="hidden font-semibold md:inline-block">TaskSlowth</span>
       </Link>
 
       <div className="hidden min-w-0 flex-1 sm:flex sm:justify-end">
@@ -64,7 +64,7 @@ export function Header() {
         </button>
       </div>
 
-      <div className="ml-auto flex items-center gap-1 sm:gap-2">
+      <div className="ml-auto flex items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
@@ -76,6 +76,11 @@ export function Header() {
           <span className="sr-only">検索</span>
         </Button>
         <AppearanceSwitcher />
+        <Button asChild variant="ghost" size="icon" className="-ml-1 mr-2" title="操作説明" aria-label="操作説明">
+          <Link href="/help">
+            <BookOpen className="h-5 w-5" aria-hidden="true" />
+          </Link>
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

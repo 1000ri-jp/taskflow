@@ -100,6 +100,7 @@ import { AssigneeSelector } from './AssigneeSelector';
 import { AttachmentPreview, AttachmentPreviewCompact } from './AttachmentPreview';
 import type { Task, Label as LabelType, Tag as TagType, List, Priority, Checklist } from '@/types';
 import { TAG_COLORS } from '@/types';
+import { ReferenceMigrationDialog } from './ReferenceMigrationDialog';
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -162,6 +163,7 @@ export function TaskDetailModal({
     removeChecklistItem,
     editChecklistItemText,
     moveChecklistItem,
+    setChecklistItemDeadline,
     removeComment,
     editComment,
     getAllCommentAttachments,
@@ -377,6 +379,12 @@ export function TaskDetailModal({
   const isOverdue = !task.isAbandoned && !task.isArchived && isTaskOverdue(
     { ...task, dueDate: dueDate || null, isCompleted }, startOfDay(new Date())
   );
+  const migrationHasBlockers = allTasks.some(candidate => candidate.parentTaskId === task.id && !candidate.isArchived && !candidate.isCompleted)
+    || checklists.some(checklist => checklist.items.some(item => !item.isChecked))
+    || task.dependsOnTaskIds.length > 0
+    || reviews.some(review => !review.isCompleted)
+    || !!task.automation
+    || !!task.completionPolicy;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -433,6 +441,7 @@ export function TaskDetailModal({
                     comments={comments} commentStatus={commentStatus} taskUpdatedAt={task.updatedAt?.toISOString()} names={Object.fromEntries(Object.entries(commentAuthors).map(([id, author]) => [id, author.displayName]))} enabled={isOpen} />
                 </details>
               </section>
+              {task.title === '情報' && user && <div className="flex justify-end"><ReferenceMigrationDialog task={task} projectId={projectId} comments={comments} commentAttachments={commentAttachments.map(({ attachment }) => attachment)} hasBlockers={migrationHasBlockers} onUpdate={onUpdate} userId={user.id} /></div>}
               {/* Comment Attachments (Jooto-style at top) */}
               {commentAttachments.length > 0 && (
                 <section className="mb-2" aria-label="添付ファイル">
@@ -1041,6 +1050,7 @@ export function TaskDetailModal({
                       onToggleItem={(itemId) => toggleChecklistItem(checklist.id, itemId)}
                       onDeleteItem={(itemId) => removeChecklistItem(checklist.id, itemId)}
                       onEditItemText={(itemId, text, expectedText) => editChecklistItemText(checklist.id, itemId, text, expectedText)}
+                      onDeadline={(itemId, value) => setChecklistItemDeadline(checklist.id, itemId, value)}
                       onMoveItem={(itemId, targetId) => moveChecklistItem(checklist.id, itemId, targetId)}
                       progress={getChecklistProgress(checklist)}
                     />
@@ -1235,6 +1245,7 @@ interface ChecklistCardProps {
   onToggleItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
   onEditItemText: (itemId: string, text: string, expectedText: string) => Promise<void>;
+  onDeadline: (itemId: string, value: import('@/lib/utils/checklist-item').ChecklistDeadline) => Promise<void>;
   onMoveItem: (itemId: string, targetId: string) => Promise<void>;
   progress: number;
 }
@@ -1250,6 +1261,7 @@ function ChecklistCard({
   onDeleteItem,
   onEditItemText,
   onMoveItem,
+  onDeadline,
   progress,
 }: ChecklistCardProps) {
   const [newItemText, setNewItemText] = useState('');
@@ -1320,7 +1332,7 @@ function ChecklistCard({
         <div className="border-t px-3 py-1">
           {isSavingOrder && <p role="status" className="py-1 text-xs text-muted-foreground">順番を保存中…</p>}
           {orderError && <p role="alert" className="py-1 text-xs text-destructive">{orderError}</p>}
-          <SortableChecklistItems items={checklist.items} disabled={isSavingOrder} onMove={handleMove} onToggle={onToggleItem} onDelete={onDeleteItem} onRename={onEditItemText} />
+          <SortableChecklistItems items={checklist.items} disabled={isSavingOrder} onMove={handleMove} onToggle={onToggleItem} onDelete={onDeleteItem} onRename={onEditItemText} onDeadline={onDeadline} />
 
           {/* Add Item */}
           {isAddingItem ? (

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: { "/api/help/videos/*": ["./src/assets/help-videos/*.mp4"] },
   // OAuth callbacks contain a short-lived authorization code; keep it out of dev logs.
   logging: { incomingRequests: { ignore: [/^\/api\/google\/callback(?:\?|$)/] } },
   // Keep the real-data local server isolated from the mock secretary preview
@@ -46,6 +47,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://*.googleusercontent.com https://*.googleapis.com https://firebasestorage.googleapis.com",
               "font-src 'self'",
+              "media-src 'self' blob:",
               "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net wss://*.firebaseio.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://firebasestorage.googleapis.com",
               "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com",
               "object-src 'none'",

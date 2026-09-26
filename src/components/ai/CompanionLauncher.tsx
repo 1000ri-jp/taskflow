@@ -9,9 +9,10 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { notificationTaskHref } from '@/lib/task/commentSubmission';
-import { isPersistentNotice, isUrgentNotice, urgentNoticeKey, unreadCompanionNotices } from '@/lib/ai/companionNotices';
+import { isUrgentNotice, urgentNoticeKey, unreadCompanionNotices } from '@/lib/ai/companionNotices';
 import { cn } from '@/lib/utils';
 import { CompanionMascot } from './CompanionMascot';
+import type { Notification } from '@/types';
 
 function readDismissed(key: string): string[] {
   try {
@@ -24,6 +25,19 @@ type Position = { x: number; y: number };
 type Viewport = { width: number; height: number };
 const iconSize = 96;
 const edge = 8;
+
+function strictDeadlineLabel(notice: Notification | undefined) {
+  const value = notice?.data?.dueDate;
+  if (typeof value !== 'string') return null;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: false,
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)?.value;
+  const month = get('month'); const day = get('day'); const hour = get('hour'); const minute = get('minute');
+  return month && day && hour && minute ? `${month}/${day} ${hour}:${minute}に` : null;
+}
 
 function getViewport(): Viewport {
   return typeof window === 'undefined' ? { width: 1024, height: 768 }
@@ -110,8 +124,9 @@ function LauncherForUser({ quickCheck, userId, isOpen, busy, onToggle, onOpenNot
     try { event.currentTarget.releasePointerCapture?.(event.pointerId); } catch { /* Capture may already be lost. */ }
   };
   const unread = !isLoading && !error ? unreadCompanionNotices(notifications, userId) : [];
-  const latest = unread.find(n => isPersistentNotice(n) || !dismissed.includes(n.id));
-  const persistent = latest ? isPersistentNotice(latest) : false;
+  const latest = unread.find(n => !dismissed.includes(n.id));
+  const strictDeadline = !!latest?.data?.strictDeadline;
+  const strictDue = strictDeadlineLabel(latest);
   const unseenUrgent = unread.filter(n => isUrgentNotice(n) && !dismissed.includes(urgentNoticeKey(n)));
   const urgentSignature = unseenUrgent.map(urgentNoticeKey).join('|');
   useEffect(() => {
@@ -136,7 +151,7 @@ function LauncherForUser({ quickCheck, userId, isOpen, busy, onToggle, onOpenNot
     router.push(notificationTaskHref(notice));
   };
   const noticeId = latest?.id;
-  const hasNotice = !isOpen && !!noticeId && (persistent || !dismissed.includes(noticeId));
+  const hasNotice = !isOpen && !!noticeId && !dismissed.includes(noticeId);
   const hasQuickCheck = !isOpen && !!quickCheck && !hasNotice && !popup.length;
   const schedule = useCompanionSchedule(userId, { blocked: hasNotice || hasQuickCheck, paused: focused !== null || hovered !== null });
   const showNotice = hasNotice && !schedule.greeting?.preview;
@@ -150,10 +165,10 @@ function LauncherForUser({ quickCheck, userId, isOpen, busy, onToggle, onOpenNot
   }, [dismissed, noticeId, storageKey]);
 
   useEffect(() => {
-    if (!showNotice || persistent || focused === noticeId || hovered === noticeId) return;
+    if (!showNotice || focused === noticeId || hovered === noticeId) return;
     const timer = setTimeout(dismiss, 20000);
     return () => clearTimeout(timer);
-  }, [showNotice, persistent, focused, hovered, noticeId, dismiss]);
+  }, [showNotice, focused, hovered, noticeId, dismiss]);
 
   const openNotifications = () => {
     dismiss();
@@ -197,15 +212,15 @@ function LauncherForUser({ quickCheck, userId, isOpen, busy, onToggle, onOpenNot
       onMouseEnter={() => setHovered(noticeId ?? null)} onMouseLeave={() => setHovered(null)}
       className="absolute"
       style={{ left: bubbleLeft - currentPosition.x, width: bubbleWidth, maxHeight: Math.max(0, above ? aboveSpace : belowSpace), ...(above ? { bottom: iconSize + 12 } : { top: iconSize + 12 }) }}>
-      <div className="flex items-start gap-2 border-b border-amber-200 bg-amber-100 px-3 py-2.5 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+      <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-100 px-3 py-2.5 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-600 text-white"><Bell className="h-4 w-4" aria-hidden="true" /></span>
-        <span className="min-w-0 flex-1 pt-0.5 text-sm font-semibold leading-snug">{persistent ? '確認してほしいことがあります' : 'モアイからのお知らせ'}{unread.length > 1 ? `（${unread.length}件）` : ''}</span>
-        {!persistent && <button type="button" onClick={() => { dismiss(); setFocused(null); setHovered(null); toggleRef.current?.focus(); }} aria-label="吹き出しを閉じる" title="吹き出しを閉じる" className="-mr-1 -mt-1 shrink-0 rounded-lg p-2 hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-ring dark:hover:bg-amber-900"><X className="h-4 w-4" aria-hidden="true" /></button>}
+        <span className="min-w-0 flex-1 text-sm font-semibold leading-snug">{strictDeadline ? <>期限厳守{strictDue && <span className="ml-2 font-medium">{strictDue}</span>}</> : 'モアイからのお知らせ'}{unread.length > 1 ? `（${unread.length}件）` : ''}</span>
+        <button type="button" onClick={() => { dismiss(); setFocused(null); setHovered(null); toggleRef.current?.focus(); }} aria-label="吹き出しを閉じる" title="吹き出しを閉じる" className="-mr-1 -mt-1 shrink-0 rounded-lg p-2 hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-ring dark:hover:bg-amber-900"><X className="h-4 w-4" aria-hidden="true" /></button>
       </div>
       <button type="button" onClick={() => openNotice(latest)} className="block w-full min-w-0 rounded-b-xl px-4 py-3 text-left hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring" aria-label={`未読の通知${count}件を開く`}>
-        <span className="block break-words text-base font-semibold leading-snug">{latest?.title}</span>
-        <span className="mt-2 block line-clamp-3 break-words text-sm leading-relaxed">{latest?.message}</span>
-        <span className="mt-3 flex items-center gap-1 text-sm font-semibold text-amber-900 dark:text-amber-200">内容を見る<ArrowUpRight className="h-4 w-4" aria-hidden="true" /></span>
+        <span className="block break-words text-base font-semibold leading-snug">{strictDeadline ? latest?.taskName : latest?.title}</span>
+        {!strictDeadline && <span className="mt-2 block line-clamp-3 break-words text-sm leading-relaxed">{latest?.message}</span>}
+        <span className="mt-3 flex items-center gap-1 text-sm font-semibold text-amber-900 dark:text-amber-200">{strictDeadline ? 'タスク詳細' : '内容を見る'}<ArrowUpRight className="h-4 w-4" aria-hidden="true" /></span>
       </button>
     </CompanionBubble>}
     <button ref={toggleRef} type="button" data-testid="companion-ai-toggle" data-companion-toggle data-unread={count > 0}

@@ -1,0 +1,80 @@
+[
+  {
+    "id": "01_project-open",
+    "title": "01 プロジェクトを開く",
+    "file": "01_project-open.mp4",
+    "sha256": "a3484564d12017b48d004b20de654d2f2963ebb5d015a47336b593dcd56ea628"
+  },
+  {
+    "id": "02_add-task",
+    "title": "02 タスクを追加する",
+    "file": "02_add-task.mp4",
+    "sha256": "ef77e496f7c5483ae5cb1ae2d2d30e4ee52b65db35354dde487705cb47939dbb"
+  },
+  {
+    "id": "03_assign-owner",
+    "title": "03 担当者を設定する",
+    "file": "03_assign-owner.mp4",
+    "sha256": "6279f08161cd0739b37e099b7b69e2f771c230752cb349d2d7e3a8156979ab5e"
+  },
+  {
+    "id": "04_set-deadline",
+    "title": "04 期限を設定する",
+    "file": "04_set-deadline.mp4",
+    "sha256": "89cbec7a37aa21e80cc184fbe95a48b232e93c78822083a9fb9afe483750678c"
+  },
+  {
+    "id": "05_complete-task",
+    "title": "05 タスクを完了する",
+    "file": "05_complete-task.mp4",
+    "sha256": "01981841f96b098fdf24f07128891205fd885e51bdd5014e2099de6d24a90d0e"
+  },
+  {
+    "id": "06_add-subtask",
+    "title": "06 サブタスクを追加する",
+    "file": "06_add-subtask.mp4",
+    "sha256": "5d968837420f6c6d2426cc4f84c48f64f0b2e8d4699e8872300e440979e6af18"
+  },
+  {
+    "id": "07_search-task",
+    "title": "07 タスクを探す",
+    "file": "07_search-task.mp4",
+    "sha256": "71a0a36bba95c8580e9959b0a5ca99083f9db98b425456db1aa78572a9a6129f"
+  },
+  {
+    "id": "08_switch-view",
+    "title": "08 表示を切り替える",
+    "file": "08_switch-view.mp4",
+    "sha256": "93554038d3d51fd174a90344e4b3f792c9343bbd66715cb23e4572264e08f96a"
+  },
+  {
+    "id": "09_google-connection",
+    "title": "09 Google連携：取り込む対象を選ぶ",
+    "file": "09_google-connection.mp4",
+    "sha256": "59a33e67a4ed3bcd76bb437e4ab03e962c3fa48471903e9e05f26316c8eec39b"
+  },
+  {
+    "id": "10_dashboard-view",
+    "title": "10 ダッシュボードの種類を切り替える",
+    "file": "10_dashboard-view.mp4",
+    "sha256": "e2ab0bb084e13118f1a805e00b3eb5d203ebed5a8ea3f612fe85bd961da8c562"
+  },
+  {
+    "id": "11_appearance",
+    "title": "11 色やデザインを切り替える",
+    "file": "11_appearance.mp4",
+    "sha256": "33c9f35730648d2c155ace5059b2545bb79ff5b5d2110a4a325684fd04441993"
+  },
+  {
+    "id": "12_neo-today",
+    "title": "12 Neo（Ver.3）：「今日」の見方",
+    "file": "12_neo-today.mp4",
+    "sha256": "38c9312d9c86c4e7672e4f17d43aa5e9b2402667252254ff46524f64019b54d6"
+  },
+  {
+    "id": "13_neo-views",
+    "title": "13 Neo（Ver.3）：目的に合わせて見る",
+    "file": "13_neo-views.mp4",
+    "sha256": "153f25bc56d7997e4c6289567a1d415c200b4aa5995b951a699086ebdffa3cbd"
+  }
+]

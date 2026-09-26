@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { ChecklistItemDueDate } from './ChecklistItemDueDate';
+import type { ChecklistDeadline } from '@/lib/utils/checklist-item';
 import { sortedChecklistItems } from '@/lib/utils/checklist';
 import type { ChecklistItem } from '@/types';
 
@@ -18,10 +20,11 @@ interface Props {
   onMove: (itemId: string, targetId: string) => void;
   onToggle: (itemId: string) => void;
   onDelete: (itemId: string) => void;
+  onDeadline?: (itemId: string, value: ChecklistDeadline) => Promise<void>;
   onRename: (itemId: string, text: string, expectedText: string) => Promise<void>;
 }
 
-export function SortableChecklistItems({ items, disabled, onMove, onToggle, onDelete, onRename }: Props) {
+export function SortableChecklistItems({ items, disabled, onMove, onToggle, onDelete, onRename, onDeadline }: Props) {
   const id = useId();
   const sorted = sortedChecklistItems(items);
   const groupIds = (activeId: string) => {
@@ -54,13 +57,13 @@ export function SortableChecklistItems({ items, disabled, onMove, onToggle, onDe
     <SortableContext items={sorted.map(item => item.id)} strategy={verticalListSortingStrategy}>
       <div role="list" aria-label="チェックリストの項目">
         {sorted.map(item => <SortableItem key={item.id} item={item} disabled={disabled}
-          onToggle={onToggle} onDelete={onDelete} onRename={onRename} />)}
+          onToggle={onToggle} onDelete={onDelete} onRename={onRename} onDeadline={onDeadline} />)}
       </div>
     </SortableContext>
   </DndContext>;
 }
 
-function SortableItem({ item, disabled, onToggle, onDelete, onRename }: Omit<Props, 'items' | 'onMove'> & { item: ChecklistItem }) {
+function SortableItem({ item, disabled, onToggle, onDelete, onRename, onDeadline }: Omit<Props, 'items' | 'onMove'> & { item: ChecklistItem }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.text);
   const [original, setOriginal] = useState(item.text);
@@ -112,6 +115,9 @@ function SortableItem({ item, disabled, onToggle, onDelete, onRename }: Omit<Pro
         <Pencil aria-hidden="true" className="mt-1 h-3 w-3 shrink-0 text-muted-foreground opacity-50 group-hover:opacity-100" />
       </button>}
     </div>
+    {onDeadline && <ChecklistItemDueDate item={item} disabled={locked || editing}
+      onSave={dueDate => onDeadline(item.id, { dueDate, dueTime: null, deadlinePolicy: null })}
+      onSaveDeadline={value => onDeadline(item.id, value)} />}
     <div className="shrink-0">
       <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
         disabled={locked} aria-label={`${item.text}を削除`} onClick={() => onDelete(item.id)}><Trash2 className="h-3 w-3" /></Button>

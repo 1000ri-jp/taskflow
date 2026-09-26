@@ -8,6 +8,7 @@ import type { TaskReviewRequest } from './reviews';
 import type { Attachment, Checklist, Comment, Task } from '@/types';
 export type DetailMockAction = { kind: 'addChecklist'; title: string } | { kind: 'editChecklist'; id: string; data: Partial<Checklist> } | { kind: 'removeChecklist'; id: string }
   | { kind: 'addItem'; id: string; text: string; itemId?: string } | { kind: 'toggleItem'; id: string; itemId: string; isChecked?: boolean } | { kind: 'removeItem'; id: string; itemId: string }
+  | ({ kind: 'setItemDeadline'; id: string; itemId: string } & import('@/lib/utils/checklist-item').ChecklistDeadline)
   | { kind: 'setItemDueDate'; id: string; itemId: string; dueDate: string | null }
   | { kind: 'editItemText'; id: string; itemId: string; text: string; expectedText: string }
   | { kind: 'moveItem'; id: string; itemId: string; targetId: string }
@@ -34,7 +35,7 @@ export async function actTaskDetailsMock(projectId: string, taskId: string, acti
       if (!checklist) throw new Error('チェックリストが見つかりません。');
       children[checklistPath] = { ...checklist, ...action.data };
     } else if (action.kind === 'removeChecklist') delete children[checklistPath];
-    else if (['addItem', 'toggleItem', 'removeItem', 'moveItem', 'setItemDueDate', 'editItemText'].includes(action.kind)) {
+    else if (['addItem', 'toggleItem', 'removeItem', 'moveItem', 'setItemDueDate', 'setItemDeadline', 'editItemText'].includes(action.kind)) {
       if (!checklist) throw new Error('チェックリストが見つかりません。');
       if (!('id' in action)) throw new Error('チェックリストを確認してください。');
       assertChecklistItemScope(projectId, taskId, action.id);
@@ -47,6 +48,10 @@ export async function actTaskDetailsMock(projectId: string, taskId: string, acti
       if (action.kind === 'addItem') items = mutateChecklistItems(items, { kind: 'add', item: { id: action.itemId ?? crypto.randomUUID(), text: action.text } });
       if (action.kind === 'toggleItem') items = mutateChecklistItems(items, { kind: 'toggle', itemId: action.itemId, isChecked: action.isChecked ?? !items.find(item => item.id === action.itemId)?.isChecked });
       if (action.kind === 'removeItem') items = mutateChecklistItems(items, { kind: 'remove', itemId: action.itemId });
+      if (action.kind === 'setItemDeadline') {
+        items = mutateChecklistItems(items, { ...action, kind: 'deadline' });
+        if (action.deadlinePolicy === 'strict') parent.hasChecklistDeadlines = true;
+      }
       if (action.kind === 'setItemDueDate') items = mutateChecklistItems(items, { kind: 'dueDate', itemId: action.itemId, dueDate: action.dueDate });
       if (action.kind === 'moveItem') {
         items = moveChecklistItem(items, action.itemId, action.targetId);

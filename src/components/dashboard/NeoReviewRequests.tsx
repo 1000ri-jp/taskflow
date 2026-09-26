@@ -15,6 +15,7 @@ import type { Notification } from '@/types';
 import type { TaskViewMember } from '@/components/board/TaskViewFields';
 import { NeoBriefTaskHeading } from './NeoBriefTaskRow';
 import { orderReviewItems, reviewPosition, reviewTaskAttention } from '@/lib/dashboard/review-queue';
+import type { BriefTaskActionRenderer } from './NeoMorningBrief';
 
 export interface NeoReviewRequestsProps {
   tasks: readonly DashboardTask[];
@@ -26,9 +27,11 @@ export interface NeoReviewRequestsProps {
   embedded?: boolean;
   calls?: readonly Notification[];
   members?: readonly TaskViewMember[];
+  taskLinkTarget?: '_self' | '_blank';
+  taskActions?: BriefTaskActionRenderer;
 }
 
-export function NeoReviewRequests({ tasks, userId, isLoading, error, projectTaskStatus, isSample = false, embedded = false, calls = [], members = [] }: NeoReviewRequestsProps) {
+export function NeoReviewRequests({ tasks, userId, isLoading, error, projectTaskStatus, isSample = false, embedded = false, calls = [], members = [], taskLinkTarget = '_self', taskActions }: NeoReviewRequestsProps) {
   const headingId = useId();
   const { notifications } = useNotifications();
   const [display, setDisplay] = useState({ userId, limit: 3 });
@@ -76,13 +79,13 @@ export function NeoReviewRequests({ tasks, userId, isLoading, error, projectTask
       const AttentionIcon = attention.level === 'now' ? CircleAlert : attention.level === 'soon' ? Clock3 : Info;
       const attentionClass = attention.level === 'now' ? 'border-l-2 border-rose-200 bg-rose-50' : attention.level === 'soon' ? 'border-l-2 border-amber-200 bg-amber-50' : 'border-l-2 border-transparent';
       return <li key={JSON.stringify([task.projectId, task.id])} className="px-5 py-1.5">
-        <div className={cn('rounded-md px-2 py-1', attentionClass)}><Link prefetch={false} href={`/projects/${encodeURIComponent(task.projectId)}/board?task=${encodeURIComponent(task.id)}`}
+        <div className="flex min-w-0 items-start gap-2"><div className={cn('min-w-0 flex-1 rounded-md px-2 py-1', attentionClass)}><Link prefetch={false} target={taskLinkTarget} rel={taskLinkTarget === '_blank' ? 'noreferrer' : undefined} href={`/projects/${encodeURIComponent(task.projectId)}/board?task=${encodeURIComponent(task.id)}`}
           className={taskRowInteraction + ' block rounded-md'}>
           <NeoBriefTaskHeading task={task} tasks={tasks} now={now} members={memberById} names={names} requester={requester} assigneeLimit={3} displayTitle={reviewRequestContent(task)} />
           <p className={cn('mt-1 flex items-start gap-1 break-words pl-8 text-xs', attention.level === 'now' ? 'text-rose-800' : attention.level === 'soon' ? 'text-amber-800' : 'text-muted-foreground')}><AttentionIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />{attention.reason}</p>
           {task.workState && <p className="mt-1 break-words pl-8 text-xs text-amber-800">{task.workState.status === 'hold' ? '保留' : '待ち'}：{task.workState.reason} ／ 再開の条件：{task.workState.resumeCondition || '要確認'}{task.workState.reviewAt && ` ／ ${new Date(task.workState.reviewAt).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' })}に再確認`}</p>}
           {call && <p className="mt-1 pl-8 text-xs text-primary">{isNeoAutomationReminder(call) ? '全員分の確認状況 · 自動確認' : '呼びかけあり'}</p>}
-        </Link></div>
+        </Link></div>{taskActions?.(task)}</div>
       </li>;
     })}</ul>}
     {!allVisible && orderedRequests.length > limit && <Button variant="ghost" size="sm" className="m-2 text-xs" onClick={() => { setShowAll(true); setDisplay({ userId, limit: limit + 3 }); }}>ほかの依頼を見る（残り{orderedRequests.length - limit}件）</Button>}

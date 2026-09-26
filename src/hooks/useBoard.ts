@@ -190,7 +190,7 @@ export function useBoard(projectId: string | null) {
       }
 
       // Delete the list
-      await deleteList(projectId, listId);
+      await deleteList(projectId, listId, targetListId);
     },
     [projectId, state.tasks, state.lists]
   );

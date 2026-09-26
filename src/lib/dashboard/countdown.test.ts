@@ -19,6 +19,17 @@ describe('countdown', () => {
   });
   it('validates exactly a pair of document IDs', () => {
     expect(isCountdownTarget({ projectId: 'p1', taskId: 't1' })).toBe(true);
+    expect(isCountdownTarget({ projectId: 'p1', milestoneId: 'm1' })).toBe(true);
+    expect(isCountdownTarget({ projectId: 'p1', taskId: 't1', milestoneId: 'm1' })).toBe(false);
+    expect(isCountdownTarget({ projectId: 'p1', milestoneId: '../m1' })).toBe(false);
     for (const value of [null, [], {}, { projectId: 'p1' }, { projectId: 'p1', taskId: '../x' }, { projectId: 'p1', taskId: '..' }, { projectId: '', taskId: 't' }, { projectId: 'p', taskId: 't', dueDate: '2026' }]) expect(isCountdownTarget(value)).toBe(false);
   });
+});
+
+it('uses milestone labels before, on and after the date', () => {
+  const milestone = { ...task, kind: 'milestone' as const };
+  expect(describeCountdown(milestone, new Date('2026-09-04T12:00:00+09:00')).label).toBe('あと1日');
+  expect(describeCountdown(milestone, new Date('2026-09-05T12:00:00+09:00')).label).toBe('今日が節目');
+  expect(describeCountdown(milestone, new Date('2026-09-06T12:00:00+09:00')).label).toBe('1日経過');
+  expect(describeCountdown({ ...milestone, isCompleted: true }).label).toBe('達成');
 });

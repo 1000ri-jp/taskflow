@@ -1,5 +1,10 @@
-export interface CountdownTarget { projectId: string; taskId: string }
+import type { Milestone } from '@/types';
+
+export type CountdownTarget = { projectId: string; taskId: string; milestoneId?: never } | { projectId: string; milestoneId: string; taskId?: never };
+export type CountdownMilestone = Milestone & { projectName: string };
+export const milestoneSummary = (item: CountdownMilestone): CountdownTask => ({ kind: 'milestone', title: item.title, projectName: item.projectName, dueDate: item.dueDate?.toISOString() ?? null, isCompleted: item.status === 'achieved', isAbandoned: item.status === 'cancelled' });
 export interface CountdownTask {
+  kind?: 'milestone';
   title: string;
   projectName: string;
   dueDate: string | null;
@@ -16,7 +21,7 @@ export interface SharedCountdownData {
 export function isCountdownTarget(value: unknown): value is CountdownTarget {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const record = value as Record<string, unknown>;
-  return Object.keys(record).length === 2 && ['projectId', 'taskId'].every((key) =>
+  return Object.keys(record).length === 2 && ['projectId', 'milestoneId' in record ? 'milestoneId' : 'taskId'].every((key) =>
     typeof record[key] === 'string' && /^[^/\s]{1,128}$/.test(record[key]) && record[key] !== '.' && record[key] !== '..');
 }
 
@@ -26,11 +31,11 @@ export function countdownDay(date: Date): string {
   return japanDate.format(date);
 }
 export function describeCountdown(task: CountdownTask, now = new Date()) {
-  if (task.isCompleted) return { label: '完了', tone: 'green' as const };
+  if (task.isCompleted) return { label: task.kind === 'milestone' ? '達成' : '完了', tone: 'green' as const };
   if (task.isAbandoned) return { label: '中止', tone: 'neutral' as const };
-  if (!task.dueDate || Number.isNaN(new Date(task.dueDate).getTime())) return { label: '期限未設定', tone: 'neutral' as const };
+  if (!task.dueDate || Number.isNaN(new Date(task.dueDate).getTime())) return { label: task.kind === 'milestone' ? '日付未設定' : '期限未設定', tone: 'neutral' as const };
   const days = Math.round((Date.parse(countdownDay(new Date(task.dueDate))) - Date.parse(countdownDay(now))) / 86_400_000);
-  if (days < 0) return { label: `期限超過 ${-days}日`, tone: 'red' as const };
-  if (days === 0) return { label: '今日が期限', tone: 'amber' as const };
+  if (days < 0) return { label: task.kind === 'milestone' ? `${-days}日経過` : `期限超過 ${-days}日`, tone: task.kind === 'milestone' ? 'neutral' as const : 'red' as const };
+  if (days === 0) return { label: task.kind === 'milestone' ? '今日が節目' : '今日が期限', tone: 'amber' as const };
   return { label: `あと${days}日`, tone: 'amber' as const };
 }

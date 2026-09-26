@@ -68,3 +68,45 @@ describe('shared countdown storage', () => {
     expect((await readSharedCountdown('b')).task).toBeNull();
   });
 });
+
+
+describe('milestone countdown storage', () => {
+  const milestoneTarget = { projectId: 'p1', milestoneId: 'm1' };
+  beforeEach(() => {
+    vi.resetAllMocks(); records.clear();
+    records.set('projects/p1', { name: 'イベント' });
+    records.set('projects/p1/milestones/m1', { title: '展示会当日', status: 'planned', kind: 'date', dueDate: new Date('2026-09-24T00:00:00+09:00') });
+    vi.mocked(getProjectAccess).mockResolvedValue({ role: 'editor' });
+    vi.mocked(getAdminDb).mockReturnValue({ doc: reference, collection: (name: string) => ({ doc: (id: string) => reference(`${name}/${id}`) }), runTransaction: async (fn: (tx: typeof transaction) => Promise<void>) => fn(transaction) } as unknown as ReturnType<typeof getAdminDb>);
+  });
+  it('replaces a missing legacy task with a milestone and only writes the shared selection', async () => {
+    records.set(COUNTDOWN_DOCUMENT, { target, revision: 2 });
+    await saveSharedCountdown('a', milestoneTarget, 2);
+    expect(writes).toHaveBeenCalledExactlyOnceWith(COUNTDOWN_DOCUMENT, { target: milestoneTarget, revision: 3 });
+    expect((await readSharedCountdown('b')).task).toMatchObject({ kind: 'milestone', title: '展示会当日', isCompleted: false });
+    records.get('projects/p1/milestones/m1')!.dueDate = new Date('2026-09-25T00:00:00+09:00');
+    expect((await readSharedCountdown('b')).task?.dueDate).toBe('2026-09-24T15:00:00.000Z');
+    expect(reads).not.toHaveBeenCalledWith('projects/p1/tasks/t1');
+  });
+  it('does not disclose milestone IDs or content to nonmembers', async () => {
+    records.set(COUNTDOWN_DOCUMENT, { target: milestoneTarget, revision: 1 });
+    vi.mocked(getProjectAccess).mockRejectedValue(new Error('FORBIDDEN'));
+    expect(await readSharedCountdown('outsider')).toEqual({ status: 'restricted', target: null, task: null, revision: 1 });
+    expect(reads).not.toHaveBeenCalledWith('projects/p1/milestones/m1');
+    await expect(saveSharedCountdown('outsider', milestoneTarget, 1)).rejects.toThrow('FORBIDDEN');
+    expect(writes).not.toHaveBeenCalled();
+  });
+  it.each([{ status: 'achieved' }, { status: 'cancelled' }, { dueDate: null }, { dueDate: 'invalid' }])('rejects unavailable milestones: %j', async changes => {
+    Object.assign(records.get('projects/p1/milestones/m1')!, changes);
+    await expect(saveSharedCountdown('a', milestoneTarget, 0)).rejects.toThrow('INVALID_COUNTDOWN_MILESTONE');
+    expect(writes).not.toHaveBeenCalled();
+  });
+  it('handles removed milestones and stale revisions without writing', async () => {
+    records.set(COUNTDOWN_DOCUMENT, { target: milestoneTarget, revision: 1 });
+    records.delete('projects/p1/milestones/m1');
+    expect((await readSharedCountdown('a')).status).toBe('unavailable');
+    await expect(saveSharedCountdown('a', milestoneTarget, 1)).rejects.toThrow('INVALID_COUNTDOWN_MILESTONE');
+    await expect(saveSharedCountdown('a', null, 0)).rejects.toThrow('CONFLICT');
+    expect(writes).not.toHaveBeenCalled();
+  });
+});

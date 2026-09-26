@@ -1,0 +1,22 @@
+import { fireEvent, render, screen } from '@testing-library/react';
+import { expect, it, vi } from 'vitest';
+import { DesktopBriefTaskActions } from './DesktopBriefTaskActions';
+import { viewTask } from '@/test/taskViewFixtures';
+const run = vi.hoisted(() => vi.fn());
+vi.mock('@/hooks/useTaskWorkflow', () => ({ useTaskWorkflow: () => ({ run, ready: true, locked: false, busy: false, error: '', success: '' }) }));
+it('toggles progress with one click in each direction without navigating or completing', () => {
+  const task = { ...viewTask({ id: 't', title: '準備', workProgress: 'not_started' }), projectName: '事務' };
+  const props = { task, allTasks: [task], userId: 'me', onFeedback: vi.fn() };
+  const view = render(<DesktopBriefTaskActions {...props} />);
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '準備の進捗' }));
+  expect(run).toHaveBeenLastCalledWith('start');
+  view.rerender(<DesktopBriefTaskActions {...props} task={{ ...task, workProgress: 'started' }} />);
+  expect(screen.getByRole('button', { name: '準備の進捗' })).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(screen.getByRole('button', { name: '準備の進捗' }));
+  expect(run).toHaveBeenLastCalledWith('reset');
+  expect(screen.getByRole('checkbox', { name: '準備を完了にする' })).toHaveAttribute('aria-checked', 'false');
+  fireEvent.click(screen.getByRole('checkbox', { name: '準備を完了にする' }));
+  expect(run).toHaveBeenLastCalledWith('complete');
+  expect(screen.getByRole('button', { name: '準備の日付を変更' })).toBeEnabled();
+});

@@ -1,4 +1,5 @@
 'use client';
+import type { ReactNode } from 'react';
 import { changeLabel } from '@/lib/task/history/presentation';
 import { compactRow } from '@/components/ui/density';
 
@@ -38,7 +39,7 @@ const actionConfig: Record<ActivityAction, { icon: typeof Plus; label: string; c
   remove_member: { icon: UserMinus, label: 'メンバー削除', color: 'text-red-600' },
 };
 
-function ActivityLogItem({ log }: { log: ActivityLog }) {
+export function ActivityLogItem({ log, context, details }: { log: ActivityLog; context?: ReactNode; details?: ReactNode }) {
   const config = actionConfig[log.action] || actionConfig.update;
   const Icon = config.icon;
 
@@ -57,7 +58,8 @@ function ActivityLogItem({ log }: { log: ActivityLog }) {
           {' '}
           <span className="text-muted-foreground">を{config.label}</span>
         </p>
-        {log.changes && log.changes.length > 0 && (
+        {context}
+        {details ?? (log.changes && log.changes.length > 0 && (
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5">
             {log.changes.map((change, i) => (
               <p key={i} className="min-w-0 break-words text-xs text-muted-foreground">
@@ -71,7 +73,7 @@ function ActivityLogItem({ log }: { log: ActivityLog }) {
               </p>
             ))}
           </div>
-        )}
+        ))}
         <time dateTime={log.createdAt.toISOString()} title={log.createdAt.toLocaleString('ja-JP')} className="ml-auto shrink-0 text-xs text-muted-foreground">
           {formatDistanceToNow(log.createdAt, { addSuffix: true, locale: ja })}
         </time>

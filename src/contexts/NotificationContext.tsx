@@ -14,7 +14,7 @@ import type { Notification } from '@/types';
 import { useOrganizationLabNotifications } from '@/hooks/useOrganizationLabNotifications';
 import { isUnreadTaskComment } from '@/lib/comments/unread';
 
-interface NotificationContextType {
+export interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
   isLoading: boolean;
@@ -32,7 +32,7 @@ interface NotificationContextType {
   ) => Promise<void>;
 }
 
-const NotificationContext = createContext<NotificationContextType | null>(null);
+export const NotificationContext = createContext<NotificationContextType | null>(null);
 
 function initialNotificationState(userId: string | null) {
   return {
@@ -43,10 +43,10 @@ function initialNotificationState(userId: string | null) {
   };
 }
 
-export function NotificationProvider({ children }: { children: ReactNode }) {
+export function NotificationProvider({ children, enabled = true }: { children: ReactNode; enabled?: boolean }) {
   const { user } = useAuthStore();
   const mockMode = isE2EMockAuthEnabled();
-  const lab = useOrganizationLabNotifications(mockMode, user?.id ?? null);
+  const lab = useOrganizationLabNotifications(mockMode && enabled, user?.id ?? null);
   const userId = mockMode ? null : user?.id || null;
   const [state, setState] = useState(() => initialNotificationState(userId));
 
@@ -61,7 +61,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   // Subscribe to notifications (only once per user)
   useEffect(() => {
-    if (!userId) return;
+    if (!enabled || !userId) return;
 
     let active = true;
     let unsubscribe: (() => void) | undefined;
@@ -86,7 +86,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       active = false;
       unsubscribe?.();
     };
-  }, [userId]);
+  }, [enabled, userId]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -159,6 +159,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       {children}
     </NotificationContext.Provider>
   );
+}
+
+/**
+ * Allows a read-only surface to show its last successful notification
+ * snapshot while the shared subscription is retrying. Mutations still use
+ * the shared provider callbacks.
+ */
+export function NotificationSnapshotProvider({ value, children }: { value: NotificationContextType; children: ReactNode }) {
+  return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 }
 
 export function useNotifications() {

@@ -162,3 +162,25 @@ describe('checklist item transaction', () => {
     expect(fake.data.get(listPath)!.items).toEqual(items);
   });
 });
+
+
+it('atomically saves a strict item deadline and subscription hint without changing the parent deadline', async () => {
+  const saved = await mutateChecklistItem('p', 'task', 'list', { kind: 'deadline', itemId: 'a', dueDate: '2026-09-24', dueTime: '08:00', deadlinePolicy: 'strict' });
+  expect(saved[0]).toMatchObject({ dueDate: '2026-09-24', dueTime: '08:00', deadlinePolicy: 'strict' });
+  expect(fake.writes).toContainEqual({ path: taskPath, data: { hasChecklistDeadlines: true } });
+  expect(fake.data.get(taskPath)?.dueDate).toBe('2026-10-10');
+  expect(saved[1]).toEqual(items[1]);
+});
+
+it('does not publish a subscription hint when saving the checklist fails', async () => {
+  fake.failure = 'permission-denied';
+  await expect(mutateChecklistItem('p', 'task', 'list', { kind: 'deadline', itemId: 'a', dueDate: '2026-09-24', dueTime: '08:00', deadlinePolicy: 'strict' })).rejects.toThrow('permission-denied');
+  expect(fake.writes).toEqual([]);
+  expect(fake.data.get(taskPath)).not.toHaveProperty('hasChecklistDeadlines');
+  expect(fake.data.get(listPath)?.items).toEqual(items);
+});
+
+it.each(['24:00', '08:60', '', '8:00'])('rejects invalid strict times before accessing Firebase: %s', async dueTime => {
+  await expect(mutateChecklistItem('p', 'task', 'list', { kind: 'deadline', itemId: 'a', dueDate: '2026-09-24', dueTime, deadlinePolicy: 'strict' })).rejects.toThrow('時刻');
+  expect(fake.runTransaction).not.toHaveBeenCalled();
+});

@@ -7,6 +7,7 @@
     "dev:local": "NEXT_PUBLIC_E2E_MOCK_AUTH=true next dev -p 3002",
     "dev:secretary": "NEXT_PUBLIC_E2E_MOCK_AUTH=true next dev --hostname 127.0.0.1 -p 3010",
     "dev:real": "NEXT_PUBLIC_E2E_MOCK_AUTH=false NEXT_PUBLIC_ENABLE_TEST_AUTH=false NEXT_DEV_DIST_DIR=.next-real next dev --hostname 127.0.0.1 -p 3003",
+    "desktop:mac": "./scripts/run-desktop-mini-mac.sh",
     "build": "node ./scripts/run-next-build.mjs",
     "start": "next start",
     "audit": "npm audit --omit=optional --audit-level=high",
@@ -15,12 +16,15 @@
     "lint": "eslint src e2e scripts playwright*.config.ts eslint.config.mjs next.config.ts && npm run ui:check",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:rules": "npx --yes firebase-tools@15.30.2 emulators:exec --project demo-taskflow-release --only firestore --config firebase.emulators.json 'node scripts/firestore-rules.test.mjs'",
+    "test:member-migration": "node --test scripts/project-member-migration.test.mjs",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "node ./scripts/run-playwright-smoke.mjs",
     "test:e2e:secretary": "playwright test --config playwright.secretary.config.ts",
     "test:e2e:ui": "playwright test --ui",
     "ui:refresh": "node scripts/ui-guide.mjs --refresh",
+    "release:prepare": "node scripts/prepare-release.mjs",
     "ui:check": "node scripts/ui-guide.mjs",
     "ui:compare": "node scripts/ui-guide.mjs --compare-worktree",
     "ui:test": "node --test scripts/ui-guide.test.mjs"
@@ -74,6 +78,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.2.1",
     "@testing-library/jest-dom": "^6.9.1",

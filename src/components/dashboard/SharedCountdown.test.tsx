@@ -9,6 +9,7 @@ const hook = vi.hoisted(() => ({ data: { status: 'unset', target: null, task: nu
 vi.mock('@/stores/authStore', () => ({ useAuthStore: (selector: (state: typeof auth) => unknown) => selector(auth) }));
 vi.mock('@/hooks/useSharedCountdown', () => ({ useSharedCountdown: () => hook }));
 const task = { id: 't', projectId: 'p', projectName: '展示会', title: '出展準備', dueDate: new Date('2026-09-23T00:00:00+09:00'), isCompleted: false, isAbandoned: false, isArchived: false } as DashboardTask;
+vi.mock('@/hooks/useCountdownMilestones', () => ({ useCountdownMilestones: () => ({ milestones: [{ ...task, status: 'planned' }, { ...task, id: 'done', status: 'achieved' }, { ...task, id: 'no-date', dueDate: null, status: 'planned' }], isLoading: false, error: null }) }));
 const props = { tasks: [task, { ...task, id: 'done', title: '完了したタスク', isCompleted: true }, { ...task, id: 'no-date', title: '期限なし', dueDate: null }], tasksLoading: false, tasksError: null };
 const open = () => fireEvent.click(screen.getByRole('button', { name: '共通カウントダウンの設定' }));
 describe('SharedCountdown', () => {
@@ -48,7 +49,7 @@ describe('SharedCountdown', () => {
     expect(hook.refresh).toHaveBeenCalledTimes(1);
     expect(hook.save).not.toHaveBeenCalled();
   });
-  it('previews eligible tasks and saves only IDs after explicit confirmation', async () => {
+  it('previews eligible milestones and saves only IDs after explicit confirmation', async () => {
     render(<SharedCountdown {...props} />);
     expect(screen.getByRole('region', { name: '共通カウントダウン' })).toHaveClass('w-full', 'max-w-[640px]', 'justify-self-end', 'gap-x-3', 'py-3', 'pl-3', 'pr-5');
     open();
@@ -59,7 +60,7 @@ describe('SharedCountdown', () => {
     expect(hook.save).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: '全員共通で保存' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(hook.save).toHaveBeenCalledExactlyOnceWith({ target: { projectId: 'p', taskId: 't' }, revision: 0 });
+    expect(hook.save).toHaveBeenCalledExactlyOnceWith({ target: { projectId: 'p', milestoneId: 't' }, revision: 0 });
   });
   it('allows unsaved preview while authentication is deferred, but never falls back to local storage', () => {
     hook.data = undefined; hook.error = new Error('credentials');
@@ -90,10 +91,10 @@ describe('SharedCountdown', () => {
   it('does not expose a restricted target, and drops the picker when accounts change', () => {
     hook.data = { status: 'restricted', target: null, task: null, revision: 1 };
     const { rerender } = render(<SharedCountdown {...props} />);
-    expect(screen.getByText('共有タスクの閲覧権限がありません。')).toBeInTheDocument();
+    expect(screen.getByText('対象の閲覧権限がありません。')).toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     open();
-    fireEvent.change(screen.getByRole('textbox', { name: 'カウントダウンのタスクを検索' }), { target: { value: '別のプロジェクト' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'カウントダウンの節目を検索' }), { target: { value: '別のプロジェクト' } });
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     auth.firebaseUser = { uid: 'b' };
     rerender(<SharedCountdown {...props} />);

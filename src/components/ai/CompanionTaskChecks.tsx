@@ -2,22 +2,14 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMyTasks } from '@/hooks/useMyTasks';
-import { completedParentIssues } from '@/lib/dashboard/task-attention';
+import { completedParentIssues, readTaskCheckDecisions, saveTaskCheckDecision, TASK_CHECK_DECISION_EVENT, TASK_CHECK_READ_UNTIL, taskCheckKey, taskCheckStorageKey } from '@/lib/dashboard/task-attention';
 import { sendWorkflow } from '@/lib/task/workflowClient';
 import { taskVersion, type WorkflowInput } from '@/lib/task/workflow';
 import { recurrenceRequest } from '@/lib/task/recurrenceClient';
 import { Button } from '@/components/ui/button';
 import { civilDate } from '@/lib/task/recurrence';
-import type { DashboardTask } from '@/lib/dashboard/brief';
 
-type Decisions = Record<string, number>;
-function readDecisions(key: string): Decisions {
-  try { const value = JSON.parse(localStorage.getItem(key) ?? '{}'); return value && typeof value === 'object' && !Array.isArray(value) ? value : {}; } catch { return {}; }
-}
-// Reconsider only when the relevant work changes; unrelated saves must not ask again.
-export function taskCheckKey(parent: DashboardTask, children: DashboardTask[]) {
-  return JSON.stringify([parent.projectId, parent.id, civilDate(parent.completedAt), children.map(child => [child.id, child.title, child.workProgress, child.workState, civilDate(child.dueDate), [...child.assigneeIds].sort()]).sort((a,b) => String(a[0]).localeCompare(String(b[0])))]);
-}
+export { taskCheckKey } from '@/lib/dashboard/task-attention';
 
 export function CompanionTaskChecks({ userId, enabled = true, children }: { userId: string; enabled?: boolean; children: (check: ReactNode) => ReactNode }) {
   return enabled ? <ConnectedTaskChecks userId={userId}>{children}</ConnectedTaskChecks> : children(null);
@@ -27,8 +19,8 @@ function ConnectedTaskChecks({ userId, children }: { userId: string; children: (
   const { allProjectTasks, projects, projectTaskStatus, isLoading, error } = useMyTasks();
   const available = projectTaskStatus ? allProjectTasks.filter(task => projectTaskStatus.get(task.projectId)?.status === 'ready') : isLoading || error ? [] : allProjectTasks;
   const issues = completedParentIssues(available).filter(issue => issue.parent.assigneeIds.includes(userId) || issue.children.some(task => task.assigneeIds.includes(userId)) || projects.some(project => project.id === issue.parent.projectId && project.ownerId === userId));
-  const storageKey = `taskflow.companion.task-checks.v2:${userId}`;
-  const [decisions, setDecisions] = useState(() => readDecisions(storageKey));
+  const storageKey = taskCheckStorageKey(userId);
+  const [decisions, setDecisions] = useState(() => readTaskCheckDecisions(userId));
   const [now, setNow] = useState(Date.now);
   const [pending, setPending] = useState<ReturnType<typeof completedParentIssues>[number] | null>(null);
   const [result, setResult] = useState('');
@@ -36,27 +28,26 @@ function ConnectedTaskChecks({ userId, children }: { userId: string; children: (
   useEffect(() => { scopeActive.current = true; return () => { scopeActive.current = false; }; }, []);
   useEffect(() => { if (!result) return; const timer = setTimeout(() => setResult(''), 5000); return () => clearTimeout(timer); }, [result]);
   useEffect(() => {
-    const sync = (event: StorageEvent) => { if (event.key === storageKey) setDecisions(readDecisions(storageKey)); };
-    window.addEventListener('storage', sync); return () => window.removeEventListener('storage', sync);
-  }, [storageKey]);
+    const syncStorage = (event: StorageEvent) => { if (event.key === storageKey) setDecisions(readTaskCheckDecisions(userId)); };
+    const syncDecision = (event: Event) => { if ((event as CustomEvent<{ userId?: string }>).detail?.userId === userId) setDecisions(readTaskCheckDecisions(userId)); };
+    window.addEventListener('storage', syncStorage);
+    window.addEventListener(TASK_CHECK_DECISION_EVENT, syncDecision);
+    return () => { window.removeEventListener('storage', syncStorage); window.removeEventListener(TASK_CHECK_DECISION_EVENT, syncDecision); };
+  }, [storageKey, userId]);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 60000); return () => clearInterval(timer); }, []);
   const issue = pending ?? issues.find(issue => (decisions[taskCheckKey(issue.parent, issue.children)] ?? 0) <= now);
   const defer = (key: string, until: number) => {
-    setDecisions(previous => {
-      const next = { ...previous, [key]: until };
-      try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* Keep this visit usable. */ }
-      return next;
-    });
+    setDecisions(() => saveTaskCheckDecision(userId, key, until));
   };
   return children(result ? <section aria-label="モアイの保存結果" className="space-y-2 p-4"><p className="text-sm font-semibold">モアイ</p><p role="status" className="text-sm">{result}</p><Button size="sm" variant="ghost" onClick={() => setResult('')}>閉じる</Button></section> : issue ? <details key={JSON.stringify([issue.parent.projectId, issue.parent.id])} className="min-w-0 rounded-lg border bg-background/95">
     <summary className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium leading-snug hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring">
       <span className="min-w-0 break-words">{issue.parent.title} · 未完了サブタスク {issue.children.length}件</span>
     </summary>
-    <div className="border-t"><TaskCheck issue={issue} saving={pending !== null} isScopeActive={() => scopeActive.current} onBegin={() => setPending(issue)} onSettled={() => setPending(null)} onSaved={setResult} onLater={() => defer(taskCheckKey(issue.parent, issue.children), Date.now() + 60 * 60 * 1000)} /></div>
+    <div className="border-t"><TaskCheck issue={issue} saving={pending !== null} isScopeActive={() => scopeActive.current} onBegin={() => setPending(issue)} onSettled={() => setPending(null)} onSaved={setResult} onLater={() => defer(taskCheckKey(issue.parent, issue.children), Date.now() + 60 * 60 * 1000)} onRead={() => defer(taskCheckKey(issue.parent, issue.children), TASK_CHECK_READ_UNTIL)} /></div>
   </details> : null);
 }
 
-function TaskCheck({ issue, saving, isScopeActive, onBegin, onSettled, onSaved, onLater }: { issue: ReturnType<typeof completedParentIssues>[number]; saving: boolean; isScopeActive: () => boolean; onBegin: () => void; onSettled: () => void; onSaved: (message: string) => void; onLater: () => void }) {
+function TaskCheck({ issue, saving, isScopeActive, onBegin, onSettled, onSaved, onLater, onRead }: { issue: ReturnType<typeof completedParentIssues>[number]; saving: boolean; isScopeActive: () => boolean; onBegin: () => void; onSettled: () => void; onSaved: (message: string) => void; onLater: () => void; onRead: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState<string[]>([]);
@@ -103,6 +94,7 @@ function TaskCheck({ issue, saving, isScopeActive, onBegin, onSettled, onSaved, 
       <Button size="sm" disabled={busy || saving} onClick={complete}>{busy || saving ? '保存中…' : error ? '残りのサブタスクを完了にする' : 'サブタスクを完了にする'}</Button>
       <Button size="sm" variant="outline" disabled={busy || saving} onClick={keepWorking}>親を着手に戻す</Button>
       <Button size="sm" variant="ghost" disabled={busy || saving} onClick={onLater}>1時間後</Button>
+      <Button size="sm" variant="ghost" disabled={busy || saving} onClick={onRead}>既読にする</Button>
     </div>}
   </section>;
 }

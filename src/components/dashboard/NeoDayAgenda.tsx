@@ -89,7 +89,7 @@ function AgendaContent({ date, tasks, events, blocks, saveBlock, removeBlock, on
     </section>
     <section aria-label="この日の期限"><h3 className="mb-3 text-xs font-semibold text-muted-foreground">この日が期限 · {day.tasks.length}件</h3>
       <ul className="space-y-3">{day.tasks.map(task => <li key={task.projectId + '/' + task.id} className="rounded-xl border p-4">
-        <div className="flex items-start gap-2"><ProjectMark name={task.projectName} icon={task.projectIcon} iconUrl={task.projectIconUrl} color={task.projectColor} /><p className="min-w-0 break-words text-sm font-medium leading-relaxed">{task.title}</p></div>
+        <div className="flex items-start gap-2"><ProjectMark name={task.projectName} color={task.projectColor} /><p className="min-w-0 break-words text-sm font-medium leading-relaxed">{task.title}</p></div>
         {taskActions(task)}
         {canPlan && <button type="button" className="mt-2 inline-flex items-center gap-1 text-xs text-primary" onClick={() => { setEditing({ task }); setReceipt(''); }}><CalendarClock className="size-3.5" />作業時間を決める</button>}
       </li>)}</ul>

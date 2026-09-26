@@ -20,7 +20,7 @@ import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
 import type { Project, ProjectMember, ProjectRole, ProjectUrl } from '@/types';
 import { useOrganizationLabTasks } from './useOrganizationLabTasks';
 
-export function useProjects() {
+export function useProjects(enabled = true) {
   const { firebaseUser } = useAuthStore();
   const userId = firebaseUser?.uid ?? null;
   const [stateUserId, setStateUserId] = useState(userId);
@@ -32,6 +32,9 @@ export function useProjects() {
   useEffect(() => {
     let active = true;
     let unsubscribe: (() => void) | undefined;
+    if (!enabled) {
+      return () => { active = false; unsubscribe?.(); };
+    }
     Promise.resolve().then(() => {
       if (!active) return;
       setStateUserId(userId);
@@ -51,7 +54,7 @@ export function useProjects() {
       });
     });
     return () => { active = false; unsubscribe?.(); };
-  }, [userId]);
+  }, [enabled, userId]);
 
   // Create project
   const create = useCallback(

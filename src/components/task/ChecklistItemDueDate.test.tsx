@@ -53,3 +53,26 @@ describe('ChecklistItemDueDate', () => {
     expect(screen.getByRole('button')).toBeDisabled();
   });
 });
+
+
+it('saves Japan time and strict visibility together, retaining both on failure and clearing both explicitly', async () => {
+  const onSave = vi.fn();
+  const onSaveDeadline = vi.fn().mockRejectedValueOnce(new Error('保存失敗')).mockResolvedValue(undefined);
+  const value = { ...item, dueDate: '2026-09-24' };
+  const view = render(<ChecklistItemDueDate item={value} disabled={false} onSave={onSave} onSaveDeadline={onSaveDeadline} />);
+  fireEvent.click(screen.getByRole('button', { name: /の期限:/ }));
+  fireEvent.change(screen.getByLabelText('期限の時刻（日本時間）'), { target: { value: '08:00' } });
+  fireEvent.click(screen.getByRole('checkbox', { name: '期限厳守：ダッシュボードに表示' }));
+  fireEvent.click(screen.getByRole('button', { name: '保存' }));
+  await screen.findByRole('alert');
+  expect(screen.getByLabelText('期限の時刻（日本時間）')).toHaveValue('08:00');
+  expect(screen.getByRole('checkbox')).toBeChecked();
+  fireEvent.click(screen.getByRole('button', { name: '保存' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(onSaveDeadline).toHaveBeenLastCalledWith({ dueDate: '2026-09-24', dueTime: '08:00', deadlinePolicy: 'strict' });
+  expect(onSave).not.toHaveBeenCalled();
+  view.rerender(<ChecklistItemDueDate item={{ ...value, dueTime: '08:00', deadlinePolicy: 'strict' }} disabled={false} onSave={onSave} onSaveDeadline={onSaveDeadline} />);
+  fireEvent.click(screen.getByRole('button', { name: /08:00 期限厳守/ }));
+  fireEvent.click(screen.getByRole('button', { name: '期限を外す' }));
+  await waitFor(() => expect(onSaveDeadline).toHaveBeenLastCalledWith({ dueDate: null, dueTime: null, deadlinePolicy: null }));
+});

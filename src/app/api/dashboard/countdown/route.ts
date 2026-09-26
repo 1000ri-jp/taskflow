@@ -18,7 +18,8 @@ async function authorize(request: NextRequest) {
 function failure(error: unknown) {
   const message = error instanceof Error ? error.message : '';
   if (message === 'UNAUTHORIZED') return json({ error: 'ログインを確認してください。' }, 401);
-  if (message === 'FORBIDDEN') return json({ error: 'この設定またはタスクへのアクセス権限がありません。' }, 403);
+  if (message === 'FORBIDDEN') return json({ error: 'この設定または対象へのアクセス権限がありません。' }, 403);
+  if (message === 'INVALID_COUNTDOWN_MILESTONE') return json({ error: '日付のある未達成の節目を選んでください。' }, 400);
   if (message === 'NOT_FOUND' || message === 'INVALID_COUNTDOWN_TASK') return json({ error: '期限のある未完了タスクを選んでください。' }, 400);
   if (message === 'CONFLICT') return json({ error: 'ほかの人が設定を変更しました。最新の設定を確認して選び直してください。' }, 409);
   return json({ error: '共有設定を読み書きできません。サーバーのFirebase認証・接続設定を確認してください。' }, 503);

@@ -10,13 +10,13 @@ const props={task,tasks:[task],userId:'worker',purpose:'展示会の準備',pref
 beforeEach(()=>{vi.clearAllMocks();vi.mocked(requestWorkSupport).mockResolvedValue({text:'確認する点を用意しました',role:'作業担当',intent:'着手',preparedAt:'2026-09-13'});});
 it('prepares for the selected work without typing context and consumes a once-only instruction on success',async()=>{
  const ui=render(<WorkSupportPreparation {...props}/>);
- expect(requestWorkSupport).not.toHaveBeenCalled();fireEvent.click(screen.getByRole('button',{name:'AIで次の一歩を整理'}));
+ expect(requestWorkSupport).not.toHaveBeenCalled();fireEvent.click(screen.getByRole('button',{name:'モアイに相談'}));
  await screen.findByText('確認する点を用意しました');expect(requestWorkSupport).toHaveBeenCalledExactlyOnceWith('worker','project-1','work','gemini','model','もっと短く');expect(props.onConsumed).toHaveBeenCalledOnce();
  ui.rerender(<WorkSupportPreparation {...props} preferenceKey="changed"/>);expect(screen.queryByText('確認する点を用意しました')).not.toBeInTheDocument();
 });
 it('keeps the once-only instruction available on failure and never shows late content after source or permission changes',async()=>{
  vi.mocked(requestWorkSupport).mockRejectedValueOnce(new Error('接続できません'));
- const ui=render(<WorkSupportPreparation {...props}/>);fireEvent.click(screen.getByRole('button',{name:'AIで次の一歩を整理'}));await screen.findByRole('alert');expect(props.onConsumed).not.toHaveBeenCalled();
- fireEvent.click(screen.getByRole('button',{name:'AIで次の一歩を整理'}));await screen.findByText('確認する点を用意しました');
+ const ui=render(<WorkSupportPreparation {...props}/>);fireEvent.click(screen.getByRole('button',{name:'モアイに相談'}));await screen.findByRole('alert');expect(props.onConsumed).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('button',{name:'モアイに相談'}));await screen.findByText('確認する点を用意しました');
  ui.rerender(<WorkSupportPreparation {...props} disabled/>);expect(screen.queryByText('確認する点を用意しました')).not.toBeInTheDocument();
 });

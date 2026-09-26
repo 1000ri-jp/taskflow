@@ -1,6 +1,7 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { ControlHint } from '@/components/ui/control-hint';
@@ -31,6 +32,7 @@ interface BoardFilterBarProps {
   showCardSettings?: boolean;
   extraControls?: ReactNode;
   endControls?: ReactNode;
+  headerControls?: ReactNode;
 }
 
 export function BoardFilterBar({
@@ -44,6 +46,7 @@ export function BoardFilterBar({
   showCardSettings = true,
   extraControls,
   endControls,
+  headerControls,
 }: BoardFilterBarProps) {
   const userId = useAuthStore(state => state.user?.id);
   const hasActiveFilter =
@@ -67,24 +70,18 @@ export function BoardFilterBar({
     });
   };
 
-  return (
-    <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 py-2 pl-4">
-      <div className="relative w-48 max-w-full">
-        <Search aria-hidden="true" className="pointer-events-none absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
-        <Input
-          aria-label="タスクを検索"
-          placeholder="タスクを検索..."
-          className="h-8 pl-8 pr-8"
-          value={filters.keyword}
-          onChange={e => onFiltersChange({ ...filters, keyword: e.target.value })}
-        />
-        {filters.keyword && (
-          <ControlHint label="検索をクリア"><Button type="button" variant="ghost" size="icon" className="absolute right-0.5 top-0.5 h-7 w-7" aria-label="検索をクリア" onClick={() => onFiltersChange({ ...filters, keyword: '' })}>
-            <X className="h-3.5 w-3.5" />
-          </Button></ControlHint>
-        )}
-      </div>
-      {userId && <ControlHint label="自分の担当" description="自分が担当するタスク・サブタスクに絞り込みます。"><Button type="button" size="icon" className="h-8 w-8" aria-label="自分の担当" variant={filters.assigneeId ? 'default' : 'outline'} aria-pressed={!!filters.assigneeId} onClick={() => onFiltersChange({ ...filters, assigneeId: filters.assigneeId ? undefined : userId })}><UserRound className="h-4 w-4" /></Button></ControlHint>}
+  const [headerTarget, setHeaderTarget] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    let active = true;
+    const frame = window.requestAnimationFrame(() => {
+      if (active) setHeaderTarget(document.getElementById('project-view-extra-controls'));
+    });
+    return () => { active = false; window.cancelAnimationFrame(frame); };
+  }, []);
+
+  const filterBar = (
+      <div className="flex min-w-0 flex-nowrap items-center gap-1">
+      {userId && <ControlHint label="自分の担当" description="自分が担当するタスク・サブタスクに絞り込みます。"><Button type="button" size="icon" className="h-8 w-8" aria-label="自分の担当" variant={filters.assigneeId ? 'default' : 'ghost'} aria-pressed={!!filters.assigneeId} onClick={() => onFiltersChange({ ...filters, assigneeId: filters.assigneeId ? undefined : userId })}><UserRound className="h-4 w-4" /></Button></ControlHint>}
 
       {/* One-click view of unfinished work due by today */}
       <ControlHint label="今日やる" description="今日までが期限の未完了タスクを表示します。">
@@ -265,7 +262,26 @@ export function BoardFilterBar({
         </Button>
         </ControlHint>
       )}
+      <div className="relative w-48 max-w-full">
+        <Search aria-hidden="true" className="pointer-events-none absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+        <Input
+          aria-label="タスクを検索"
+          placeholder="タスクを検索..."
+          className="h-8 pl-8 pr-8"
+          value={filters.keyword}
+          onChange={e => onFiltersChange({ ...filters, keyword: e.target.value })}
+        />
+        {filters.keyword && (
+          <ControlHint label="検索をクリア"><Button type="button" variant="ghost" size="icon" className="absolute right-0.5 top-0.5 h-7 w-7" aria-label="検索をクリア" onClick={() => onFiltersChange({ ...filters, keyword: '' })}>
+            <X className="h-3.5 w-3.5" />
+          </Button></ControlHint>
+        )}
+      </div>
       {endControls && <div className="ml-auto min-w-0 max-w-full">{endControls}</div>}
-    </div>
+      </div>
   );
+
+  return headerTarget
+    ? createPortal(<>{headerControls}{filterBar}</>, headerTarget)
+    : <>{headerControls}{filterBar}</>;
 }

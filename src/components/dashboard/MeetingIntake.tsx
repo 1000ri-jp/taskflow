@@ -10,7 +10,7 @@ import { useAISettings } from '@/hooks/useAISettings';
 import { Button } from '@/components/ui/button';
 
 type DialogProps = { open?: boolean; onOpenChange?: (open: boolean) => void; notice?: ReactNode };
-type Props = DialogProps & { projects: Project[]; tasks: DashboardTask[]; disabled: boolean; launcherOnly?: boolean };
+type Props = DialogProps & { projects: Project[]; tasks: DashboardTask[]; disabled: boolean; launcherOnly?: boolean; presentation?: 'dialog' | 'popover'; trigger?: ReactNode };
 const mockProjects = [
   { id: 'secretary-demo', name: '架空の制作プロジェクト' },
   { id: 'secretary-demo-office', name: '架空の総務プロジェクト' },
@@ -18,11 +18,11 @@ const mockProjects = [
 
 export function MeetingIntake(props: Props) {
   return isE2EMockAuthEnabled()
-    ? <MeetingScope options={mockProjects} tasks={props.tasks} disabled={false} mock launcherOnly={props.launcherOnly} open={props.open} onOpenChange={props.onOpenChange} notice={props.notice} />
+    ? <MeetingScope options={mockProjects} tasks={props.tasks} disabled={false} mock launcherOnly={props.launcherOnly} open={props.open} onOpenChange={props.onOpenChange} notice={props.notice} presentation={props.presentation} trigger={props.trigger} />
     : <ConnectedMeetingIntake {...props} />;
 }
 
-function ConnectedMeetingIntake({ projects, tasks, disabled, launcherOnly, open, onOpenChange, notice }: Props) {
+function ConnectedMeetingIntake({ projects, tasks, disabled, launcherOnly, open, onOpenChange, notice, presentation, trigger }: Props) {
   const { allowedProjectIds, projectAccessLoaded, projectAccessError, refreshProjectAccess } = useAISettings();
   const options = projects.filter(project => !project.isArchived && (allowedProjectIds === null || allowedProjectIds.includes(project.id)));
   const accessNotice = <>
@@ -30,16 +30,16 @@ function ConnectedMeetingIntake({ projects, tasks, disabled, launcherOnly, open,
     {projectAccessError && <div role="alert" className="mt-2 space-y-2 text-xs text-amber-800"><p>{projectAccessError}</p><Button size="sm" variant="outline" onClick={() => void refreshProjectAccess()}>照合対象を再取得</Button></div>}
   </>;
   return <>
-    <MeetingScope options={options} tasks={tasks} disabled={disabled || !projectAccessLoaded || !!projectAccessError} launcherOnly={launcherOnly} open={open} onOpenChange={onOpenChange} notice={<>{notice}{open !== undefined && accessNotice}</>} />
+    <MeetingScope options={options} tasks={tasks} disabled={disabled || !projectAccessLoaded || !!projectAccessError} launcherOnly={launcherOnly} open={open} onOpenChange={onOpenChange} notice={<>{notice}{open !== undefined && accessNotice}</>} presentation={presentation} trigger={trigger} />
     {open === undefined && accessNotice}
   </>;
 }
 
-function MeetingScope({ options, tasks, disabled, mock = false, launcherOnly = false, open, onOpenChange, notice }: DialogProps & { options: { id: string; name: string }[]; tasks: DashboardTask[]; disabled: boolean; mock?: boolean; launcherOnly?: boolean }) {
+function MeetingScope({ options, tasks, disabled, mock = false, launcherOnly = false, open, onOpenChange, notice, presentation = 'dialog', trigger }: DialogProps & { options: { id: string; name: string }[]; tasks: DashboardTask[]; disabled: boolean; mock?: boolean; launcherOnly?: boolean; presentation?: 'dialog' | 'popover'; trigger?: ReactNode }) {
   const [excluded, setExcluded] = useState<string[]>([]);
   const candidates = options.filter(project => !excluded.includes(project.id));
   const candidateIds = new Set(candidates.map(project => project.id));
-  const organizer = <TaskOrganizer projects={candidates} tasks={tasks.filter(task => candidateIds.has(task.projectId))} source={{ kind: 'meeting', id: 'meeting-intake', title: '会議メモ', text: '', occurredAt: null }} label={launcherOnly ? '会議から整理' : '文字起こし・メモを取り込む'} disabled={disabled || candidates.length === 0} open={open} onOpenChange={onOpenChange} notice={<>{notice}{!disabled && !candidates.length && <p role="status" className="text-xs text-amber-800">照合できるプロジェクトがありません。AI設定で対象を確認してください。</p>}</>} />;
+  const organizer = <TaskOrganizer projects={candidates} tasks={tasks.filter(task => candidateIds.has(task.projectId))} source={{ kind: 'meeting', id: 'meeting-intake', title: '会議メモ', text: '', occurredAt: null }} label={launcherOnly ? '会議から整理' : '文字起こし・メモを取り込む'} disabled={disabled || candidates.length === 0} open={open} onOpenChange={onOpenChange} presentation={presentation} trigger={trigger} notice={<>{notice}{!disabled && !candidates.length && <p role="status" className="text-xs text-amber-800">照合できるプロジェクトがありません。AI設定で対象を確認してください。</p>}</>} />;
   if (launcherOnly) return organizer;
   return <section aria-label="会議・メモを取り込む" className="space-y-3 rounded-2xl border bg-background p-4">
     <div><h2 className="text-sm font-semibold">会議・メモから仕事を整理</h2><p className="mt-1 text-xs text-muted-foreground">複数プロジェクトの話が混ざったまま取り込めます。AIが既存タスクへの追記・進捗更新、新しい仕事、確認事項に仕分けます。</p></div>

@@ -126,6 +126,8 @@ describe('useSecretary live reads', () => {
 
   it('defaults to hourly reads, ignores early focus, and restarts the interval after a manual refresh', async () => {
     vi.useFakeTimers();
+    // Keep interval tests away from the independently tested JST midnight refresh.
+    vi.setSystemTime(new Date('2026-09-18T09:00:00+09:00'));
     fetchMock.mockImplementation(async () => response(view));
     const { result } = renderHook(() => useSecretary('a'));
     await act(async () => {});
@@ -168,6 +170,8 @@ describe('useSecretary live reads', () => {
 
   it('waits while hidden and catches up once when the selected interval has elapsed', async () => {
     vi.useFakeTimers();
+    // Keep interval tests away from the independently tested JST midnight refresh.
+    vi.setSystemTime(new Date('2026-09-18T09:00:00+09:00'));
     fetchMock.mockImplementation(async () => response(view));
     const visibility = vi.spyOn(document, 'visibilityState', 'get');
     visibility.mockReturnValue('visible');
