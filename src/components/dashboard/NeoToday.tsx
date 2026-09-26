@@ -93,7 +93,7 @@ export function NeoTodayContent({ tasks, now, userId, isLoading, error, projectT
           {work.error && <p role="status" className="mt-3 text-xs text-amber-800">{work.error}</p>}
         </section>
 
-        <section aria-label="進めている仕事" className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+        <section aria-label="進めているタスク" className="overflow-hidden rounded-2xl border bg-card shadow-sm">
           <NeoWorkContinuation key={selectedTaskKey ?? 'default'} tasks={tasks} userId={userId} isLoading={isLoading} error={error} projectTaskStatus={projectTaskStatus} onList={onList} initialTaskKey={selectedTaskKey} preferStarted />
         </section>
       </div>
