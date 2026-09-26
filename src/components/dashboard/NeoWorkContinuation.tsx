@@ -53,18 +53,18 @@ export function NeoWorkContinuation({ tasks, userId, isLoading, error, projectTa
   const loading = !userId || isLoading || [...projectTaskStatus.values()].some(status => status.status === 'loading');
   return <div data-testid="neo-work-continuation">
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b px-5 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
-      <h2 className="inline-flex items-center gap-2 whitespace-nowrap text-sm font-semibold"><ArrowRight className="h-4 w-4 text-primary" aria-hidden="true" />仕事の続き</h2>
-      <label className="order-3 col-span-2 min-w-0 sm:order-2 sm:col-span-1"><span className="sr-only">続ける仕事</span><select aria-label="続ける仕事" className="h-8 w-full min-w-0 rounded-md border bg-background px-2 text-sm" value={selectedTask ? identity(selectedTask) : ''} onChange={e => setSelected(e.target.value)} disabled={!choices.length}>
-        {!selected && !selectedTask && choices.length > 0 && <option value="">進行中の仕事はありません。続ける仕事を選べます。</option>}
-        {selected && !selectedTask && choices.length > 0 && <option value="">最新情報を取得できません。仕事を選び直してください。</option>}
-        {!choices.length && <option value="">{loading ? '読み込み中…' : failed ? '取得できた仕事はありません' : '続ける仕事はありません'}</option>}
+      <h2 className="inline-flex items-center gap-2 whitespace-nowrap text-sm font-semibold"><ArrowRight className="h-4 w-4 text-primary" aria-hidden="true" />タスクの続き</h2>
+      <label className="order-3 col-span-2 min-w-0 sm:order-2 sm:col-span-1"><span className="sr-only">続けるタスク</span><select aria-label="続けるタスク" className="h-8 w-full min-w-0 rounded-md border bg-background px-2 text-sm" value={selectedTask ? identity(selectedTask) : ''} onChange={e => setSelected(e.target.value)} disabled={!choices.length}>
+        {!selected && !selectedTask && choices.length > 0 && <option value="">進行中のタスクはありません。続けるタスクを選べます。</option>}
+        {selected && !selectedTask && choices.length > 0 && <option value="">最新情報を取得できません。タスクを選び直してください。</option>}
+        {!choices.length && <option value="">{loading ? '読み込み中…' : failed ? '取得できたタスクはありません' : '続けるタスクはありません'}</option>}
         {choices.map(task => <option key={identity(task)} value={identity(task)}>{task.projectName} / {task.title}</option>)}
       </select></label>
       <Button size="sm" variant="ghost" className="order-2 sm:order-3" onClick={onList}><List className="h-4 w-4" />一覧</Button>
     </div>
-    {(loading || failed) && <p role={failed ? 'alert' : 'status'} className="px-5 py-3 text-xs text-muted-foreground">{failed ? '一部の仕事を取得できません。取得できたプロジェクトだけ表示しています。' : '仕事を読み込み中…'}</p>}
+    {(loading || failed) && <p role={failed ? 'alert' : 'status'} className="px-5 py-3 text-xs text-muted-foreground">{failed ? '一部のタスクを取得できません。取得できたプロジェクトだけ表示しています。' : 'タスクを読み込み中…'}</p>}
     {selectedTask && userId ? <ActiveWork key={JSON.stringify([userId, selectedTask.projectId, selectedTask.id])} task={selectedTask} tasks={ready.filter(task => task.projectId === selectedTask.projectId)} userId={userId} />
-      : <p className="p-5 text-sm text-muted-foreground">{selected ? 'この仕事の最新情報を取得できません。選び直すか、一覧で確認してください。' : !loading && !failed ? 'いま続ける担当の仕事はありません。一覧からも確認できます。' : '状況を確認してから、次の操作を表示します。'}</p>}
+      : <p className="p-5 text-sm text-muted-foreground">{selected ? 'このタスクの最新情報を取得できません。選び直すか、一覧で確認してください。' : !loading && !failed ? 'いま続ける担当タスクはありません。一覧からも確認できます。' : '状況を確認してから、次の操作を表示します。'}</p>}
   </div>;
 }
 
@@ -119,11 +119,11 @@ function ActiveWork({ task, tasks, userId }: { task: MyTask; tasks: MyTask[]; us
   const handoff = context.handoffs[0];
   const focus = workSupportContext(task, tasks, userId, scope.project?.description ?? '');
   const title = context.canResubmit ? `${base.title}の修正をお願いします` : context.canReview ? `${base.title}を確認してください`
-    : closed ? 'この仕事の結果を記録しました' : handoff ? '確認結果が届いています'
-      : pendingReview ? '確認の返答を待っています' : task.workState ? '再開の条件を確認しましょう' : task.workProgress === 'started' ? '作業の続きから進められます' : 'この仕事から始められます';
+    : closed ? 'このタスクの結果を記録しました' : handoff ? '確認結果が届いています'
+      : pendingReview ? '確認の返答を待っています' : task.workState ? '再開の条件を確認しましょう' : task.workProgress === 'started' ? '作業の続きから進められます' : 'このタスクから始められます';
   const request = previous?.review?.request || (base.completionCriteria ? '次の完了条件を確認してください。\n' + base.completionCriteria : '');
   if (task.parentTaskId && task.taskKind !== 'review_request') return <section className="rounded-xl border p-4"><p className="mb-2 text-sm">{task.title}</p><Link className="text-sm underline" href={href(task)}>親タスクで確認・編集</Link></section>;
-  return <section aria-label="選んだ仕事の続き" className="space-y-3 px-5 py-3">
+  return <section aria-label="選んだタスクの続き" className="space-y-3 px-5 py-3">
     <div>
       {context.parent && <p className="mb-1 break-words text-xs text-muted-foreground">{task.projectName} / {base.title}</p>}
       <h3 className={context.canResubmit || context.canReview || closed || handoff || pendingReview || task.workState ? 'mb-2 text-sm font-semibold' : 'sr-only'}>{title}</h3>
@@ -142,10 +142,10 @@ function ActiveWork({ task, tasks, userId }: { task: MyTask; tasks: MyTask[]; us
       {showBaseAssignees && <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">作業：<TaskAssignees task={base} names={names} members={memberIcons} iconOnly /></div>}
     </div>
     {base.completionCriteria && <p className="border-l-2 border-primary/50 pl-3 text-sm"><span className="mb-1 block text-xs text-muted-foreground">終わる条件</span>{base.completionCriteria}</p>}
-    {!detailsReady && <p role={details.detailsError ? 'alert' : 'status'} className="text-xs text-amber-800">{details.detailsError || '資料と仕事の情報を確認しています…'}</p>}
+    {!detailsReady && <p role={details.detailsError ? 'alert' : 'status'} className="text-xs text-amber-800">{details.detailsError || '資料とタスクの情報を確認しています…'}</p>}
     {details.commentStatus === 'error' && <p role="alert" className="text-xs text-amber-800">コメント内の資料を取得できません。確認依頼に保存された資料だけ表示します。</p>}
     {handoff && <div className="space-y-2 rounded-lg border p-3"><p className="text-xs font-medium">引き継いだ確認結果 · {handoff.review?.round ?? 1}回目</p><p className="whitespace-pre-wrap break-words text-sm">{handoff.review?.request}</p><div className="flex items-center gap-2 text-xs text-muted-foreground"><TaskAssignees task={{ assigneeIds: Object.entries(handoff.review?.responses ?? {}).filter(([, response]) => response.outcome === 'approved').map(([id]) => id) }} names={names} members={memberIcons} compact />確認OK</div><TaskMaterials files={handoff.review?.attachments ?? []} label="引き継いだ資料" /><Link href={href(handoff)} className="text-xs text-primary">確認の記録を見る</Link></div>}
-    {detailsReady && !context.review && checklistItems.length > 0 && <section aria-label="この仕事のチェックリスト" className="space-y-2 rounded-lg border p-3">
+    {detailsReady && !context.review && checklistItems.length > 0 && <section aria-label="このタスクのチェックリスト" className="space-y-2 rounded-lg border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs"><h4 className="font-medium">{details.checklists.length === 1 ? details.checklists[0].title : 'チェックリスト'}</h4><span className="text-muted-foreground">残り{unfinishedItems.length}件 · {completedItems.length}/{checklistItems.length}完了</span></div>
       <fieldset disabled={!canEdit || closed || checking !== null} className="space-y-2" aria-label="チェック項目">
         {checklistRows(unfinishedItems.slice(0, 3))}
@@ -158,7 +158,7 @@ function ActiveWork({ task, tasks, userId }: { task: MyTask; tasks: MyTask[]; us
     {context.review && !context.review.review && detailsReady && details.commentStatus === 'ready' && <TaskMaterials files={details.comments.find(comment => comment.id === context.review?.sourceCommentId)?.attachments ?? []} label="元の確認依頼の資料" />}
     {context.review && <fieldset disabled={!canEdit || !detailsReady} className="min-w-0"><TaskWorkflow key={context.review.id} task={context.review} tasks={tasks} userId={userId} names={names} continuation availableAttachments={materials} onRecorded={recorded} /></fieldset>}
     {!context.review && previous?.isCompleted && <details className="rounded-lg border p-3"><summary className="cursor-pointer text-sm">確認結果を見る・訂正する</summary><fieldset disabled={!canEdit || !detailsReady} className="mt-3 min-w-0"><TaskWorkflow key={previous.id} task={previous} tasks={tasks} userId={userId} names={names} continuation availableAttachments={materials} onRecorded={recorded} /></fieldset></details>}
-    {!context.review && !handoff && detailsReady && materials.length > 0 && !submitting && <details className="rounded-lg border px-3 py-2"><summary className="cursor-pointer text-xs text-muted-foreground">資料 {materials.length}件</summary><div className="mt-2"><TaskMaterials files={materials} label="この仕事に登録された資料" /></div></details>}
+    {!context.review && !handoff && detailsReady && materials.length > 0 && !submitting && <details className="rounded-lg border px-3 py-2"><summary className="cursor-pointer text-xs text-muted-foreground">資料 {materials.length}件</summary><div className="mt-2"><TaskMaterials files={materials} label="このタスクに登録された資料" /></div></details>}
     {!context.review && !closed && blockers.length > 0 && <div className="text-sm"><p>先に確認する仕事</p>{blockers.map(blocker => blocker.task ? <Link key={blocker.id} href={href(blocker.task)} className="mt-1 block text-primary">{blocker.task.title}</Link> : <p key={blocker.id} className="text-amber-800">前提の仕事を取得できません。</p>)}</div>}
     {!context.review && !closed && !task.workState && !blockers.length && task.workProgress === 'started' && submitting && <fieldset disabled={!canEdit || !detailsReady} className="min-w-0 space-y-3">
       <CommentComposer onSubmitted={message => { setSubmissionResult(message); setReceipt(null); }} projectId={task.projectId} taskId={task.id} authorId={userId} authorName={user?.displayName || 'メンバー'} members={members} tasks={tasks} availableAttachments={materials} reviewContext={{ request, assigneeIds: previous?.assigneeIds.filter(id => scope.project?.memberIds.includes(id)) ?? [], nextTaskId: previous?.review?.nextTaskId ?? '', policy: previous?.review?.policy ?? 'any', sourceLabel: previous ? '前回の確認先と依頼内容を引き継ぎました。変更できます。' : request ? '完了条件から確認内容を用意しました。確認する人を選んでください。' : '確認してほしいことと、確認する人を指定してください。', expectedVersion: taskVersion(task) }} />

@@ -451,11 +451,11 @@
     },
     {
       "path": "src/components/dashboard/NeoDashboard.tsx",
-      "sha256": "7c7c157fd84ee503264a7e4d4492cc67ad03678da6ed15088871cc3dae906fd2"
+      "sha256": "8f032a80ae77746b8e382a826d67c4a32527dd8506df217439ec322db510c281"
     },
     {
       "path": "src/components/dashboard/NeoDayAgenda.tsx",
-      "sha256": "a3f4a74495f35f69252f44531ab29b5b112b75eeca21cebd6420ad327215a61a"
+      "sha256": "62ad4194b4c3f15125825f0b9cd816beea565ef98c899de1bbed536b21089fd1"
     },
     {
       "path": "src/components/dashboard/NeoMorningBrief.tsx",
@@ -479,11 +479,11 @@
     },
     {
       "path": "src/components/dashboard/NeoToday.tsx",
-      "sha256": "3ce127cc70db5dd3fc98814f6a4ae109aa26979c505cf004bff81f9a6b0f0051"
+      "sha256": "f0851e1420dfab2928cfa9fb61e261fe21860412a993adf563f3787474295e4a"
     },
     {
       "path": "src/components/dashboard/NeoWorkContinuation.tsx",
-      "sha256": "a2c96174c4ba06239607dd3831fe2a02b6a2a9cc180da79154ce29784b1ccb01"
+      "sha256": "a89b53971aa69b7e7bedb26c6a92f222e461a5f50e165eb729f5b283df730b55"
     },
     {
       "path": "src/components/dashboard/OrganizationProposalCard.tsx",
@@ -1771,7 +1771,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "ec2205b61b892348364f2e1295e4edb05877e7a471cf6a1c6cabc2c8204dbda0"
+      "sha256": "bf6daf0c9a75210c875af4a5f14f5c96a7b69103446e9dbae4e8b8cfe8bfa6ff"
     },
     {
       "path": "src/lib/ui-guide/verification.json",

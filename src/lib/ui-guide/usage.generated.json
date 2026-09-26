@@ -49,7 +49,7 @@
       ]
     },
     "button": {
-      "sourceHash": "23108dcf92efc8057567db73fb251123417d9079001076c41285a5abfec35022",
+      "sourceHash": "3ccaeb0bc0a567318eae13bb043f6b388d7dc286e5eb96637dca75c2e65b2412",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -234,7 +234,7 @@
       ]
     },
     "input": {
-      "sourceHash": "d867232559f4c334e08f6c4c07c2b0f00a1eb0b5f185f13faeb90da6266baf80",
+      "sourceHash": "0db50c961f4d2bec8b3c15a842a9ceb1b490e7548a782d2e736ef85f316453ea",
       "direct": [
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
@@ -348,7 +348,7 @@
       ]
     },
     "navigation": {
-      "sourceHash": "6d91635b4c21aa0fab304a17efc9b95dbfbacea8e65bc5a0aa9a942f37df0b44",
+      "sourceHash": "b2874f1af644e32aea25e11e98e90511142732591b7971243d0da7c1741f32dd",
       "direct": [
         "src/components/common/Header.tsx",
         "src/components/common/NotificationDropdown.tsx",
@@ -383,7 +383,7 @@
       ]
     },
     "card": {
-      "sourceHash": "387700eaa4ff8b6b6962be833d26d080b82976b5b0f7eee3d9cd68c208eaf9b8",
+      "sourceHash": "bc1ac3830510817199d8a8270509af13632dd16fd884a652d03bf56c3d36e017",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -452,7 +452,7 @@
       ]
     },
     "states": {
-      "sourceHash": "bdafee17fec544a2f4ccf2b3d109312d8c79b898b11419240c5c4fad35b4804a",
+      "sourceHash": "e7ad39b2cd812d335c135518af86b23172044039e6f7c7593924713c10298d93",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/components/common/CommandPalette.tsx",
@@ -487,7 +487,7 @@
       ]
     },
     "outline": {
-      "sourceHash": "ca551573e0ab605d98d7fc454c6f988627f9919c096b46f7d6eeab41d39c0d8b",
+      "sourceHash": "797fd8e4b0ca43d73a3d255ee1414ff774d06b8e30de56694ed42d73e93a5c70",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/AutoArchiveSettings.tsx",
@@ -553,7 +553,7 @@
       ]
     },
     "table": {
-      "sourceHash": "97080dc4a310d6cd43c5ec1cd8f2781586779029805764690d16a6de12e44ab8",
+      "sourceHash": "e1b59421ebc5e3b24f397e4dcda23b7a5f55fdcb759bc39c153bd5b544347a1f",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/AutoArchiveSettings.tsx",
@@ -615,7 +615,7 @@
       ]
     },
     "proposal": {
-      "sourceHash": "aeb74ee05d096f15799d59a8ce006df5ce6960653311afa0c8ee587f0bb3dd30",
+      "sourceHash": "f36a46f62463f363bc0263ee55df93a8ca208503f057d4d23a1c8d8036ba5d1f",
       "direct": [
         "src/components/dashboard/OrganizationReviewInbox.tsx",
         "src/components/task/TaskOrganizer.tsx"
@@ -742,7 +742,7 @@
       ]
     },
     "settings-layout": {
-      "sourceHash": "2c0eb62c1432059cc16c94e9c54b1bba44b84b939c40e3f23e91786fc72308bf",
+      "sourceHash": "5da1ab6d46e825c50a4fa388ce8a28f2351417132a6d05a399085c1e0a7a41ea",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/help/page.tsx",
@@ -824,7 +824,7 @@
       "routes": []
     },
     "search": {
-      "sourceHash": "fc58df0e6c450883e6bd4bf61e27a9ca62cc6e31ea58fa7b1b5bb16c02bba135",
+      "sourceHash": "ad1a70a0675c8dd031d026c82aed6229874795311594792839172c5f7e9a3b56",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1003,7 +1003,7 @@
       ]
     },
     "notifications": {
-      "sourceHash": "fa9c5db80c4846f27f3a1d258941eec6868e4467c4b54edaeac57d80193c50bd",
+      "sourceHash": "468c587635e13a42afe226d5521d43d6133b4371ecf4cc701371d50f4a42d59f",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1180,7 +1180,7 @@
       ]
     },
     "calendar": {
-      "sourceHash": "fa9c5db80c4846f27f3a1d258941eec6868e4467c4b54edaeac57d80193c50bd",
+      "sourceHash": "468c587635e13a42afe226d5521d43d6133b4371ecf4cc701371d50f4a42d59f",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1357,7 +1357,7 @@
       ]
     },
     "gantt": {
-      "sourceHash": "fa9c5db80c4846f27f3a1d258941eec6868e4467c4b54edaeac57d80193c50bd",
+      "sourceHash": "468c587635e13a42afe226d5521d43d6133b4371ecf4cc701371d50f4a42d59f",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1534,7 +1534,7 @@
       ]
     },
     "progress": {
-      "sourceHash": "3dbf42a46aae703a0e58eee7de5ac4911b6afdf0fa15ce2afdd5858e5427b1b6",
+      "sourceHash": "626a2d8f47ff4452e2deb9a013f5706e2a349da0c28d13c5636d819a183ec061",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1852,7 +1852,7 @@
       ]
     },
     "frame-trial": {
-      "sourceHash": "fa9c5db80c4846f27f3a1d258941eec6868e4467c4b54edaeac57d80193c50bd",
+      "sourceHash": "468c587635e13a42afe226d5521d43d6133b4371ecf4cc701371d50f4a42d59f",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2029,7 +2029,7 @@
       ]
     },
     "table-trial": {
-      "sourceHash": "64663321122b3edcc12bd310d93effcc3cecbe35396287026f87a9f3c40818e0",
+      "sourceHash": "caa83847242165b4b4ee45a8acad66240241f5f788884e531e6467fa681ba23f",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2217,7 +2217,7 @@
       ]
     },
     "history-trial": {
-      "sourceHash": "64663321122b3edcc12bd310d93effcc3cecbe35396287026f87a9f3c40818e0",
+      "sourceHash": "caa83847242165b4b4ee45a8acad66240241f5f788884e531e6467fa681ba23f",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2405,7 +2405,7 @@
       ]
     },
     "neo-brief-row-trial": {
-      "sourceHash": "4c96bde56bcb4da09cbb389c7acf7ef740ff502b795a55597f3ace5a950b967f",
+      "sourceHash": "4da325ae6779703655356e97bb6bf2528d00eaf1785916a74b8ff8a1bd47b4a8",
       "direct": [
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskCard.tsx",
@@ -2445,7 +2445,7 @@
       ]
     },
     "neo-brief-assignee-filter-trial": {
-      "sourceHash": "1c0b8b594f7cd74fc28f5c18862008b2f39983e014c8c00cac1f208c11a0b26e",
+      "sourceHash": "f0e7bb7885e03f16a48a1b86eb0eba031e67a5a83b52dabb7bf1c2a15a46d4be",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2627,7 +2627,7 @@
       ]
     },
     "neo-shared-countdown-trial": {
-      "sourceHash": "8acb95ebb9c006027f463744b16ddaa3eec374e7a8ceccc200574d13e6ca8e41",
+      "sourceHash": "39fb9ccc56b56adb10b4ab9f60ada25e1ec0aec29e0817b3858336b1eac6e2bb",
       "direct": [
         "src/components/dashboard/KozueDashboard.tsx",
         "src/components/dashboard/NeoDashboard.tsx"
@@ -2642,7 +2642,7 @@
       ]
     },
     "task-row-one-line-trial": {
-      "sourceHash": "8ba2baec6c42184590d52e67bcfc47db5cd4d616ab91a4b7ac1d07f33a0ddf20",
+      "sourceHash": "431846749b33042d78716008a56001995a9ffe295f48938beabd1cc8205f5fd8",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
@@ -2704,7 +2704,7 @@
       ]
     },
     "neo-home-layout-trial": {
-      "sourceHash": "082b18a67cb023e3d37fa4416744d51c6b1eb9910b0e0e31bf95ee348ceb8af2",
+      "sourceHash": "4717e05bfdd3aa4b5c53e2f637fb9c17a7201de2daf8336ab59fb031811e5712",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2824,7 +2824,7 @@
       ]
     },
     "proposal-review-flow-trial": {
-      "sourceHash": "b0fdd5bea4258ba0a41c8bc6dc23f490763a8b2c637896ee127a9dff4a130516",
+      "sourceHash": "e5f8a26dd49cbcecd60b4ee165c87957a72b9c26b302fec412551a565311c41e",
       "direct": [
         "src/app/(dashboard)/layout.tsx",
         "src/components/dashboard/NeoDashboard.tsx",
@@ -2879,7 +2879,7 @@
       ]
     },
     "task-structure-guidance-trial": {
-      "sourceHash": "2ec25d01e85b8974f9f49c9f1f5a4b670ae9d138fbe7e11243bda098c3183af6",
+      "sourceHash": "8449253e80ce88ab9f28eb18782aefa32491a17768a9541df0713ebed8db91f0",
       "direct": [
         "src/app/api/tasks/organize/route.ts",
         "src/components/board/TaskRelationshipSuggestions.tsx",

@@ -70,7 +70,7 @@ describe('Today essentials', () => {
     const side = schedule.parentElement!;
     expect(side.children[0]).toBe(screen.getByRole('region', { name: '期限厳守' }));
     expect(side.children[1]).toBe(schedule);
-    expect(side.children[2]).toBe(screen.getByRole('region', { name: '進めている仕事' }));
+    expect(side.children[2]).toBe(screen.getByRole('region', { name: '進めているタスク' }));
     expect(side.children).toHaveLength(3);
     expect(screen.queryByText('今日が期限')).not.toBeInTheDocument();
     expect(briefing.nextElementSibling).toBe(side);

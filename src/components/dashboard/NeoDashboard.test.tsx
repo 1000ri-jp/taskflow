@@ -34,7 +34,7 @@ describe('Neo dashboard task views', () => {
     fireEvent.click(screen.getByRole('button', { name: /^タスク$/ }));
     fireEvent.click(screen.getByRole('button', {name: '自分の担当'}));
     expect(screen.getByRole('link', { name: /自分の作業/ })).toHaveAttribute('href', '/projects/project-1/board?task=task-1');
-    fireEvent.click(screen.getByRole('button', { name: '最近の更新' }));
+    fireEvent.click(screen.getByRole('button', { name: 'タスクのアクティビティ' }));
     const rows = within(screen.getByRole('region', { name: 'タスク一覧' })).getAllByRole('listitem');
     expect(rows[0]).toHaveTextContent('図面作成');
     const link = within(rows[0]).getByRole('link');
@@ -108,7 +108,7 @@ describe('Neo dashboard task views', () => {
     fireEvent.click(screen.getByRole('button', { name: '今日の予定を見る' }));
     const agenda = screen.getByRole('dialog');
     expect(within(agenda).getByText('自分の作業')).toBeVisible();
-    fireEvent.click(within(agenda).getAllByRole('button', { name: '仕事の続きへ' })[0]);
+    fireEvent.click(within(agenda).getAllByRole('button', { name: 'タスクの続きへ' })[0]);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByTestId('neo-work-continuation')).toBeVisible();
     expect(screen.getByRole('button', { name: '今日' })).toHaveAttribute('aria-pressed', 'true');
@@ -118,19 +118,32 @@ describe('Neo dashboard task views', () => {
     render(<NeoDashboard />);
     const nav = within(screen.getByRole('group', { name: 'タスクの表示' }));
     fireEvent.click(screen.getByRole('button', { name: /^タスク$/ }));
-    fireEvent.click(screen.getByRole('button', { name: '最近の更新' }));
+    fireEvent.click(screen.getByRole('button', { name: 'タスクのアクティビティ' }));
     fireEvent.click(nav.getByRole('button', { name: 'カレンダー' }));
     expect(screen.getByRole('region', { name: '予定と期限のカレンダー' })).toBeVisible();
     expect(document.querySelector('time[aria-label]')).toBeVisible();
     expect(screen.getAllByRole('region', { name: '共通カウントダウン' })).toHaveLength(1);
     expect(screen.queryByText('AI秘書')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '最近の更新' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'タスクのアクティビティ' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /^タスク$/ }));
-    expect(screen.getByRole('button', { name: '最近の更新' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'タスクのアクティビティ' })).toHaveAttribute('aria-pressed', 'true');
     expect(document.querySelector('time[aria-label]')).toBeVisible();
     expect(screen.getAllByRole('region', { name: '共通カウントダウン' })).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: /今日までの期限/ }));
     expect(screen.getByRole('button', { name: /^今日まで$/ })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('shows every due task without the assigned-task pagination limit', () => {
+    data.tasks = Array.from({ length: 8 }, (_, index) => viewTask({
+      id: `due-${index}`, title: `期限タスク ${index + 1}`, assigneeIds: ['me'], dueDate: new Date(2026, 8, 1),
+    }));
+    data.allProjectTasks = data.tasks;
+    render(<NeoDashboard />);
+    fireEvent.click(screen.getByRole('button', { name: /^タスク$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^今日まで$/ }));
+    const list = within(screen.getByRole('region', { name: 'タスク一覧' }));
+    expect(list.getAllByRole('listitem')).toHaveLength(8);
+    expect(list.queryByRole('button', { name: /ほかのタスクを見る/ })).not.toBeInTheDocument();
   });
 });
 
@@ -142,7 +155,7 @@ it('gives AI proposals their own purpose, without completed work, ordinary filte
   const proposals = screen.getByRole('region', { name: 'モアイの提案' });
   expect(within(proposals).getByText('いま判断が必要な提案はありません。')).toBeVisible();
   expect(within(proposals).getByRole('button', { name: 'メモから提案を作る' })).toBeVisible();
-  expect(screen.queryByRole('button', { name: '最近の更新' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'タスクのアクティビティ' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'メモから' })).not.toBeInTheDocument();
   expect(document.querySelector('time[aria-label]')).toBeVisible();
   expect(nav.getAllByRole('button')).toHaveLength(4);

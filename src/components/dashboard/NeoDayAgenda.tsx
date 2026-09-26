@@ -68,7 +68,7 @@ function AgendaContent({ date, tasks, events, blocks, saveBlock, removeBlock, on
   const day = buildNeoCalendarDays(tasks, [...events, ...work.map(item => item.event)], date, 1)[0];
   const taskActions = (task: DashboardTask) => <div className="mt-2 flex flex-wrap gap-2">
     <Button size="sm" variant="outline" asChild><Link href={taskHref(task)}>詳細<ArrowUpRight className="size-3.5" /></Link></Button>
-    {onContinue && <Button size="sm" variant="ghost" onClick={() => onContinue(task)}>仕事の続きへ<ArrowRight className="size-3.5" /></Button>}
+    {onContinue && <Button size="sm" variant="ghost" onClick={() => onContinue(task)}>タスクの続きへ<ArrowRight className="size-3.5" /></Button>}
   </div>;
   return <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
     {notice && <p role="status" className="text-xs leading-relaxed text-amber-800">{notice}</p>}

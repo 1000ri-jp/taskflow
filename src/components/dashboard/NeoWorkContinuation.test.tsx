@@ -70,13 +70,13 @@ it.each(['loading', 'error', 'permission'] as const)('does not allow a shared wr
 it('retains a completed selected job and closes actions when its project snapshot fails', async () => {
  const parent = task(); const other = task({ id: 'other', title: '別の仕事' });
  const ui = render(<NeoWorkContinuation {...props([parent, other])} />); await act(async () => {});
- fireEvent.change(screen.getByRole('combobox', { name: '続ける仕事' }), { target: { value: JSON.stringify(['project-1', 'parent']) } });
+ fireEvent.change(screen.getByRole('combobox', { name: '続けるタスク' }), { target: { value: JSON.stringify(['project-1', 'parent']) } });
  state.task = task({ isCompleted: true }); ui.rerender(<NeoWorkContinuation {...props([state.task as MyTask, other])} />);
- expect(screen.getByRole('heading', { name: 'この仕事の結果を記録しました' })).toBeVisible();
- expect(screen.getByRole('combobox', { name: '続ける仕事' })).toHaveValue(JSON.stringify(['project-1', 'parent']));
+ expect(screen.getByRole('heading', { name: 'このタスクの結果を記録しました' })).toBeVisible();
+ expect(screen.getByRole('combobox', { name: '続けるタスク' })).toHaveValue(JSON.stringify(['project-1', 'parent']));
  ui.rerender(<NeoWorkContinuation {...props([parent, other], new Map([['project-1', { status: 'error', error: new Error('offline') }]]))} />);
  expect(screen.queryByRole('button', { name: '作業を始める' })).not.toBeInTheDocument();
- expect(screen.getByText(/この仕事の最新情報を取得できません/)).toBeVisible();
+ expect(screen.getByText(/このタスクの最新情報を取得できません/)).toBeVisible();
  expect(sendWorkflow).not.toHaveBeenCalled();
 });
 
@@ -145,7 +145,7 @@ it('uses actual checklist items on home and preserves them on failed save withou
 it('limits the checklist preview across lists and leaves completed items available to undo', async () => {
  state.checklists = ['持ちもの', '会場'].map((title, listIndex) => ({ id: `list-${listIndex}`, taskId: 'parent', title, order: listIndex, createdAt: new Date(), items: Array.from({ length: 4 }, (_, index) => ({ id: `item-${index}`, text: `${title} ${index}`, isChecked: index === 0, order: index })) }));
  render(<NeoWorkContinuation {...props([task()])} />); await act(async () => {});
- const checklist = within(screen.getByRole('region', { name: 'この仕事のチェックリスト' }));
+ const checklist = within(screen.getByRole('region', { name: 'このタスクのチェックリスト' }));
  for (const name of ['持ちもの持ちもの 1', '持ちもの持ちもの 2', '持ちもの持ちもの 3']) expect(checklist.getByRole('checkbox', { name })).toBeVisible();
  expect(checklist.getByRole('checkbox', { name: '会場会場 1' })).not.toBeVisible();
  expect(checklist.getByRole('checkbox', { name: '会場会場 0' })).not.toBeVisible();
