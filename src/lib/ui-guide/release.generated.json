@@ -1487,7 +1487,7 @@
     },
     {
       "path": "src/lib/firebase/firestore.ts",
-      "sha256": "49b9b7855c5ca01cb8cc485f81cbf45dc29fee7a982bc4d6585f68db3899aaf4"
+      "sha256": "957998eb120b3b8ba9e3de37e41227c80fc2209f4a3ed30f7338f396b4dc4f65"
     },
     {
       "path": "src/lib/firebase/moaiLabel.ts",
@@ -1771,7 +1771,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "bf4b0c9531c6a8133ad4b7d2a8b04ac9c9cd1c249bb8c4eb3a359702333cf269"
+      "sha256": "17bd8716424140720c0c0a2df834d4653f35d23b65711e7f9b736563e3af4e37"
     },
     {
       "path": "src/lib/ui-guide/verification.json",

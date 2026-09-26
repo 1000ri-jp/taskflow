@@ -495,7 +495,8 @@ export async function createProjectTask(
     calculatedStartDate = now;
   }
 
-  const taskData: Omit<Task, 'id' | 'projectId'> = {
+  const taskData: Omit<Task, 'id'> = {
+    projectId,
     listId: input.listId,
     title: input.title,
     description: input.description ?? '',

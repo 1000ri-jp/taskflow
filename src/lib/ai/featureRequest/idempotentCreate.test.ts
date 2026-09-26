@@ -15,6 +15,7 @@ it('creates once, returns the existing task after a lost response, and refuses c
   const input = { listId: 'requests', title: '通知を改善', description: '説明' };
   const receipt = { taskId: 'request-test', fingerprint: 'same-content' };
   const first = await createProjectTask('p', 'owner', input, receipt);
+  expect(fake.data.get('request-test')?.projectId).toBe('p');
   fake.data.get('request-test')!.title = '担当者が変更した名前';
   const retry = await createProjectTask('p', 'owner', input, receipt);
   expect(retry.task.id).toBe(first.task.id); expect(retry.task.title).toBe('担当者が変更した名前'); expect(fake.creates).toBe(1);
