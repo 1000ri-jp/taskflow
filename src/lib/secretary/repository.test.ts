@@ -234,7 +234,7 @@ describe('Secretary shared deadline changes', () => {
     const beforeComment = structuredClone(documents.get('projects/p/tasks/t/comments/c'));
     const saved = await actOnSecretary('u', { action: 'reschedule', proposalId: view.state.proposals[0].id, revision: view.state.revision, dueDate: '2026-09-21' });
     expect(documents.get('projects/p/tasks/t')).toEqual({ ...beforeTask, dueDate: new Date('2026-09-21T00:00:00Z'), durationDays: 8, isDueDateFixed: true,
-      updatedAt: expect.any(Date), secretaryMutationId: expect.any(String) });
+      updatedAt: expect.any(Date), secretaryMutationId: expect.any(String), apiChangedAt: expect.any(Object) });
     expect(documents.get('projects/p/tasks/t/comments/c')).toEqual(beforeComment);
     expect(saved.snapshot.tasks[0]).toMatchObject({ dueDate: '2026-09-21T00:00:00.000Z', durationDays: 8, isDueDateFixed: true, isCompleted: false });
     const log = [...documents].find(([key]) => key.includes('/activityLogs/'))![1];

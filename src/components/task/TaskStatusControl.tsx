@@ -27,7 +27,7 @@ export function TaskStatusControl({ task, tasks, userId, disabled = false, showS
         {TASK_STATUSES.map(option => <option key={option.id} value={option.id}
           disabled={option.id === 'waiting' || option.id !== 'archived' && cannotProgress}>{option.label}</option>)}
       </select>
-      {showCompleteButton && !task.isCompleted && !task.isArchived && !task.isAbandoned && task.taskKind !== 'review_request' && <Button size="sm" disabled={disabled || !userId || flow.locked || !!completionBlocked} onClick={() => void flow.run('complete')}>完了</Button>}
+      {showCompleteButton && !task.isCompleted && !task.isArchived && !task.isAbandoned && task.taskKind !== 'review_request' && <Button size="sm" disabled={disabled || !userId || flow.locked || !!completionBlocked} onClick={() => void flow.run('complete')}>{flow.busy && flow.pending?.action === 'complete' ? '完了を保存中…' : 'タスクを完了'}</Button>}
       {task.workState && !task.isArchived && !task.isCompleted && !task.parentTaskId && <Button size="sm" variant="outline" disabled={disabled || !userId || flow.locked} onClick={()=>void flow.run('resume')}>保留・待ちを解除</Button>}
       {task.isArchived && <Button size="sm" variant="outline" disabled={disabled || !userId || flow.locked} onClick={() => void flow.run('restore')}>復元</Button>}
       {flow.pending && <Button size="sm" variant="outline" disabled={flow.busy || disabled || !userId} onClick={() => void flow.run(flow.pending!.action)}>同じ操作を再試行</Button>}

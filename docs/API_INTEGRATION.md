@@ -225,3 +225,7 @@ Used for invalid state transitions such as restoring a task that is not archived
 3. pick a project and call `GET /api/projects/[projectId]/lists`
 4. call read or write task routes with the resolved `projectId` and `listId`
 5. handle `401`, `403`, `404`, and `409` distinctly
+
+## タスク変更の継続取得
+
+全件一覧の繰返し取得に代えて `GET /api/projects/{projectId}/tasks/changes` を利用できます。初回はcursorなしで全ページを同期し、完了時のcheckpointを保存します。以降はそのcheckpointから開始してnextCursorを辿り、ID/changeVersionで重複を吸収します。ページ期限切れは直前の完了checkpointから再開します。通常コメント・物理削除・旧クライアント等の未刻印更新には全件照合が必要です。詳細と実装例は [TASK_CHANGES_API.md](./TASK_CHANGES_API.md) にあります。

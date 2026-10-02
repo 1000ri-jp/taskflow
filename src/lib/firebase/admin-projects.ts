@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.server';
 import { updateTaskWithRecurrence } from '@/lib/task/recurrenceRepository';
 import { assertTaskDates, hasTaskDateChange } from '@/lib/task/dateValidation';
 import type { CommentAttachment, Priority, Task } from '@/types';
@@ -169,7 +170,7 @@ function toIsoString(value: unknown): string | null {
   return date ? date.toISOString() : null;
 }
 
-function mapTaskDataToTask(projectId: string, taskId: string, data: Record<string, unknown>): Task {
+export function mapTaskDataToTask(projectId: string, taskId: string, data: Record<string, unknown>): Task {
   return {
     id: taskId,
     projectId,
@@ -199,7 +200,7 @@ function mapTaskDataToTask(projectId: string, taskId: string, data: Record<strin
   };
 }
 
-function mapTaskToApiItem(task: Task): ProjectTaskItem {
+export function mapTaskToApiItem(task: Task): ProjectTaskItem {
   return {
     id: task.id,
     listId: task.listId,
@@ -523,7 +524,7 @@ export async function createProjectTask(
 
   assertTaskDates(taskData);
   const tasksRef = db.collection('projects').doc(projectId).collection('tasks');
-  const taskRef = receipt ? tasksRef.doc(receipt.taskId) : await tasksRef.add(taskData);
+  const taskRef = receipt ? tasksRef.doc(receipt.taskId) : await tasksRef.add(stampTaskWrite(tasksRef, taskData));
   if (receipt) {
     await db.runTransaction(async transaction => {
       const existing = await transaction.get(taskRef);
@@ -531,7 +532,7 @@ export async function createProjectTask(
         if (existing.data()?.createdBy !== userId || existing.data()?.requestFingerprint !== receipt.fingerprint) throw new Error('REQUEST_CONFLICT');
         return;
       }
-      transaction.create(taskRef, { ...taskData, requestFingerprint: receipt.fingerprint });
+      transaction.create(taskRef, stampTaskWrite(taskRef, { ...taskData, requestFingerprint: receipt.fingerprint }));
     });
   }
   const task = await getProjectTaskInternal(projectId, taskRef.id);
@@ -666,9 +667,9 @@ export async function updateProjectTask(
     const current = await tx.get(taskRef);
     if (!current.exists) throw new Error('NOT_FOUND');
     assertTaskDates({ ...current.data(), ...updateData });
-    tx.update(taskRef, updateData);
+    tx.update(taskRef, stampTaskWrite(taskRef, updateData));
   });
-  else await taskRef.update(updateData);
+  else await taskRef.update(stampTaskWrite(taskRef, updateData));
 
   const task = await getProjectTaskInternal(projectId, taskId);
   if (!task) {
@@ -697,12 +698,13 @@ export async function archiveProjectTask(
     throw new Error('ALREADY_ARCHIVED');
   }
 
-  await db.collection('projects').doc(projectId).collection('tasks').doc(taskId).update({
+  const taskRef = db.collection('projects').doc(projectId).collection('tasks').doc(taskId);
+  await taskRef.update(stampTaskWrite(taskRef, {
     isArchived: true,
     archivedAt: new Date(),
     archivedBy: userId,
     updatedAt: new Date(),
-  });
+  }));
 
   const task = await getProjectTaskInternal(projectId, taskId);
   if (!task) {
@@ -729,12 +731,13 @@ export async function restoreProjectTask(
     throw new Error('NOT_ARCHIVED');
   }
 
-  await db.collection('projects').doc(projectId).collection('tasks').doc(taskId).update({
+  const taskRef = db.collection('projects').doc(projectId).collection('tasks').doc(taskId);
+  await taskRef.update(stampTaskWrite(taskRef, {
     isArchived: false,
     archivedAt: null,
     archivedBy: null,
     updatedAt: new Date(),
-  });
+  }));
 
   const task = await getProjectTaskInternal(projectId, taskId);
   if (!task) {

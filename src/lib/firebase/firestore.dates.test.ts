@@ -1,16 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mock = vi.hoisted(() => ({ add: vi.fn(), update: vi.fn(), get: vi.fn(), txUpdate: vi.fn(), txSet: vi.fn(), moai: vi.fn() }));
+const mock = vi.hoisted(() => ({ paths: false, add: vi.fn(), update: vi.fn(), get: vi.fn(), txUpdate: vi.fn(), txSet: vi.fn(), moai: vi.fn() }));
 vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(() => 'tasks'), doc: vi.fn(() => 'task-ref'), addDoc: mock.add, updateDoc: mock.update,
+  collection: vi.fn((_db, ...parts: string[]) => mock.paths ? { path: parts.join('/') } : 'tasks'),
+  doc: vi.fn((parent, ...parts: string[]) => mock.paths ? { path: parts.length ? parts.join('/') : `${parent.path}/generated` } : 'task-ref'), addDoc: mock.add, updateDoc: mock.update,
   runTransaction: vi.fn(async (_db, callback) => callback({ get: mock.get, update: mock.txUpdate, set: mock.txSet })),
   deleteDoc: vi.fn(), getDoc: vi.fn(async () => ({ id: 'p', exists: () => true, data: () => ({ memberIds: ['u','user-1'], isArchived: false }) })), getDocs: vi.fn(), getDocsFromServer: vi.fn(), setDoc: vi.fn(), query: vi.fn(), where: vi.fn(),
   orderBy: vi.fn(), onSnapshot: vi.fn(), serverTimestamp: () => 'SERVER_TIMESTAMP', writeBatch: vi.fn(), Timestamp: class {}, documentId: vi.fn(), limit: vi.fn(),
 }));
 vi.mock('./moaiLabel', () => ({ ensureMoaiLabel: mock.moai }));
 vi.mock('./config', () => ({ getFirebaseDb: () => 'db', getFirebaseAuth: () => ({currentUser:{uid:'u',displayName:'本人'}}) }));
-import { createTask, updateTask } from './firestore';
+import { archiveTask, createTask, restoreTask, updateTask } from './firestore';
 import { viewTask } from '@/test/taskViewFixtures';
-beforeEach(() => { vi.clearAllMocks(); mock.add.mockResolvedValue({id:'new'}); });
+beforeEach(() => { vi.clearAllMocks(); mock.paths = false; mock.add.mockResolvedValue({id:'new'}); });
 describe('task write date guard', () => {
   it('blocks invalid creation before writing and permits a same-day task', async () => {
     const task = viewTask({ startDate: new Date('2026-09-20T00:00:00+09:00'), dueDate: new Date('2026-09-16T00:00:00+09:00') });
@@ -63,4 +64,16 @@ it('records the saved before/after values and actor in the same transaction as t
   expect(mock.txUpdate).toHaveBeenCalledExactlyOnceWith('task-ref',{title:'変更',dueDate,updatedAt:'SERVER_TIMESTAMP'});
   expect(mock.txSet).toHaveBeenCalledExactlyOnceWith('task-ref',expect.objectContaining({targetId:'t',targetName:'変更',userId:'u',userName:'本人',createdAt:'SERVER_TIMESTAMP',changes:[{field:'title',oldValue:'元',newValue:'変更'},{field:'dueDate',oldValue:'2026-09-16T00:00:00.000Z',newValue:'2026-09-18T00:00:00.000Z'}]}));
   expect(mock.update).not.toHaveBeenCalled();
+});
+
+it('stamps browser creation, edits, archive and restore atomically, leaving activity records unstamped', async () => {
+  mock.paths = true;
+  await createTask('p', viewTask());
+  expect(mock.add).toHaveBeenCalledWith({ path: 'projects/p/tasks' }, expect.objectContaining({ apiChangedAt: 'SERVER_TIMESTAMP' }));
+  mock.get.mockResolvedValue({ exists: () => true, data: () => ({ title: 'old', listId: 'todo' }) });
+  await updateTask('p', 't', { title: 'new', listId: 'done' });
+  expect(mock.txUpdate).toHaveBeenCalledWith({ path: 'projects/p/tasks/t' }, expect.objectContaining({ title: 'new', listId: 'done', apiChangedAt: 'SERVER_TIMESTAMP' }));
+  expect(mock.txSet.mock.calls[0][1]).not.toHaveProperty('apiChangedAt');
+  await archiveTask('p', 't', 'u'); await restoreTask('p', 't');
+  expect(mock.update.mock.calls.map(args => args[1])).toMatchObject([{ isArchived: true, apiChangedAt: 'SERVER_TIMESTAMP' }, { isArchived: false, apiChangedAt: 'SERVER_TIMESTAMP' }]);
 });

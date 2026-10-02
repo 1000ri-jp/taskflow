@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.server';
 import { expandTaskReviews, requiresReviewResponse } from './reviews';
 import { prepareRecurrence } from './recurrenceRepository';
 import { getAdminDb } from '@/lib/firebase/admin';
@@ -45,8 +46,8 @@ export async function applyWorkflow(uid: string, projectId: string, taskId: stri
     if (task.reviewRecordId) {
       const parent = tasks.find(t => t.id === task.parentTaskId)!;
       const saved = parent.reviewRequests![task.reviewRecordId];
-      tx.update(ref.collection('tasks').doc(parent.id), { [`reviewRequests.${task.reviewRecordId}`]: { ...saved, cycle: plan.patch.review ?? task.review, updatedAt: now.toISOString() }, updatedAt: now });
-    } else tx.update(ref.collection('tasks').doc(taskId), { ...plan.patch, ...('clearTaskKind' in plan && plan.clearTaskKind ? { taskKind: FieldValue.delete() } : {}), updatedAt: now });
+      tx.update(ref.collection('tasks').doc(parent.id), stampTaskWrite(ref.collection('tasks').doc(parent.id), { [`reviewRequests.${task.reviewRecordId}`]: { ...saved, cycle: plan.patch.review ?? task.review, updatedAt: now.toISOString() }, updatedAt: now }));
+    } else tx.update(ref.collection('tasks').doc(taskId), stampTaskWrite(ref.collection('tasks').doc(taskId), { ...plan.patch, ...('clearTaskKind' in plan && plan.clearTaskKind ? { taskKind: FieldValue.delete() } : {}), updatedAt: now }));
     const record = { projectId, targetType: 'task', targetId: taskId, targetName: task.title, action: 'update', userId: uid, userName, createdAt: now,
       workflowAction: input.action, sourceTaskId: task.parentTaskId ?? taskId,
       changes: [{ field: 'workEvent', newValue: plan.text }],

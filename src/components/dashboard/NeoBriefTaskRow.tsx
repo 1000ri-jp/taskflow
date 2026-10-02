@@ -92,7 +92,6 @@ export function NeoBriefTaskHeading({ task, now, members, names, requester, assi
     </div>
   </div>;
   return <div className="flex min-h-8 items-center gap-2">
-    {completionControl}
     <ProjectMark name={task.projectName} color={task.projectColor} />
     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
       <p className="flex min-w-[min(100%,10rem)] flex-1 flex-wrap items-center gap-x-3 gap-y-1 break-words text-sm"><span className="min-w-0 font-medium">{taskHref ? <Link prefetch={false} href={taskHref} target={taskLinkTarget} rel={taskLinkTarget === '_blank' ? 'noreferrer' : undefined}>{displayTitle ?? task.title}</Link> : displayTitle ?? task.title}</span>
@@ -119,6 +118,7 @@ export function NeoBriefTaskHeading({ task, now, members, names, requester, assi
           {miniLayout && parentTitle && <span className="min-w-0 max-w-full break-words text-xs text-muted-foreground" title={`親タスク: ${parentTitle}`}>{parentTitle}</span>}
         </span>
       </p>
+      {completionControl}
       <span className="ml-auto inline-flex items-center"><NeoBriefTaskMeta task={task} members={members} names={names} requester={requester} assigneeLimit={assigneeLimit} showPriority={false} /></span>
     </div>
     <span className="inline-flex h-5 w-6 shrink-0 items-center justify-end" aria-hidden={priority ? undefined : true}>

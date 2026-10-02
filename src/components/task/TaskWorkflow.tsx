@@ -3,10 +3,12 @@ import { useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { HelpText } from '@/components/ui/typography';
 import { useTaskWorkflow } from '@/hooks/useTaskWorkflow';
 import { reviewOutcome, workflowReceiptMessage, type WorkflowReceipt, type WorkflowAction } from '@/lib/task/workflow';
 import { uploadCommentAttachment } from '@/lib/firebase/storage';
 import { isE2EMockAuthEnabled } from '@/lib/firebase/testMode';
+import { completionBlockReason } from '@/lib/task/completion';
 import { reviewCanResubmit } from '@/lib/task/continuation';
 import { TaskMaterials } from './TaskMaterials';
 import type { CommentAttachment, Task } from '@/types';
@@ -43,6 +45,7 @@ export function TaskWorkflow({ task, tasks, userId, names = {}, continuation = f
     finally { uploadGuard.current = false; setUploading(false); }
   };
   const review = task.taskKind === 'review_request';
+  const completionBlocked = !review && !task.isCompleted ? completionBlockReason(task, tasks) : null;
   const outcome = reviewOutcome(task);
   const parent = tasks.find(t => t.projectId === task.projectId && t.id === task.parentTaskId);
   const validParent = parent && !parent.isArchived && !parent.isAbandoned && !parent.isCompleted;
@@ -75,12 +78,13 @@ export function TaskWorkflow({ task, tasks, userId, names = {}, continuation = f
     </div>}
     <div className={compact ? 'contents' : 'flex flex-wrap gap-2'}>
       {!review && !task.isCompleted && task.workProgress !== 'started' && <Button size="sm" variant="outline" disabled={locked} onClick={() => void perform('start')}>作業を始める</Button>}
-      {!review && (!continuation || task.workProgress === 'started' || task.isCompleted) && <Button size="sm" variant="outline" disabled={locked} onClick={() => void perform(task.isCompleted ? 'reopen' : 'complete')}>{task.isCompleted ? '未完了に戻す' : '完了にする'}</Button>}
+      {!review && <Button size="sm" variant={task.isCompleted ? 'outline' : 'default'} disabled={locked || !!completionBlocked} onClick={() => void perform(task.isCompleted ? 'reopen' : 'complete')}>{flow.busy && flow.pending?.action === 'complete' ? '完了を保存中…' : task.isCompleted ? '未完了に戻す' : 'タスクを完了'}</Button>}
       {canReply && <><Button size="sm" className="h-auto whitespace-normal" disabled={locked} onClick={() => void perform('approve', note)}>{handsOff ? '確認OK・' + next.title + 'へ渡す' : '確認OK'}</Button>{continuation && !showCorrection ? <Button size="sm" variant="outline" disabled={locked} onClick={() => setShowCorrection(true)}>修正を依頼</Button> : <Button size="sm" variant="outline" disabled={locked || !note.trim()} onClick={() => void perform('request_changes', note)}>修正が必要</Button>}</>}
       {canResubmit && <Button size="sm" disabled={locked || !note.trim()} onClick={() => void perform('resubmit', note)}>再確認を依頼</Button>}
       {canCorrectApproval && !correctingApproval && <Button size="sm" variant="outline" disabled={locked} onClick={() => setCorrectingApproval(true)}>確認結果を訂正する</Button>}
       {flow.pending && <Button size="sm" disabled={flow.busy || uploading} onClick={() => void perform(flow.pending!.action)}>同じ操作を再試行</Button>}
     </div>
+    {completionBlocked && <HelpText>{completionBlocked}</HelpText>}
     {correctingApproval && canCorrectApproval && <div className="space-y-2 rounded-md border p-3 text-xs">
       <p>元の確認OKを残し、訂正を追加します。後続の作業は自動で戻しません。</p>
       <Textarea aria-label="訂正する理由" rows={2} maxLength={2000} disabled={locked} value={note} onChange={event => setNote(event.target.value)} />

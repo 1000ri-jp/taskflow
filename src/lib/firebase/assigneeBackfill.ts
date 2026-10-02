@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.client';
 import { collection, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from './config';
 import { isE2EMockAuthEnabled } from './testMode';
@@ -26,7 +27,7 @@ export async function applyProjectAssignee(projectId: string, taskIds: string[],
     const plan = planAssigneeBackfill(tasks, taskIds, assigneeId, project.data().defaultAssigneeId, project.data().memberIds);
     const at = serverTimestamp();
     for (const [index, row] of plan.entries()) {
-      tx.update(refs[index], { assigneeIds: row.assigneeIds, updatedAt: at });
+      tx.update(refs[index], stampTaskWrite(refs[index], { assigneeIds: row.assigneeIds, updatedAt: at }));
       tx.set(doc(collection(db, 'projects', projectId, 'activityLogs')), { projectId, targetType: 'task', targetId: row.id, targetName: tasks[row.id].title, action: 'assign', userId: actor.uid, userName: actor.displayName || '操作者不明', changes: [{ field: 'assigneeIds', oldValue: '', newValue: assigneeId }], createdAt: at });
     }
   });

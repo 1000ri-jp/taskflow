@@ -15,7 +15,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "56b8f4fd621dbb11cdcec443860db92ea370a580cd4998b2840a49325187b678"
+      "sha256": "87d82328223ad78043d35ab8d5868cb6e183478d0c31a042a832d6731cf37964"
     },
     {
       "path": "scripts/ui-guide.mjs",
@@ -443,7 +443,7 @@
     },
     {
       "path": "src/components/dashboard/NeoBriefTaskRow.tsx",
-      "sha256": "70c280a4fd377d5c09e51d7a7cec5877148fd885e4622013451a02ed811b2f9a"
+      "sha256": "ebf73bd6a83236de68bdb76c5b4583856315dd61aa0ebc360307fbae38c20b14"
     },
     {
       "path": "src/components/dashboard/NeoCalendar.tsx",
@@ -451,7 +451,7 @@
     },
     {
       "path": "src/components/dashboard/NeoDashboard.tsx",
-      "sha256": "8f032a80ae77746b8e382a826d67c4a32527dd8506df217439ec322db510c281"
+      "sha256": "14321c59d2d3a38723e3a179601b20ab8af16c2e751dd51a39084fb303f6629b"
     },
     {
       "path": "src/components/dashboard/NeoDayAgenda.tsx",
@@ -479,7 +479,7 @@
     },
     {
       "path": "src/components/dashboard/NeoToday.tsx",
-      "sha256": "f0851e1420dfab2928cfa9fb61e261fe21860412a993adf563f3787474295e4a"
+      "sha256": "646018f2f9972ae875891d9184e239cd0cdc62757dfa8f00968401849a805346"
     },
     {
       "path": "src/components/dashboard/NeoWorkContinuation.tsx",
@@ -535,7 +535,7 @@
     },
     {
       "path": "src/components/desktop/DesktopBriefTaskActions.tsx",
-      "sha256": "2407ddb413647bcdcf8bd5677822965e38a503b8ddaf9ad105201de4efce276c"
+      "sha256": "25c20a42d224c597a5b61b91056fba556fa71b0d21fd5aa7acf4d70ab5e1f46c"
     },
     {
       "path": "src/components/desktop/DesktopMiniApp.tsx",
@@ -727,7 +727,7 @@
     },
     {
       "path": "src/components/task/TaskDetailModal.tsx",
-      "sha256": "278a85150a792ee71b993a16f046f2e4f6bba1644e2ba386450101af6809335c"
+      "sha256": "040a038d7a6eb10f677d7fbbc6d90cc64bd71ab6ee32b61514f6bd3ccbb00a93"
     },
     {
       "path": "src/components/task/TaskHistoryTimeline.tsx",
@@ -767,7 +767,7 @@
     },
     {
       "path": "src/components/task/TaskStatusControl.tsx",
-      "sha256": "74e94e740407f21e1aa5935e537e70423f6c0496aea16ff331670d0024ade471"
+      "sha256": "f767c727e42cbb319e717978a1b70f7e58846af7825f4d93157ee1dd3a6cb100"
     },
     {
       "path": "src/components/task/TaskSubtaskCreator.tsx",
@@ -779,7 +779,7 @@
     },
     {
       "path": "src/components/task/TaskWorkflow.tsx",
-      "sha256": "edb213414dad63c19a3272574f2dd8b4008c3bd71c0c94ae28da01054e6347c2"
+      "sha256": "945b7612328cef1b2b7b9db1382fd9970faf28918250afa1b0f0978996a293fb"
     },
     {
       "path": "src/components/ui-guide/ExtendedPreviews.module.css",
@@ -1459,7 +1459,7 @@
     },
     {
       "path": "src/lib/firebase/assigneeBackfill.ts",
-      "sha256": "b34932b19c9841dbdea1530bd215905bc204d062caf71e385e4de8103451768b"
+      "sha256": "0b7ad6cd6dbe36d1cdc0461f566c8a0a74bad88214ad831e6ad8d168f440f521"
     },
     {
       "path": "src/lib/firebase/auth.ts",
@@ -1471,7 +1471,7 @@
     },
     {
       "path": "src/lib/firebase/checklist-item.ts",
-      "sha256": "25da2cb69963bdd2a5b96c5264023b9cc1979928e9287bc53a2e16d02cf4c295"
+      "sha256": "b9be7dfa583b9019047bd6940f707bb7fafdec7ff83ed4e720c39a712341a1ab"
     },
     {
       "path": "src/lib/firebase/checklist-order.ts",
@@ -1487,7 +1487,7 @@
     },
     {
       "path": "src/lib/firebase/firestore.ts",
-      "sha256": "957998eb120b3b8ba9e3de37e41227c80fc2209f4a3ed30f7338f396b4dc4f65"
+      "sha256": "dc02396ab662ea20b54757368a1ffa1a5756d3a5b95dfd7ecff57ef44c9e9081"
     },
     {
       "path": "src/lib/firebase/moaiLabel.ts",
@@ -1507,7 +1507,7 @@
     },
     {
       "path": "src/lib/firebase/subtask-order.ts",
-      "sha256": "9bed18329666f545b9f81ec92f9a9c6db8b35a31ebbc207c15185cd541d7b9ce"
+      "sha256": "0ca5606330d9612bedaa0dcf0a1700b191ccd1b525c04df0cc2e2af98e0d8c6a"
     },
     {
       "path": "src/lib/firebase/taskParent.ts",
@@ -1579,7 +1579,7 @@
     },
     {
       "path": "src/lib/secretary/repository.ts",
-      "sha256": "fb025f5466ae74d5745deb7413a2e0bc543a9b8bc26f8881fdda11cece672631"
+      "sha256": "d1c0a9f1ab578579a5580e4a6c41a27c191815d760535d8aedb2a8c30549f2b7"
     },
     {
       "path": "src/lib/secretary/types.ts",
@@ -1612,6 +1612,18 @@
     {
       "path": "src/lib/task/automationTypes.ts",
       "sha256": "b4aedd3032ffecd8c32c57f714f6ca74e7cec736d617e7ef1a2471a87a33b895"
+    },
+    {
+      "path": "src/lib/task/changeStamp.client.ts",
+      "sha256": "b6689dcf8b382c83e8efd64931cfbc5854d137a316511ea031b19e11fa59d0c1"
+    },
+    {
+      "path": "src/lib/task/changeStamp.server.ts",
+      "sha256": "1d016437b9f8ac35c090b6bc617d06b11104ae1a8544f8389c7e48e5c3b50fe7"
+    },
+    {
+      "path": "src/lib/task/changeStamp.ts",
+      "sha256": "8ed8cdf8f8f8ab7dd5df941bba6e58eefa63691cea63f7ed9c6924cd3bd90d8b"
     },
     {
       "path": "src/lib/task/commentSubmission.ts",
@@ -1683,7 +1695,7 @@
     },
     {
       "path": "src/lib/task/organizationIdentity.ts",
-      "sha256": "f1a1fbeda2d62f7c82bd126a46a8c5d813aaa9534c9deaca5211ac998e4f39ff"
+      "sha256": "d05aa065d3dd209ed21e8515e0e097050e41321bb94ac0de2bc85534de95f416"
     },
     {
       "path": "src/lib/task/organizationMock.ts",
@@ -1691,7 +1703,7 @@
     },
     {
       "path": "src/lib/task/organizationRepository.ts",
-      "sha256": "372554be15581256108d5258cd63e3cd2285f71082878d24c6e8b0b0d75938d2"
+      "sha256": "99f120cbd639f0626d1f4cefdea98996cb11eba872e35aa4ee519629fd680eaa"
     },
     {
       "path": "src/lib/task/organizationTypes.ts",
@@ -1739,7 +1751,7 @@
     },
     {
       "path": "src/lib/task/recurrenceRepository.ts",
-      "sha256": "f0a5ebeb901f346b9382c065d55175d9bf011186bd9592e8b3a687f116bbea03"
+      "sha256": "b38c713ead1249b478c9b9f72b89254c85132f044879bd57b3ca2420931cb31e"
     },
     {
       "path": "src/lib/task/reviews.ts",
@@ -1771,7 +1783,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "17bd8716424140720c0c0a2df834d4653f35d23b65711e7f9b736563e3af4e37"
+      "sha256": "a93e12d8f768758e98bb46cc4e4ded098475ce8a22bac3e14de204ccd608956e"
     },
     {
       "path": "src/lib/ui-guide/verification.json",

@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { getAdminDb } from './admin';
-import { createProjectTask } from './admin-projects';
+import { archiveProjectTask, createProjectTask, restoreProjectTask, updateProjectTask } from './admin-projects';
 
 vi.mock('./admin', () => ({ getAdminDb: vi.fn() }));
 const docs = new Map<string, Record<string, unknown>>();
@@ -9,10 +9,12 @@ function snapshot(path: string) {
   return { id: path.split('/').at(-1), exists: docs.has(path), data: () => docs.get(path) };
 }
 function reference(path: string) {
-  return { path, id: path.split('/').at(-1), get: async () => snapshot(path), collection: (name: string) => collection(`${path}/${name}`) };
+  return { path, id: path.split('/').at(-1), get: async () => snapshot(path), collection: (name: string) => collection(`${path}/${name}`),
+    update: async (data: Record<string, unknown>) => { writes(path, data); docs.set(path, { ...docs.get(path), ...data }); } };
 }
 function collection(path: string) {
   const value = {
+    path,
     doc: (id: string) => reference(`${path}/${id}`),
     get: async () => ({ docs: [...docs.keys()].filter(key => key.startsWith(`${path}/`) && !key.slice(path.length + 1).includes('/')).map(snapshot) }),
     orderBy: () => value,
@@ -38,6 +40,7 @@ it.each([
   expect(result.task.assigneeIds).toEqual(expected);
   expect(docs.get('projects/p/tasks/new')?.assigneeIds).toEqual(expected);
   expect(writes).toHaveBeenCalledOnce();
+  expect(docs.get('projects/p/tasks/new')).toHaveProperty('apiChangedAt');
 });
 it('does not assign a departed default or rewrite existing tasks', async () => {
   docs.set('projects/p', { memberIds: ['other'], defaultAssigneeId: 'main' });
@@ -70,4 +73,15 @@ it('does not write when project retrieval fails', async () => {
   docs.delete('projects/p');
   await expect(createProjectTask('p', 'other', { listId: 'list', title: '新しい仕事' })).rejects.toThrow('NOT_FOUND');
   expect(writes).not.toHaveBeenCalled();
+});
+
+it('stamps API edit, list movement, archive and restore without changing the legacy response shape', async () => {
+  docs.set('projects/p/tasks/t', { title: 'old', listId: 'list', isArchived: false, createdAt: new Date(1), updatedAt: new Date(1) });
+  const changed = await updateProjectTask('p', 't', { title: 'new' });
+  expect(changed.task.title).toBe('new'); expect(changed.task).not.toHaveProperty('apiChangedAt');
+  await updateProjectTask('p', 't', { listId: 'list' });
+  await archiveProjectTask('p', 't', 'main'); await restoreProjectTask('p', 't');
+  expect(writes).toHaveBeenCalledTimes(4);
+  for (const [, data] of writes.mock.calls) expect(data).toHaveProperty('apiChangedAt');
+  expect(docs.get('projects/p/tasks/t')).toMatchObject({ title: 'new', isArchived: false });
 });

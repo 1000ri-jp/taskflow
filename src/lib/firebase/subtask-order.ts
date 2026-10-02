@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.client';
 import { collection, doc, getDocs, query, runTransaction, where } from 'firebase/firestore';
 import { getFirebaseDb } from './config';
 import { getTaskSubtasks } from '@/lib/task/subtasks';
@@ -41,7 +42,7 @@ export async function reorderTaskSubtasks(
     const hiddenIds = oldOrder.filter(id => !currentIds.includes(id));
     const nextOrder = [...orderedIds, ...hiddenIds.filter(id => !orderedIds.includes(id))];
     if (oldOrder.length === nextOrder.length && oldOrder.every((id, index) => id === nextOrder[index])) return;
-    transaction.update(parentRef, { subtaskOrderIds: nextOrder });
+    transaction.update(parentRef, stampTaskWrite(parentRef, { subtaskOrderIds: nextOrder }));
   });
 }
 

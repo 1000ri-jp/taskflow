@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.client';
 import { taskEditChanges } from '@/lib/task/history/recentChanges';
 import { ensureMoaiLabel } from './moaiLabel';
 import { expandTaskReviews } from '@/lib/task/reviews';
@@ -542,7 +543,7 @@ export async function createTask(
       if (!parent.exists() || parent.data().parentTaskId || parent.data().taskKind === 'review_request' || parent.data().isArchived || parent.data().isAbandoned || parent.data().listId !== data.listId || (parent.data().projectId && parent.data().projectId !== projectId)) throw new Error('親タスクが変更されました。タスクを開き直してください。');
       const assigneeIds = resolveTaskAssignees({ explicit: data.assigneeIds, parent: { assigneeIds: parent.data().assigneeIds ?? [] } });
       if (assigneeIds.some(id => !project.data().memberIds?.includes(id))) throw new Error('担当者がプロジェクトのメンバーに含まれていません。');
-      tx.set(taskRef, { ...taskData, assigneeIds, projectId, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      tx.set(taskRef, stampTaskWrite(taskRef, { ...taskData, assigneeIds, projectId, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }));
     });
     return taskRef.id;
   }
@@ -554,12 +555,12 @@ export async function createTask(
   const listDefaultAssigneeId = list.exists() && typeof list.data().defaultAssigneeId === 'string' ? list.data().defaultAssigneeId : null;
   const assigneeIds = resolveTaskAssignees({ explicit: data.assigneeIds, defaultAssigneeId: project.defaultAssigneeId, listDefaultAssigneeId, memberIds: project.memberIds });
   if (assigneeIds.some(id => !project.memberIds.includes(id))) throw new Error('担当者がプロジェクトのメンバーに含まれていません。');
-  const taskRef = await addDoc(collection(db, 'projects', projectId, 'tasks'), {
+  const taskRef = await addDoc(collection(db, 'projects', projectId, 'tasks'), stampTaskWrite(collection(db, 'projects', projectId, 'tasks'), {
     ...taskData, assigneeIds,
     projectId,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  });
+  }));
   return taskRef.id;
 }
 
@@ -594,7 +595,7 @@ export async function updateTask(
     const changes = taskEditChanges(before, patch);
     if (!changes.length) return;
     const at = serverTimestamp();
-    tx.update(ref, { ...patch, updatedAt: at });
+    tx.update(ref, stampTaskWrite(ref, { ...patch, updatedAt: at }));
     tx.set(logRef, { projectId, targetType: 'task', targetId: taskId,
       targetName: String(patch.title ?? before.title ?? ''), action: 'update',
       userId: actor.uid, userName: actor.displayName || '操作者不明', changes, createdAt: at });
@@ -610,12 +611,12 @@ export async function archiveTask(
   userId: string
 ): Promise<void> {
   const db = getFirebaseDb();
-  await updateDoc(doc(db, 'projects', projectId, 'tasks', taskId), {
+  await updateDoc(doc(db, 'projects', projectId, 'tasks', taskId), stampTaskWrite(doc(db, 'projects', projectId, 'tasks', taskId), {
     isArchived: true,
     archivedAt: serverTimestamp(),
     archivedBy: userId,
     updatedAt: serverTimestamp(),
-  });
+  }));
 }
 
 /**
@@ -626,12 +627,12 @@ export async function restoreTask(
   taskId: string
 ): Promise<void> {
   const db = getFirebaseDb();
-  await updateDoc(doc(db, 'projects', projectId, 'tasks', taskId), {
+  await updateDoc(doc(db, 'projects', projectId, 'tasks', taskId), stampTaskWrite(doc(db, 'projects', projectId, 'tasks', taskId), {
     isArchived: false,
     archivedAt: null,
     archivedBy: null,
     updatedAt: serverTimestamp(),
-  });
+  }));
 }
 
 /**

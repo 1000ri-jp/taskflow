@@ -191,7 +191,7 @@ describe('Mini briefing', () => {
   });
 });
 
-it.each([false, true])('places the completion control before task content when miniLayout is %s', miniLayout => {
+it.each([false, true])('keeps completion beside task content without narrowing the dashboard title (miniLayout: %s)', miniLayout => {
   const taskActions = (_task: typeof props.tasks[number], renderControls?: import('@/components/desktop/DesktopBriefTaskActions').BriefTaskControlsRenderer) => renderControls?.({
     actions: <button type="button" role="checkbox" aria-checked="false" aria-label="出展準備を完了にする" />,
     progress: <button type="button" aria-label="進捗" />,
@@ -200,5 +200,6 @@ it.each([false, true])('places the completion control before task content when m
   render(<NeoMorningBrief {...props} miniLayout={miniLayout} taskActions={taskActions} />);
   const checkbox = screen.getByRole('checkbox', { name: '出展準備を完了にする' });
   const title = screen.getByText('出展準備');
-  expect(checkbox.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const order = miniLayout ? Node.DOCUMENT_POSITION_FOLLOWING : Node.DOCUMENT_POSITION_PRECEDING;
+  expect(checkbox.compareDocumentPosition(title) & order).toBeTruthy();
 });
