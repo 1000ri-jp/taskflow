@@ -66,7 +66,7 @@
     "html2canvas-pro": "2.4.2",
     "lodash": "^4.17.21",
     "lucide-react": "^0.577.0",
-    "next": "^16.1.6",
+    "next": "16.3.6",
     "react": "^19.2.4",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.4",
@@ -90,7 +90,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "baseline-browser-mapping": "^2.10.0",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^16.1.6",
+    "eslint-config-next": "16.3.6",
     "jsdom": "^28.1.0",
     "msw": "^2.12.10",
     "tailwindcss": "^4.2.1",
@@ -100,6 +100,15 @@
   },
   "overrides": {
     "@tootallnate/once": "3.0.1",
+    "@firebase/firestore": {
+      "@grpc/grpc-js": "1.13.6"
+    },
+    "google-gax": {
+      "@grpc/grpc-js": "1.14.5"
+    },
+    "brace-expansion@1": "1.1.21",
+    "brace-expansion@2": "2.1.7",
+    "brace-expansion@5": "5.0.12",
     "postcss": "8.5.28",
     "websocket-driver": "0.7.5"
   }
