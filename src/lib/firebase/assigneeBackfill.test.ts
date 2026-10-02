@@ -18,7 +18,7 @@ describe('reviewed assignee backfill',()=>{
   it('writes only selected tasks and logs together; failure commits nothing and permits retry',async()=>{
     fake.fail=true; await expect(applyProjectAssignee('p',['a'],'v')).rejects.toThrow('保存失敗'); expect(fake.writes).toEqual([]);
     fake.fail=false; await applyProjectAssignee('p',['a'],'v'); expect(fake.writes).toHaveLength(2);
-    expect(fake.writes[0]).toEqual([expect.objectContaining({id:'a'}),{assigneeIds:['v'],updatedAt:0}]);
+    expect(fake.writes[0]).toEqual([expect.objectContaining({id:'a'}),{assigneeIds:['v'],updatedAt:0,apiChangedAt:0}]);
     expect(fake.tasks.b.assigneeIds).toEqual(['u']);
   });
   it('rejects the entire batch if assignment or project default changed since preview',async()=>{

@@ -27,7 +27,7 @@ beforeEach(() => {
 it('writes the new task with its parent atomically and leaves the parent unchanged', async () => {
   const before = structuredClone(fake.data);
   expect(await createTask('p', data)).toBe('new-child');
-  expect(fake.writes).toEqual([{ path: 'projects/p/tasks/new-child', data: { ...data, projectId: 'p', createdAt: 'SERVER_TIME', updatedAt: 'SERVER_TIME' } }]);
+  expect(fake.writes).toEqual([{ path: 'projects/p/tasks/new-child', data: { ...data, projectId: 'p', createdAt: 'SERVER_TIME', updatedAt: 'SERVER_TIME', apiChangedAt: 'SERVER_TIME' } }]);
   expect(fake.data).toEqual(before);
   expect(fake.addDoc).not.toHaveBeenCalled();
 });

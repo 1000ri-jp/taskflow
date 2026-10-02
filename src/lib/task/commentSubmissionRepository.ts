@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.server';
 import { getAdminDb } from '@/lib/firebase/admin';
 import type { Transaction } from 'firebase-admin/firestore';
 import { organizationAccess } from './organizationRepository';
@@ -60,7 +61,7 @@ export async function submitTaskCommentInTransaction(tx: Transaction, uid: strin
     const request: TaskReviewRequest = { commentId: input.id, assigneeIds: [...new Set(input.review.assigneeIds)], dueDate: input.review.dueDate,
       createdBy: uid, createdAt: time.toISOString(), updatedAt: time.toISOString(),
       cycle: { ...(input.review.urgency ? { urgency: input.review.urgency } : {}), policy: input.review.policy ?? 'any', round: 1, request: input.review.content.trim(), attachments: input.attachments, requestedAt: time.toISOString(), responses: {}, nextTaskId: input.review.nextTaskId ?? null } };
-    tx.update(parentRef, { [`reviewRequests.${childId}`]: request, updatedAt: time });
+    tx.update(parentRef, stampTaskWrite(parentRef, { [`reviewRequests.${childId}`]: request, updatedAt: time }));
   }
   recipients.forEach(userId => {
     const isReviewer = Boolean(input.review?.assigneeIds.includes(userId));

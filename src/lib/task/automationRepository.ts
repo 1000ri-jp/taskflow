@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.server';
 import { completionBlockReason } from './completion';
 import { prepareRecurrence } from './recurrenceRepository';
 import { createHash, randomUUID } from 'node:crypto';
@@ -24,12 +25,12 @@ export function automationIso(value: unknown): string | null {
 function canonical(value: unknown): unknown {
   if (value instanceof Date || value && typeof value === 'object' && 'toDate' in value) return automationIso(value);
   if (Array.isArray(value)) return value.map(canonical);
-  return value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, canonical(v)])) : value;
+  return value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'apiChangedAt').sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, canonical(v)])) : value;
 }
 export const automationHash = (value: unknown) => createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex');
 export function taskVersion(task: DocumentData) {
   // Acquisition status changes do not invalidate the user's work; all actual work edits do.
-  return automationHash(Object.fromEntries(Object.entries(task).filter(([key]) => key !== 'automation')));
+  return automationHash(Object.fromEntries(Object.entries(task).filter(([key]) => key !== 'automation' && key !== 'apiChangedAt')));
 }
 function stateData(uid: string, value?: DocumentData): AutomationState {
   if (!value) return { uid, automationEnabled: false, revision: 0, grants: [], reminders: [] };
@@ -92,7 +93,7 @@ export async function saveAutomationRule(uid: string, rule: TaskEvidenceRule, re
       ownedCompletion: identityChanged || editedAfterGrant ? false : old?.ownedCompletion ?? false, records: old?.records ?? [] };
     state.grants = [...state.grants.filter(g => g !== old), grant];
     saveState(tx, state);
-    tx.update(td.ref, { automation: { ...(task.automation ?? {}), ownerId: uid, stage: grant.stage, evidenceAt: grant.latestEvidenceAt, expectedDate: task.automation?.expectedDate ?? null, check: grant.check, checkedAt: now } });
+    tx.update(td.ref, stampTaskWrite(td.ref, { automation: { ...(task.automation ?? {}), ownerId: uid, stage: grant.stage, evidenceAt: grant.latestEvidenceAt, expectedDate: task.automation?.expectedDate ?? null, check: grant.check, checkedAt: now } }));
     activity(tx, uid, rule.projectId, rule.taskId, task, rule.enabled ? '本人が指定した対象・期間・完了条件の自動更新を許可' : '本人が自動更新を解除');
   });
   return readAutomation(uid);
@@ -172,7 +173,7 @@ async function processGrant(uid: string, key: string, now: string) {
         grant.records.push({ id: randomUUID(), expectedDate: result.expectedDate, ruleVersion: evidenceRuleVersion(rule), at: now, source: result.evidence.source, sourceId: result.evidence.id, sourceVersion: result.evidence.version,
           evidenceAt: result.evidence.at, sourceUrl: result.evidence.url, stage: result.stage, before, after, afterVersion: grant.expectedTaskVersion, undone: false });
         if (rule.order && result.evidence.source === 'gmail') lastOrderEvidence = result.evidence;
-        tx.update(taskDoc.ref, patch);
+        tx.update(taskDoc.ref, stampTaskWrite(taskDoc.ref, patch));
         task = { ...task, ...patch, ...(rule.order?{automation:after.automation}:{}) };
         activity(tx, uid, rule.projectId, rule.taskId, task, `${STAGE_LABELS[result.stage]}${result.expectedDate ? `：${result.expectedDate}` : ''}（本人の許可範囲・根拠日時 ${result.evidence.at}）`, before.isCompleted === after.isCompleted ? 'update' : after.isCompleted ? 'complete' : 'reopen');
         result = selectEvidence(grant, sources, now);
@@ -187,8 +188,8 @@ async function processGrant(uid: string, key: string, now: string) {
       }
     }
     if (task?.isCompleted && canAccess) repeat();
-    if (task && canAccess) tx.update(taskDoc.ref, { automation: { ...(task.automation ?? {}), ownerId: uid, stage: grant.stage, check: grant.check, checkedAt: now,
-      evidenceAt: grant.latestEvidenceAt ?? task.automation?.evidenceAt ?? null, expectedDate: ['cancelled','refunded'].includes(grant.stage ?? '') ? null : [...grant.records].reverse().find(r=>r.expectedDate)?.expectedDate ?? task.automation?.expectedDate ?? null } });
+    if (task && canAccess) tx.update(taskDoc.ref, stampTaskWrite(taskDoc.ref, { automation: { ...(task.automation ?? {}), ownerId: uid, stage: grant.stage, check: grant.check, checkedAt: now,
+      evidenceAt: grant.latestEvidenceAt ?? task.automation?.evidenceAt ?? null, expectedDate: ['cancelled','refunded'].includes(grant.stage ?? '') ? null : [...grant.records].reverse().find(r=>r.expectedDate)?.expectedDate ?? task.automation?.expectedDate ?? null } }));
     saveState(tx, state);
   });
 }
@@ -204,10 +205,10 @@ export async function undoAutomation(uid: string, projectId: string, taskId: str
     const before = record.before;
     const notice=grant.rule.order ? await tx.get(getAdminDb().doc(`notifications/order-${automationHash([uid,`${projectId}/${taskId}`,record.sourceId,record.sourceVersion])}`)) : null;
     if(notice?.exists)tx.update(notice.ref,{isRead:true,title:'自動反映を取り消しました',message:'元の報告を残して、自動更新を停止しました。',data:{...notice.data()?.data,requiresResponse:false,retracted:true}});
-    tx.update(td.ref, { isCompleted: before.isCompleted, completedAt: before.completedAt ? new Date(before.completedAt) : null,
+    tx.update(td.ref, stampTaskWrite(td.ref, { isCompleted: before.isCompleted, completedAt: before.completedAt ? new Date(before.completedAt) : null,
       dueDate: before.dueDate ? new Date(before.dueDate) : null,
       ...(typeof before.isDueDateFixed === 'boolean' ? {isDueDateFixed:before.isDueDateFixed} : {}),
-      ...('durationDays' in before ? {durationDays:before.durationDays} : {}), updatedAt: new Date(), automation: { ...('automation' in before ? before.automation : task.automation), check: 'conflict' } });
+      ...('durationDays' in before ? {durationDays:before.durationDays} : {}), updatedAt: new Date(), automation: { ...('automation' in before ? before.automation : task.automation), check: 'conflict' } }));
     if('automation' in before){grant.stage=before.automation?.stage??null;grant.latestEvidenceAt=before.automation?.evidenceAt??null;}
     record.undone = true; grant.rule.enabled = false; grant.check = 'conflict'; grant.reason = '反映を取り消し、自動更新を停止しました。';
     saveState(tx, state); activity(tx, uid, projectId, taskId, task, '本人が自動反映を取り消し、自動更新を停止');
@@ -232,7 +233,7 @@ export async function saveCompletionPolicy(uid: string, projectId: string, taskI
     state.reminders = state.reminders.filter(r => r.projectId !== projectId || r.taskId !== taskId);
     if (input) state.reminders.push({ projectId, taskId, dueDate: automationIso(task.dueDate) ?? '', snoozedUntil: null, notifiedSignature: null, sequence: 0 });
     tx.delete(getAdminDb().doc(`notifications/task-automation-${automationHash([uid, projectId, taskId]).slice(0, 40)}`));
-    tx.update(td.ref, { completionPolicy: input ? { ...input, kind: 'all_required_children', grantedBy: uid, grantedAt: now } : null, updatedAt: new Date(now) });
+    tx.update(td.ref, stampTaskWrite(td.ref, { completionPolicy: input ? { ...input, kind: 'all_required_children', grantedBy: uid, grantedAt: now } : null, updatedAt: new Date(now) }));
     saveState(tx, state); activity(tx, uid, projectId, taskId, task, input ? `全員条件を設定：${input.condition}` : '全員条件の自動判定を解除');
   });
   await processParentPolicies(uid);
@@ -269,7 +270,7 @@ async function processParentPolicies(uid: string, now = new Date().toISOString()
       if (newPolicy.completedByAutomation) newPolicy.completedVersion = automationHash(Object.fromEntries(Object.entries({ ...task, ...patch }).filter(([key]) => !['completionPolicy', 'automation'].includes(key))));
       const repeat = patch.isCompleted === true ? await prepareRecurrence(tx, td.ref, { ...task, ...patch, id:reminder.taskId, projectId:reminder.projectId } as Task, new Date(now)) : () => {};
       repeat();
-      patch.completionPolicy = newPolicy; tx.update(td.ref, patch);
+      patch.completionPolicy = newPolicy; tx.update(td.ref, stampTaskWrite(td.ref, patch));
       activity(tx, uid, reminder.projectId, reminder.taskId, task, patch.isCompleted ? `全員条件が成立：${policy.condition}` : `全員条件が成立しなくなりました：${policy.condition}`, patch.isCompleted ? 'complete' : 'reopen');
     }
     const dueDate = automationIso(task.dueDate) ?? '';
@@ -379,7 +380,7 @@ export async function recordPurchaseReport(uid: string, raw: unknown) {
       state.grants=state.grants.map(g=>g===prior?grant:g);
     }else state.grants.push(grant);
     tx.set(ref.collection('comments').doc(input.id),{taskId:input.taskId,content:purchaseReportText(input.report),authorId:uid,authorLabel:user?.displayName??'本人',authorIcon:null,purpose:'memo',mentions:[],attachments:input.attachment?[input.attachment]:[],createdAt:now,updatedAt:now});
-    tx.update(ref,{automation:summary});
+    tx.update(ref,stampTaskWrite(ref, {automation:summary}));
     tx.set(receiptRef,{projectId:input.projectId,targetType:'task',targetId:input.taskId,targetName:task.title,userId:uid,userName:user?.displayName??'本人',action:'update',tracked:input.track,changes:[{field:'purchaseReport',newValue:'購入報告を記録'}],createdAt:now});
     saveState(tx,state);
     return {commentId:input.id,taskId:input.taskId,tracked:input.track,backgroundConfigured:process.env.TASK_AUTOMATION_SCHEDULED==='true',alreadyApplied:false};

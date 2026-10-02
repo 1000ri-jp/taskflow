@@ -1,8 +1,13 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NeoDashboard } from './NeoDashboard';
 import { viewTask } from '@/test/taskViewFixtures';
 import { useAuthStore } from '@/stores/authStore';
+
+beforeAll(() => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+});
+afterAll(() => vi.unstubAllGlobals());
 
 vi.mock('@/hooks/useRecentTaskChanges', async original => ({ ...await original<typeof import('@/hooks/useRecentTaskChanges')>(), useRecentTaskChanges: () => ({changes: ['done','older','child'].map((taskId,i)=>({projectId:'project-1',taskId,entry:{id:taskId,kind:'activity',title:'内容を更新',actor:'同僚',at:new Date(2026,8,15,21,30-i).toISOString(),private:false,changes:[{field:'dueDate',before:'2026-09-16',after:'2026-09-18'}]}})),isLoading:false,error:false,more:false}) }));
 
@@ -89,6 +94,7 @@ describe('Neo dashboard task views', () => {
     expect(taskListRow).not.toHaveTextContent(/親[:：]/);
     expect(taskListRow).toHaveTextContent(/期限/);
     expect(within(taskListRow).queryByLabelText('未完了')).not.toBeInTheDocument();
+    expect(within(taskListRow).getByRole('checkbox', { name: '自分の作業を完了にする' })).toHaveTextContent('タスクを完了');
 
     fireEvent.click(nav.getByRole('button', { name: '今日' }));
     const briefing = within(screen.getByRole('region', { name: '今日の仕事・期限' }));
@@ -101,6 +107,8 @@ describe('Neo dashboard task views', () => {
     expect(briefingRow).toHaveTextContent(/期限/);
     expect(briefingLink).toHaveAttribute('href', taskListLink.getAttribute('href'));
     expect(briefingRow.querySelector('a button')).toBeNull();
+    expect(within(briefingRow).getByRole('checkbox', { name: '自分の作業を完了にする' })).toHaveTextContent('タスクを完了');
+    expect(screen.queryByRole('checkbox', { name: '原稿の確認依頼を完了にする' })).not.toBeInTheDocument();
   });
 
   it('opens the combined daily agenda from Today and returns to the selected job', () => {

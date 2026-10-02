@@ -418,6 +418,41 @@ export function TaskDetailModal({
                 </Button>
               </ControlHint>
             </div>
+                <div role="group" aria-label="状態" className="flex flex-wrap items-center gap-x-6 gap-y-1">
+                {/* Completion Status */}
+                <div className="flex min-w-0 items-center gap-2 py-1 text-sm">
+                  <TaskStatusControl key={`status:${user?.id}:${task.id}`} task={task} tasks={allTasks} userId={user?.id ?? ''} showCompleteButton />
+                  <div className="flex flex-1 items-center gap-2">
+                    {isCompleted && task.taskKind !== 'review_request' && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="flex items-center gap-1 rounded border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
+                            <CalendarIcon className="h-3 w-3" />
+                            {completedAt ? format(completedAt, 'M/d', { locale: ja }) : format(new Date(), 'M/d', { locale: ja })}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-4" align="start">
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">完了日</p>
+                            <Calendar
+                              mode="single"
+                              selected={completedAt || new Date()}
+                              onSelect={(date) => {
+                                if (date) {
+                                  setCompletedAt(date);
+                                  onUpdate({ completedAt: date });
+                                }
+                              }}
+                            />
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  </div>
+                </div>
+
+
+                </div>
           </DialogHeader>
 
           {/* Content */}
@@ -628,41 +663,6 @@ export function TaskDetailModal({
                     )}
                   </div>
                 </div>
-
-                </div>
-                <div role="group" aria-label="状態" className="flex flex-wrap items-center gap-x-6 gap-y-1">
-                {/* Completion Status */}
-                <div className="flex min-w-0 items-center gap-2 py-1 text-sm">
-                  <TaskStatusControl key={`status:${user?.id}:${task.id}`} task={task} tasks={allTasks} userId={user?.id ?? ''} showCompleteButton showSuccess={false} />
-                  <div className="flex flex-1 items-center gap-2">
-                    {isCompleted && task.taskKind !== 'review_request' && (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button className="flex items-center gap-1 rounded border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
-                            <CalendarIcon className="h-3 w-3" />
-                            {completedAt ? format(completedAt, 'M/d', { locale: ja }) : format(new Date(), 'M/d', { locale: ja })}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-4" align="start">
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium">完了日</p>
-                            <Calendar
-                              mode="single"
-                              selected={completedAt || new Date()}
-                              onSelect={(date) => {
-                                if (date) {
-                                  setCompletedAt(date);
-                                  onUpdate({ completedAt: date });
-                                }
-                              }}
-                            />
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    )}
-                  </div>
-                </div>
-
 
                 </div>
                 </div>

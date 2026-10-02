@@ -127,7 +127,7 @@ describe('subtask date HTTP request through the transaction', () => {
   const response = await requestDate(dueDate);
   expect(response.status).toBe(200);
   expect(docs.get('projects/p/tasks/subtask')).toEqual({ ...original,
-   dueDate: dueDate ? new Date(dueDate + 'T00:00:00+09:00') : null, updatedAt: expect.any(Date),
+   dueDate: dueDate ? new Date(dueDate + 'T00:00:00+09:00') : null, updatedAt: expect.any(Date), apiChangedAt: expect.any(Object),
   });
   expect(docs.get('projects/p/tasks/work')).toEqual(parent);
   expect(docs.get('projects/p/tasks/subtask/comments/old')).toEqual({ content: '以前のやりとり' });

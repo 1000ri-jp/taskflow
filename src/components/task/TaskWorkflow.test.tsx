@@ -7,6 +7,37 @@ vi.mock('@/lib/task/workflowClient',()=>({sendWorkflow:vi.fn()}));
 beforeEach(()=>{vi.clearAllMocks();sessionStorage.clear();vi.mocked(sendWorkflow).mockResolvedValue(null);});
 const parent=viewTask({id:'p',assigneeIds:['worker']});
 const review=viewTask({id:'r',parentTaskId:'p',taskKind:'review_request',assigneeIds:['reviewer']});
+it('exposes completion before starting and preserves the same request after an uncertain result', async () => {
+ vi.mocked(sendWorkflow).mockRejectedValueOnce(new Error('通信切断'));
+ const ui=render(<TaskWorkflow task={parent} tasks={[parent]} userId="worker" continuation compact />);
+ const complete=screen.getByRole('button',{name:'タスクを完了'});
+ await waitFor(()=>expect(complete).toBeEnabled());
+ expect(sendWorkflow).not.toHaveBeenCalled();
+ fireEvent.click(complete);
+ await screen.findByRole('alert');
+ const sent=vi.mocked(sendWorkflow).mock.calls[0];
+ expect(sent[2]).toMatchObject({action:'complete',expectedVersion:parent.updatedAt.toISOString()});
+ expect(complete).toBeDisabled();
+ ui.unmount();
+ render(<TaskWorkflow task={{...parent,updatedAt:new Date()}} tasks={[parent]} userId="worker" continuation compact />);
+ await act(async()=>{});
+ fireEvent.click(screen.getByRole('button',{name:'同じ操作を再試行'}));
+ await waitFor(()=>expect(sendWorkflow).toHaveBeenLastCalledWith(...sent));
+ expect(sendWorkflow).toHaveBeenCalledTimes(2);
+ await screen.findByRole('status');
+ expect(sessionStorage.length).toBe(0);
+});
+it('keeps incomplete prerequisites and review requests out of ordinary completion', async () => {
+ const blocked={...parent,dependsOnTaskIds:['dependency']};
+ const ui=render(<TaskWorkflow task={blocked} tasks={[blocked]} userId="worker" continuation />);
+ await act(async()=>{});
+ expect(screen.getByRole('button',{name:'タスクを完了'})).toBeDisabled();
+ expect(screen.getByText('前提の仕事が未完了、または未取得です。')).toBeVisible();
+ ui.rerender(<TaskWorkflow task={review} tasks={[parent,review]} userId="reviewer" continuation />);
+ expect(screen.queryByRole('button',{name:'タスクを完了'})).not.toBeInTheDocument();
+ expect(screen.getByRole('button',{name:'確認OK'})).toBeVisible();
+ expect(sendWorkflow).not.toHaveBeenCalled();
+});
 it('requires a change note and retains an identical request through failure, reload and retry',async()=>{
  vi.mocked(sendWorkflow).mockRejectedValueOnce(new Error('通信切断'));
  const ui=render(<TaskWorkflow task={review} tasks={[parent,review]} userId="reviewer" />); await act(async()=>{});

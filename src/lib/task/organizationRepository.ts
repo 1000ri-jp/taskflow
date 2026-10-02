@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.server';
 import { prepareRecurrence } from './recurrenceRepository';
 import type { Task } from '@/types';
 import { MOAI_LABEL_ID } from './moaiLabel';
@@ -190,7 +191,7 @@ export async function actOnOrganization(uid: string, projectId: string, id: stri
         }
         moaiLabel?.write();
         for (const repeat of repeatWriters) repeat();
-        entry.writes.forEach(write => tx.set(db.doc(`projects/${projectId}/${write.path}`),write.after));
+        entry.writes.forEach(write => tx.set(db.doc(`projects/${projectId}/${write.path}`),stampTaskWrite(db.doc(`projects/${projectId}/${write.path}`), write.after)));
         entry.appliedComments.forEach(comment => tx.set(db.doc(`projects/${projectId}/${comment.path}`),comment.after));
         entry.preview.status = 'applied';
       } else {
@@ -203,8 +204,8 @@ export async function actOnOrganization(uid: string, projectId: string, id: stri
         assertOrganizationGraphSafe(restored);
         for (const write of entry.writes) {
           const ref = db.doc(`projects/${projectId}/${write.path}`);
-          if (write.before) tx.set(ref,write.path.split('/').length === 2 ? {...write.before,updatedAt:new Date(now)} : write.before);
-          else if (write.path.split('/').length === 2) tx.update(ref,{isArchived:true,archivedAt:new Date(now),archivedBy:uid,updatedAt:new Date(now)});
+          if (write.before) tx.set(ref,stampTaskWrite(ref, write.path.split('/').length === 2 ? {...write.before,updatedAt:new Date(now)} : write.before));
+          else if (write.path.split('/').length === 2) tx.update(ref,stampTaskWrite(ref, {isArchived:true,archivedAt:new Date(now),archivedBy:uid,updatedAt:new Date(now)}));
           else tx.delete(ref);
         }
         for (const comment of entry.appliedComments ?? []) tx.delete(db.doc(`projects/${projectId}/${comment.path}`));

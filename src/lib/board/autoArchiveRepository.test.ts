@@ -198,7 +198,7 @@ describe('transactional automatic archive', () => {
     task().parentTaskId = 'parent'; documents.set(`${path()}/comments/c`, { content: '原文コメント' });
     const before = structuredClone(task());
     expect(await runAutoArchiveBatch()).toEqual({ checked: 1, archived: 2, failed: 0, nextCursor: null });
-    expect(task()).toEqual({ ...before, isArchived: true, archivedAt: now, archivedBy: 'u', updatedAt: now, autoArchiveCompletedAt: completed });
+    expect(task()).toEqual({ ...before, isArchived: true, archivedAt: now, archivedBy: 'u', updatedAt: now, autoArchiveCompletedAt: completed, apiChangedAt: expect.any(Object) });
     expect(task('parent')).toMatchObject({ isArchived: true, description: '共有本文', completionPolicy: { required: [{ taskId: 't' }] } });
     expect(documents.get(`${path()}/comments/c`)).toEqual({ content: '原文コメント' });
     expect(activities()).toHaveLength(2);

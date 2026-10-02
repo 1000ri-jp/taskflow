@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.server';
 import { readAISupportInstructions } from '@/lib/ai/support/repository';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Transaction } from 'firebase-admin/firestore';
@@ -14,7 +15,7 @@ function canonical(value: unknown): unknown {
   if (value instanceof Date) return value.toISOString();
   if (value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') return value.toDate().toISOString();
   if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, canonical(v)]));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'apiChangedAt').sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, canonical(v)]));
   return value;
 }
 export const descriptionVersion = (value: unknown) => createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex');
@@ -139,7 +140,7 @@ export async function actOnDescription(uid: string, projectId: string, taskId: s
     if(task.parentTaskId && action !== 'undo')throw new SecretaryError('INVALID','サブタスクの説明は親タスクにまとめてください。');
     const patch = { description: action === 'undo' ? op.before : op.after, updatedAt: new Date(), aiDescriptionMutationId: randomUUID() };
     const next: DescriptionOperation = { ...op, state: action === 'undo' ? 'undone' : 'applied', afterVersion: descriptionVersion({ ...task, ...patch }) };
-    tx.update(taskRef, patch); tx.set(ref, next);
+    tx.update(taskRef, stampTaskWrite(taskRef, patch)); tx.set(ref, next);
     tx.set(taskRef.parent.parent!.collection('activityLogs').doc(), { projectId, targetType: 'task', targetId: taskId, targetName: task.title, action: 'update', userId: uid, userName: '本人のAI説明編集', createdAt: new Date(),
       changes: [{ field: 'description', oldValue: task.description ?? '', newValue: patch.description }] });
     return next;

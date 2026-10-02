@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.server';
 import { taskEditChanges } from './history/recentChanges';
 import { completionBlockReason } from './completion';
 import { assertTaskDates, hasTaskDateChange } from './dateValidation';
@@ -25,7 +26,7 @@ export async function prepareRecurrence(tx: Transaction, ref: DocumentReference,
   }
   if (existing.exists || !list.exists || checklists.size > 100) throw new OrganizationError('次回タスクの作成先・チェックリストを確認できません。繰り返し設定を見直してください。',409);
   return () => {
-    tx.set(nextRef, next.task);
+    tx.set(nextRef, stampTaskWrite(nextRef, next.task));
     for (const checklist of checklists.docs) tx.set(nextRef.collection('checklists').doc(checklist.id), repeatChecklist(checklist.data(), next.id, next.shiftDays, now));
     tx.set(receiptRef, { sourceTaskId:source.id, nextTaskId:next.id, createdAt:now });
   };
@@ -39,7 +40,7 @@ export async function updateTaskWithRecurrence(ref: DocumentReference, patch: Re
     const updated = { ...source, ...patch } as Task;
     if (hasTaskDateChange(patch)) assertTaskDates(updated);
     const repeat = patch.isCompleted === true ? await prepareRecurrence(tx, ref, updated, new Date()) : () => {};
-    tx.update(ref, patch); repeat();
+    tx.update(ref, stampTaskWrite(ref, patch)); repeat();
   });
 }
 export async function saveRecurrence(uid: string, projectId: string, taskId: string, expectedVersion: string, settings: RecurrenceSettings | null) {
@@ -70,7 +71,7 @@ export async function saveRecurrence(uid: string, projectId: string, taskId: str
       nextRecurrence({ ...settings, occurrence:0 });
     }
     const recurrence = settings ? { ...settings, occurrence:0 } : null;
-    tx.update(taskRef, { recurrence, updatedAt:new Date() });
+    tx.update(taskRef, stampTaskWrite(taskRef, { recurrence, updatedAt:new Date() }));
     return recurrence;
   });
 }
@@ -95,7 +96,7 @@ export async function completeFromBoard(uid: string, projectId: string, taskId: 
     const repeat = await prepareRecurrence(tx, taskRef, { ...data, ...patch, id:taskId, projectId } as Task, now);
     const changes = taskEditChanges(data, patch);
     const person = changes.length ? (await tx.get(getAdminDb().doc(`users/${uid}`))).data() : null;
-    tx.update(taskRef, patch); repeat();
+    tx.update(taskRef, stampTaskWrite(taskRef, patch)); repeat();
     if (changes.length) tx.set(ref.collection('activityLogs').doc(`complete-${crypto.randomUUID()}`), {
       projectId, targetType: 'task', targetId: taskId, targetName: data.title || '',
       action: data.isCompleted ? 'update' : 'complete', userId: uid, userName: person?.displayName || 'メンバー',

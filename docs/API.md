@@ -196,3 +196,7 @@ Current routes use standard HTTP status codes:
 - Lint cleanup is still tracked separately from API feature work.
 
 See [`API_INTEGRATION.md`](./API_INTEGRATION.md) for concrete curl examples and a recommended client flow.
+
+## タスク差分取得
+
+`GET /api/projects/{projectId}/tasks/changes?limit=100&cursor=<opaque-cursor>` は初回同期後の追加・更新をプロジェクト単位で返します。既存の `tasks:read` とプロジェクト権限が必要です。保存した `checkpoint` で次の差分取得を開始し、`nextCursor` を最後まで辿ります。アーカイブを含み、通常コメント単独・物理削除は対象外です。契約、ページ期限、更新元の前提は [TASK_CHANGES_API.md](./TASK_CHANGES_API.md) を参照してください。

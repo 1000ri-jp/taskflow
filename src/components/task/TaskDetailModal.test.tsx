@@ -122,10 +122,12 @@ describe('TaskDetailModal notification placement', () => {
     expect(dialog.querySelector('.tf-detail-header')).toHaveClass('pt-5', 'pb-1');
   });
 
-  it('completes an ordinary task beside the status menu without adding a new row', async () => {
+  it('completes an ordinary task from the fixed header through the existing workflow', async () => {
     const { onUpdate } = await renderModal();
     const state = screen.getByRole('group', { name: '状態' });
-    const complete = within(state).getByRole('button', { name: '完了' });
+    const complete = within(state).getByRole('button', { name: 'タスクを完了' });
+    expect(complete.closest('.tf-detail-header')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'タスクを完了' })).toHaveLength(1);
     expect(within(state).getByRole('combobox', { name: `${task.title}のステータス` }).compareDocumentPosition(complete) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await waitFor(() => expect(complete).toBeEnabled());
     fireEvent.click(complete);
@@ -137,7 +139,7 @@ describe('TaskDetailModal notification placement', () => {
     const prerequisite = { ...task, id: 'prerequisite', title: '前提の作業' };
     const dependent = { ...task, dependsOnTaskIds: [prerequisite.id] };
     await renderModal({ task: dependent, allTasks: [dependent, prerequisite] });
-    expect(screen.getByRole('button', { name: '完了' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'タスクを完了' })).toBeDisabled();
     expect(screen.getByText('前提の完了待ち：前提の作業')).toBeVisible();
     expect(sendWorkflow).not.toHaveBeenCalled();
   });

@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.server';
 import { createHash } from 'node:crypto';
 import { FieldPath, type DocumentData, type Transaction } from 'firebase-admin/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
@@ -141,7 +142,7 @@ async function processProject(projectId: string, callerUid?: string): Promise<{ 
     // All settings, roles, and the entire task family snapshot were read before these writes.
     const refs = new Map(tasks.docs.map(doc => [doc.id, doc.ref]));
     for (const { task, completedAt, elapsedDays } of plan.candidates) {
-      tx.update(refs.get(task.id)!, { isArchived: true, archivedAt: at, archivedBy: actor, updatedAt: at, autoArchiveCompletedAt: completedAt });
+      tx.update(refs.get(task.id)!, stampTaskWrite(refs.get(task.id)!, { isArchived: true, archivedAt: at, archivedBy: actor, updatedAt: at, autoArchiveCompletedAt: completedAt }));
       tx.create(projectRef(projectId).collection('activityLogs').doc(), {
         projectId, targetType: 'task', targetId: task.id, targetName: task.title || '名称未設定のタスク', action: 'update', userId: actor, userName: '自動アーカイブ',
         changes: [{ field: 'アーカイブ', oldValue: '表示中', newValue: `完了から${elapsedDays}日経過（設定${state.effectiveDays}日）により自動アーカイブ` }], createdAt: at,

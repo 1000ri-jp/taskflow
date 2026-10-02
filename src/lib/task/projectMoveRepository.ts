@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.server';
 import { createHash } from 'node:crypto';
 import type { DocumentData, DocumentReference, Transaction } from 'firebase-admin/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
@@ -99,7 +100,7 @@ export async function moveProjectTask(uid: string, projectId: string, taskId: st
       checklistCount: Object.keys(children).filter(path => path.includes('/checklists/')).length, targetName: targetProject.data()!.name as string, listName: list.name as string };
     if (input.version !== version) fail('確認後にタスクや関連記録が更新されました。「内容を確認」から読み直してください。');
     const result = { projectId: input.targetProjectId, taskId };
-    for (const [path, data] of Object.entries(plan.writes)) tx.set(db.doc(`${target.ref.path}/${path}`), data);
+    for (const [path, data] of Object.entries(plan.writes)) tx.set(db.doc(`${target.ref.path}/${path}`), stampTaskWrite(db.doc(`${target.ref.path}/${path}`), data));
     for (const [path, data] of Object.entries(children)) { tx.set(db.doc(`${target.ref.path}/${path}`), data); tx.delete(db.doc(`${source.ref.path}/${path}`)); }
     for (const id of ids) tx.delete(source.ref.collection('tasks').doc(id));
     for (const [id, log] of Object.entries(history)) tx.set(target.ref.collection('activityLogs').doc(id), log);

@@ -1,3 +1,4 @@
+import { stampTaskWrite } from '@/lib/task/changeStamp.server';
 import { completionBlockReason } from '@/lib/task/completion';
 import { prepareRecurrence } from '@/lib/task/recurrenceRepository';
 import { expandTaskReviews } from '@/lib/task/reviews';
@@ -19,7 +20,7 @@ const statePath = (uid: string) => `users/${uid}/secretary/state`;
 function canonical(value: unknown): unknown {
   if (value instanceof Date || value && typeof value === 'object' && 'toDate' in value) return iso(value);
   if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, canonical(v)]));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'apiChangedAt').sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, canonical(v)]));
   return value;
 }
 const hash = (data: unknown) => createHash('sha256').update(JSON.stringify(canonical(data))).digest('hex');
@@ -254,7 +255,7 @@ export async function actOnSecretary(uid: string, request: ActionRequest) {
         updatedAt: new Date(now), secretaryMutationId: randomUUID() };
       const repeat = transition.patch.isCompleted === true ? await prepareRecurrence(tx, taskRef, { ...beforeTask.data(), ...changed, id:taskRef.id, projectId:task.projectId } as unknown as Task,new Date(now)) : () => {};
       repeat();
-      tx.update(taskRef, changed);
+      tx.update(taskRef, stampTaskWrite(taskRef, changed));
       tx.set(taskRef.parent.parent!.collection('activityLogs').doc(), { projectId: taskRef.parent.parent!.id, targetType: 'task', targetId: taskRef.id,
         targetName: snapshot.tasks.find(t => t.key === transition.key)!.title, action: 'update', userId: uid, userName: 'dueDate' in transition.patch ? '本人がNeoから期限を変更' : 'AI秘書の提案を本人が採用', createdAt: new Date(now),
         changes: 'dueDate' in transition.patch

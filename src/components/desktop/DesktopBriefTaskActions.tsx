@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CalendarDays, Circle, CircleCheck, Loader2, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { recalculateDates } from '@/lib/utils/task';
@@ -23,6 +24,7 @@ export type BriefTaskControls = { progress: ReactNode; schedule: ReactNode; acti
 export type BriefTaskControlsRenderer = (controls: BriefTaskControls) => ReactNode;
 
 type Props = {
+  showCompletionLabel?: boolean;
   renderControls?: BriefTaskControlsRenderer;
   task: DashboardTask;
   allTasks: readonly DashboardTask[];
@@ -37,7 +39,7 @@ export function DesktopBriefTaskActions(props: Props) {
   return <DesktopBriefTaskActionControls {...props} />;
 }
 
-function DesktopBriefTaskActionControls({ task, allTasks, userId, onFeedback, renderControls }: Props) {
+function DesktopBriefTaskActionControls({ task, allTasks, userId, onFeedback, renderControls, showCompletionLabel = false }: Props) {
   const flowAction = useRef<'complete' | 'reopen' | 'progress' | null>(null);
   const reportedError = useRef('');
   const [dateField, setDateField] = useState<DateField>('dueDate');
@@ -118,7 +120,19 @@ function DesktopBriefTaskActionControls({ task, allTasks, userId, onFeedback, re
     </Popover>;
 
   const actions = <div className="flex shrink-0 items-center gap-1" onClick={event => event.stopPropagation()}>
-    <button
+    {showCompletionLabel ? <Button
+      type="button"
+      role="checkbox"
+      aria-checked={task.isCompleted}
+      aria-label={`${task.title}を${task.isCompleted ? '未完了に戻す' : '完了にする'}`}
+      size="sm"
+      variant="outline"
+      disabled={!flow.ready || flow.locked || task.isArchived}
+      onClick={() => runWorkflow(task.isCompleted ? 'reopen' : 'complete')}
+    >
+      {flow.busy && flowAction.current !== 'progress' ? <Loader2 className="size-3.5 animate-spin" aria-hidden="true" /> : <CircleCheck className="size-4" aria-hidden="true" />}
+      {flow.busy && flowAction.current !== 'progress' ? '保存中…' : task.isCompleted ? '未完了に戻す' : 'タスクを完了'}
+    </Button> : <button
       type="button"
       role="checkbox"
       aria-checked={task.isCompleted}
@@ -129,7 +143,7 @@ function DesktopBriefTaskActionControls({ task, allTasks, userId, onFeedback, re
       className="inline-flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted disabled:cursor-wait disabled:opacity-50 aria-checked:bg-primary/10 aria-checked:text-primary"
     >
       {flow.busy && flowAction.current !== 'progress' ? <Loader2 className="size-3.5 animate-spin" aria-hidden="true" /> : task.isCompleted ? <CircleCheck className="size-4" aria-hidden="true" /> : <Circle className="size-4" aria-hidden="true" />}
-    </button>
+    </button>}
     {!renderControls && progress}
     {!renderControls && schedule}
     {(flow.success || flow.error) && <span role={flow.error ? 'alert' : 'status'} className={`sr-only ${flow.error ? 'text-destructive' : 'text-emerald-700'}`}>{flow.error || flow.success}</span>}

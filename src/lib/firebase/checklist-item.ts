@@ -1,4 +1,5 @@
 import { doc, runTransaction } from 'firebase/firestore';
+import { stampTaskWrite } from '@/lib/task/changeStamp.client';
 import { getFirebaseAuth, getFirebaseDb } from './config';
 import { assertChecklistItemScope, mutateChecklistItems, validateChecklistDeadline, validateChecklistItemDueDate, type ChecklistItemMutation } from '@/lib/utils/checklist-item';
 import type { ChecklistItem } from '@/types';
@@ -36,7 +37,7 @@ export async function mutateChecklistItem(
     }
     // This hint only narrows subscriptions. Completion, text and dates are read live from the checklist.
     if (mutation.kind === 'deadline' && mutation.deadlinePolicy === 'strict' && !task.hasChecklistDeadlines) {
-      transaction.update(taskRef, { hasChecklistDeadlines: true });
+      transaction.update(taskRef, stampTaskWrite(taskRef, { hasChecklistDeadlines: true }));
     }
     return next;
   });

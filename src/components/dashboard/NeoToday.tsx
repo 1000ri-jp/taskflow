@@ -53,7 +53,7 @@ export function NeoTodayContent({ tasks, now, userId, isLoading, error, projectT
   const ongoing = next && Date.parse(next.at) <= now.getTime();
   const incompleteCalendar = !!calendarError || source?.connected && source.status !== 'ready';
   const [feedback, setFeedback] = useState<MiniTaskFeedback | null>(null);
-  const taskActions = (task: import('@/lib/dashboard/brief').DashboardTask, renderControls?: BriefTaskControlsRenderer) => userId ? <DesktopBriefTaskActions renderControls={renderControls} task={task} allTasks={ready} userId={userId} onFeedback={setFeedback} /> : renderControls?.({ progress: null, schedule: null, actions: null });
+  const taskActions = (task: import('@/lib/dashboard/brief').DashboardTask, renderControls?: BriefTaskControlsRenderer) => userId ? <DesktopBriefTaskActions showCompletionLabel renderControls={renderControls} task={task} allTasks={ready} userId={userId} onFeedback={setFeedback} /> : renderControls?.({ progress: null, schedule: null, actions: null });
   const requestProps = { tasks: ready, userId, isLoading, error, projectTaskStatus, members, taskActions };
   return <div data-testid="neo-today" className="space-y-4">
     {feedback && <p role={feedback.ok ? 'status' : 'alert'} className="text-sm">{feedback.task.title}：{feedback.message}</p>}
