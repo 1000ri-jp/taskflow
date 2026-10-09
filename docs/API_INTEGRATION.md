@@ -229,3 +229,7 @@ Used for invalid state transitions such as restoring a task that is not archived
 ## タスク変更の継続取得
 
 全件一覧の繰返し取得に代えて `GET /api/projects/{projectId}/tasks/changes` を利用できます。初回はcursorなしで全ページを同期し、完了時のcheckpointを保存します。以降はそのcheckpointから開始してnextCursorを辿り、ID/changeVersionで重複を吸収します。ページ期限切れは直前の完了checkpointから再開します。通常コメント・物理削除・旧クライアント等の未刻印更新には全件照合が必要です。詳細と実装例は [TASK_CHANGES_API.md](./TASK_CHANGES_API.md) にあります。
+
+## OAuth と MCP による Slowth 連携
+
+Dot の MCP 接続は、本人の OAuth 同意と対象プロジェクト・期限・権限の検証を使用します。共通ツールからタスクと関連リソースを操作し、画面と同じ共有サービスへ保存します。PAT と通常ログインの既存経路は維持します。構成、共通契約、通知と割り振り、設定・検証の手順は [SLOWTH_MCP.md](./SLOWTH_MCP.md) を参照してください。

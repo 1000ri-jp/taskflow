@@ -62,3 +62,12 @@ next-env.d.ts
 
 # Internal recordings are supplied privately before release, never via public Git.
 /src/assets/help-videos/
+
+# Private Slowth sidecar state and deployment-specific configuration.
+/tools/slowth-worker/state/
+/tools/slowth-worker/node_modules/
+/tools/slowth-worker/config.local.json
+/tools/slowth-worker/config.*.local.json
+/mcp-events-functions/node_modules/
+/mcp-events-functions/.env*
+!/mcp-events-functions/.env.example

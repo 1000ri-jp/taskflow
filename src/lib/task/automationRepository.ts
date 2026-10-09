@@ -217,10 +217,15 @@ export async function undoAutomation(uid: string, projectId: string, taskId: str
   return readAutomation(uid);
 }
 export async function saveCompletionPolicy(uid: string, projectId: string, taskId: string, input: Pick<AllChildrenCompletionPolicy, 'condition' | 'required'> | null, expectedUpdatedAt: string) {
+  await getAdminDb().runTransaction(tx => saveCompletionPolicyInTransaction(tx, uid, projectId, taskId, input, expectedUpdatedAt));
+  await processParentPolicies(uid);
+  return readAutomation(uid);
+}
+export async function saveCompletionPolicyInTransaction(tx: Transaction, uid: string, projectId: string, taskId: string, input: Pick<AllChildrenCompletionPolicy, 'condition' | 'required'> | null, expectedUpdatedAt: string) {
   if (typeof expectedUpdatedAt !== 'string' || !automationIso(expectedUpdatedAt)) throw new AutomationError('親タスクの更新日時を取得し直してください。', 409);
   if (!id(projectId) || !id(taskId) || input && (typeof input.condition !== 'string' || !input.condition.trim() || input.condition.length > 500 || !Array.isArray(input.required) || input.required.length < 1 || input.required.length > 40 ||
     input.required.some(r => !id(r.taskId) || !id(r.assigneeId) || r.taskId === taskId) || new Set(input.required.map(r => r.taskId)).size !== input.required.length || new Set(input.required.map(r => r.assigneeId)).size !== input.required.length)) throw new AutomationError('必要な担当ごとのサブタスクと、全員分の完了条件を指定してください。');
-  await getAdminDb().runTransaction(async tx => {
+
     await access(tx, uid, projectId, true);
     const [td, sd, children] = await Promise.all([tx.get(taskRef(projectId, taskId)), tx.get(stateRef(uid)), tx.get(getAdminDb().collection(`projects/${projectId}/tasks`).where('parentTaskId', '==', taskId).limit(101))]);
     const task = td.data(); if (!task || task.isArchived || task.isAbandoned) throw new AutomationError('対象の親タスクを確認してください。');
@@ -235,14 +240,12 @@ export async function saveCompletionPolicy(uid: string, projectId: string, taskI
     tx.delete(getAdminDb().doc(`notifications/task-automation-${automationHash([uid, projectId, taskId]).slice(0, 40)}`));
     tx.update(td.ref, stampTaskWrite(td.ref, { completionPolicy: input ? { ...input, kind: 'all_required_children', grantedBy: uid, grantedAt: now } : null, updatedAt: new Date(now) }));
     saveState(tx, state); activity(tx, uid, projectId, taskId, task, input ? `全員条件を設定：${input.condition}` : '全員条件の自動判定を解除');
-  });
-  await processParentPolicies(uid);
-  return readAutomation(uid);
+
 }
 /** Parent ownership is persisted on the existing task; no arbitrary parent is completed. */
-async function processParentPolicies(uid: string, now = new Date().toISOString()) {
+export async function processParentPolicies(uid: string, now = new Date().toISOString(), scope?: { projectId: string; taskId: string }) {
   const outer = stateData(uid, (await stateRef(uid).get()).data());
-  for (const reminder of outer.reminders) await getAdminDb().runTransaction(async tx => {
+  for (const reminder of outer.reminders.filter(r => !scope || r.projectId === scope.projectId && r.taskId === scope.taskId)) await getAdminDb().runTransaction(async tx => {
     const db = getAdminDb(); const state = stateData(uid, (await tx.get(stateRef(uid))).data());
     const current = state.reminders.find(r => r.projectId === reminder.projectId && r.taskId === reminder.taskId); if (!current) return;
     const notification = db.doc(`notifications/task-automation-${automationHash([uid, reminder.projectId, reminder.taskId]).slice(0, 40)}`);

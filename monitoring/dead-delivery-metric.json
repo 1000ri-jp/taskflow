@@ -1,0 +1,5 @@
+{
+  "name": "slowth_mcp_delivery_dead",
+  "description": "Slowth Dot pilot delivery entered a permanent failure state. No event bodies or credentials are logged.",
+  "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.message=\"slowth_mcp_delivery\" AND jsonPayload.state=\"dead\""
+}

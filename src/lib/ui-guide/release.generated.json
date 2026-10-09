@@ -11,11 +11,11 @@
     },
     {
       "path": "next.config.ts",
-      "sha256": "bdb32657e54a5cde241ce8aba2c5f089b3b1e86133c26e0b3bf521f86be913d9"
+      "sha256": "1f3c4264ace313298722271db025da64f13bd529e8fcd1ebb19e438ec209a6eb"
     },
     {
       "path": "package.json",
-      "sha256": "87d82328223ad78043d35ab8d5868cb6e183478d0c31a042a832d6731cf37964"
+      "sha256": "de32f230f1a76317c879b60c1061dd55a36344b42f1079fe6336dd1e3c402a58"
     },
     {
       "path": "scripts/ui-guide.mjs",
@@ -43,23 +43,23 @@
     },
     {
       "path": "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
-      "sha256": "d5fbd9c919c494ff96f7dbc640abaa81b8b515a62a20ca2efb426392f67e8879"
+      "sha256": "ef05844d9403d13e35f31434c7f3e9916234ec8365af786acd2b979d7a31badf"
     },
     {
       "path": "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
-      "sha256": "e3c384346fa0b7bf223955f432ba5b4bf9a33d76db2620f24afdf4470c23dcd7"
+      "sha256": "826a898988a7dee15aa60ab04bfae8ae2dfe5a4be20c47d642aa5ca8b3df387c"
     },
     {
       "path": "src/app/(dashboard)/projects/[projectId]/layout.tsx",
-      "sha256": "d4eb6ca90bc3b805ee4218312fb0dc297ee4c8405b42eb12a33e476082248daf"
+      "sha256": "d6f154ac3b9bd275202e7315f6795a198c286b85616b35a797b9a79faf5489a4"
     },
     {
       "path": "src/app/(dashboard)/projects/[projectId]/milestones/page.tsx",
-      "sha256": "2532de373f78b9efae7b2de898b1ecee32fdd970c983f9bfca435ff9cd73b22d"
+      "sha256": "f359127d4e416e3a6681820d4dc85aed4ee448fdae22559f114fce96cf0a7410"
     },
     {
       "path": "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
-      "sha256": "aeebbbdc5121c7471659080f0539057cbd407f04cc1071920d0c7de19b320874"
+      "sha256": "dd40b7404e6a3db0e636ef6cd6e7fddd46eeff0bcac8c8e977f6bda97eb17bfc"
     },
     {
       "path": "src/app/(dashboard)/projects/page.tsx",
@@ -92,6 +92,10 @@
     {
       "path": "src/app/layout.tsx",
       "sha256": "64aff2ce4e11c1d2763b92503eb0f13be148bc394a0e2d1970cd4fcc2d013b95"
+    },
+    {
+      "path": "src/app/mcp-connect/consent.tsx",
+      "sha256": "28d88e3f985277350a5a1ee4f98150db924e223b4425d3cb439b654c2a109209"
     },
     {
       "path": "src/app/neo-appearance.css",
@@ -295,7 +299,7 @@
     },
     {
       "path": "src/components/board/ProjectListFilter.tsx",
-      "sha256": "73a898c4574bdaa9c6b0b0b0663cdc176dccfea696410509f5b969e531eed8e9"
+      "sha256": "ee137e28e5aabae0b80994676cf962a24026b0d9c7b80b6372d0dd60a9016adb"
     },
     {
       "path": "src/components/board/ProjectMilestones.tsx",
@@ -387,7 +391,7 @@
     },
     {
       "path": "src/components/common/Sidebar.tsx",
-      "sha256": "3ae78b732bfa8dc59efdab6115b421681031a523ae7be94d21c2b5df13351e95"
+      "sha256": "0c3e5e25d342b5a5e8ec2baccbaaa6ad3616133c37f01147a361c9774efa56b1"
     },
     {
       "path": "src/components/common/UndoToast.tsx",
@@ -567,7 +571,7 @@
     },
     {
       "path": "src/components/google/GoogleWorkspacePanel.tsx",
-      "sha256": "edcf1f7a7ea3e79ac567d2ae39b63b475fb48043dcb9a7c2dbd7038162249575"
+      "sha256": "fdb3d8498b20d0b77b8892779d97cbe4b4813ac769d44ebab1917d7b5493102c"
     },
     {
       "path": "src/components/help/HelpVideos.tsx",
@@ -959,7 +963,7 @@
     },
     {
       "path": "src/hooks/useAuth.ts",
-      "sha256": "b105d3bc4eed2ee2572f3edb281550e19d795f500d542318b7652d4981e22fd6"
+      "sha256": "a5c0146bfdec09095497e3a42371f5afe548cddf09bafa2cdfeef43eca3ce282"
     },
     {
       "path": "src/hooks/useBoard.ts",
@@ -1055,7 +1059,7 @@
     },
     {
       "path": "src/hooks/useProjectTaskViewNavigation.ts",
-      "sha256": "83b0e44d7c086c90cb3ab15c8e761714932e29a11d9b929465771ce9eaf9955d"
+      "sha256": "524e04991e241ba2fc5381f3fe5aa3ebff7913f5765390c83afe75ce2c5f1ad6"
     },
     {
       "path": "src/hooks/useProjects.ts",
@@ -1463,7 +1467,7 @@
     },
     {
       "path": "src/lib/firebase/auth.ts",
-      "sha256": "6c250f8edd4cf5d7311a223877687c42e3784113f604015cd7fe020470993b09"
+      "sha256": "41f3509717edd0b30af66525b2280219c2fdd4f4a3180d2b55c4ad662600fc96"
     },
     {
       "path": "src/lib/firebase/authToken.ts",
@@ -1751,7 +1755,7 @@
     },
     {
       "path": "src/lib/task/recurrenceRepository.ts",
-      "sha256": "b38c713ead1249b478c9b9f72b89254c85132f044879bd57b3ca2420931cb31e"
+      "sha256": "9f27ae0c9bc8cdd0888688e3f9e00157cf5db6164219c19e84526dd325849432"
     },
     {
       "path": "src/lib/task/reviews.ts",
@@ -1783,7 +1787,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "a93e12d8f768758e98bb46cc4e4ded098475ce8a22bac3e14de204ccd608956e"
+      "sha256": "00049296f6046c15d08d5f733de5b8bb475467279ffbc688cdc00d3cfdb7a7ba"
     },
     {
       "path": "src/lib/ui-guide/verification.json",

@@ -1,0 +1,16 @@
+{
+  "displayName": "Slowth Dot pilot: permanent delivery failure",
+  "enabled": false,
+  "combiner": "OR",
+  "notificationChannels": [],
+  "conditions": [{
+    "displayName": "At least one permanently failed delivery",
+    "conditionThreshold": {
+      "filter": "metric.type=\"logging.googleapis.com/user/slowth_mcp_delivery_dead\" AND resource.type=\"cloud_run_revision\"",
+      "comparison": "COMPARISON_GT", "thresholdValue": 0, "duration": "0s",
+      "aggregations": [{ "alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_SUM" }],
+      "trigger": { "count": 1 }
+    }
+  }],
+  "documentation": { "mimeType": "text/markdown", "content": "Review MCP delivery counters. Check subscription renewal and authorization, then recover unacknowledged notifications. Do not log or share callback URLs, signing keys or tokens." }
+}

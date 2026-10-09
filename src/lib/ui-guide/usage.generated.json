@@ -1,15 +1,16 @@
 {
   "revision": "ui-guide-2026-09-18.17",
-  "graphHash": "e2e4aaa04f2f8f44911487d293268095bd4b6dd2f5b2668e13ab5e2db2538333",
+  "graphHash": "c278ea9c47c484eb7a7f4873d1d537704c03c8fa45a48af3932b8713b0c0dd5f",
   "entries": {
     "text": {
-      "sourceHash": "1201c305cfa2550ad4d6e426dbc05ddbebdc3e83698b0146040c4d0d4dd2d76a",
+      "sourceHash": "68f321d79d4e5150acec68bf37bc95af53c09ba3edd4bf043a5effb7d8368c3a",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/settings/ai/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
         "src/app/layout.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/board/ReferenceComments.tsx",
         "src/components/help/HelpVideos.tsx",
         "src/components/task/TaskDetailModal.tsx",
@@ -21,6 +22,7 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/board/BoardList.tsx",
         "src/components/board/BoardView.tsx",
         "src/components/board/ListReferencesPanel.tsx",
@@ -36,6 +38,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -54,7 +57,7 @@
       ]
     },
     "button": {
-      "sourceHash": "efe3e7f686fe31992670b768856746363b196880c226d9f5b1ad02ca40b0f022",
+      "sourceHash": "307b182c0c47df390aa4e9a7a8d4799c3600f8c9a8cbf5c97569cdda08f2364c",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -66,6 +69,7 @@
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/browser-backup/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AIModelSelector.tsx",
         "src/components/ai/AIReferenceFields.tsx",
         "src/components/ai/AISettingsForm.tsx",
@@ -198,6 +202,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -221,6 +226,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -239,7 +245,7 @@
       ]
     },
     "input": {
-      "sourceHash": "3400bb65a12005abaf098b4a881ad083a0ee3612e7c7a4e72b867c0842e365c4",
+      "sourceHash": "dfbf32293c0f9f936a8bb54cfc17e0aa4bfce0d37af359012aef4601a656a16c",
       "direct": [
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
@@ -388,13 +394,14 @@
       ]
     },
     "card": {
-      "sourceHash": "82bfda71b82d58fe95b6e6db7424dc980581da106076e7f44052515ce6750975",
+      "sourceHash": "8baf50e955c91c771fd54226fd741ab3ae234d911a9dcaccb7b3995174be89d7",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AISettingsForm.tsx",
         "src/components/ai/AISupportSettings.tsx",
         "src/components/ai/CompanionScheduleSettings.tsx",
@@ -421,6 +428,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/AISupportAdjust.tsx",
         "src/components/ai/CompanionAI.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
@@ -439,6 +447,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -457,7 +466,7 @@
       ]
     },
     "states": {
-      "sourceHash": "4edfc4018b077e01bf387e1d128e31e23346e0b83cb6ad5ba59b72318b8e3391",
+      "sourceHash": "9e626e6a31e05f3765437ce4fde519a2864167b7bb4516521175d381daf6e6a8",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/components/common/CommandPalette.tsx",
@@ -492,7 +501,7 @@
       ]
     },
     "outline": {
-      "sourceHash": "b0c335670634c271c4dc19f621721d8f3ab54ca68ced114e2a155ebb08eff725",
+      "sourceHash": "04761197c7d9d71e76f61e74ab7905afc391f03e6fedc72fd0c19ca0ac05b343",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/AutoArchiveSettings.tsx",
@@ -558,7 +567,7 @@
       ]
     },
     "table": {
-      "sourceHash": "387d8a1ddbb61e507f5eb72f8fd99b9b37afc7f56f6d912c5e8dbb3e02c2f0a7",
+      "sourceHash": "980fc1c6ca1577e6b5a3f143804d7c8f2e75a00dc005fa31b9863160c02e630f",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/AutoArchiveSettings.tsx",
@@ -693,22 +702,25 @@
       ]
     },
     "setting": {
-      "sourceHash": "50bb6d266c94c0dd6a7eb552ee0ff5b42ad763c22ba8ff229bdbda7b6190b223",
+      "sourceHash": "91997c9c289be5564e7e81b2185fca4e83297f1dd438a110a0fc758031ce9ec2",
       "direct": [
+        "src/app/mcp-connect/consent.tsx",
         "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx"
       ],
       "indirect": [
         "src/app/(dashboard)/help/page.tsx",
-        "src/app/(dashboard)/projects/[projectId]/settings/page.tsx"
+        "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
+        "src/app/mcp-connect/page.tsx"
       ],
       "routes": [
         "/help",
+        "/mcp-connect",
         "/projects/[projectId]/settings"
       ]
     },
     "list-layout": {
-      "sourceHash": "8d15e26ea172e636616f0efb4555295afa420af4d6cb261ad9b2adb2dce472b3",
+      "sourceHash": "662d781ba4b5892a99b62b29e51c7ad67a761d59eb179ee8eb6d80b477f63852",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx"
       ],
@@ -720,24 +732,27 @@
       ]
     },
     "detail-layout": {
-      "sourceHash": "ce2bab5ab1f5a6379e3628b5e4e6ac0ae3e5602656784a3826ba65821d5bed8a",
+      "sourceHash": "9f5c1a3d9105aa1f12d12ac5f9b4edcec9e4b8c8d0578b7457f075ee0a081408",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/ai/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/board/ListReferencesPanel.tsx",
         "src/components/task/TaskDetailModal.tsx"
       ],
       "indirect": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/board/BoardList.tsx",
         "src/components/board/BoardView.tsx"
       ],
       "routes": [
         "/help",
+        "/mcp-connect",
         "/profile",
         "/projects/[projectId]/board",
         "/projects/[projectId]/gantt",
@@ -747,7 +762,7 @@
       ]
     },
     "settings-layout": {
-      "sourceHash": "4fce659acfae5d0e84a2a3f5a26b6b14bd13c5b706e9883952c77a65826c4534",
+      "sourceHash": "65b71d80fcbe59a013f6938c0da01de3050898e12a65ae74d0bb1706c3a292eb",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/help/page.tsx",
@@ -756,6 +771,7 @@
         "src/app/(dashboard)/settings/ai/page.tsx",
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AISettingsForm.tsx",
         "src/components/ai/AISupportSettings.tsx",
         "src/components/ai/CompanionScheduleSettings.tsx",
@@ -785,6 +801,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/AISupportAdjust.tsx",
         "src/components/ai/CompanionAI.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
@@ -805,6 +822,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -829,7 +847,7 @@
       "routes": []
     },
     "search": {
-      "sourceHash": "7a0114317ae5d047d02615b143c0bfdb2c0cec8d7e91b99219870395df50bd77",
+      "sourceHash": "be88f5028f87be39a92cec2cc440c75516e0feeed3b49d1bc46173f7cab75ad7",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -841,6 +859,7 @@
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/browser-backup/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AIModelSelector.tsx",
         "src/components/ai/AIReferenceFields.tsx",
         "src/components/ai/AISettingsForm.tsx",
@@ -970,6 +989,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -990,6 +1010,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -1008,7 +1029,7 @@
       ]
     },
     "notifications": {
-      "sourceHash": "293c9834da1dcdaf0d8248d4b09e0a27a1de1496c4c84609505b42e5ff841630",
+      "sourceHash": "8df33205a8f25d2776d02c38d1c53e245aae2354776321e9980fe43aee7670ae",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1020,6 +1041,7 @@
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/browser-backup/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AIModelSelector.tsx",
         "src/components/ai/AIReferenceFields.tsx",
         "src/components/ai/AISettingsForm.tsx",
@@ -1147,6 +1169,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -1167,6 +1190,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -1185,7 +1209,7 @@
       ]
     },
     "calendar": {
-      "sourceHash": "293c9834da1dcdaf0d8248d4b09e0a27a1de1496c4c84609505b42e5ff841630",
+      "sourceHash": "8df33205a8f25d2776d02c38d1c53e245aae2354776321e9980fe43aee7670ae",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1197,6 +1221,7 @@
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/browser-backup/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AIModelSelector.tsx",
         "src/components/ai/AIReferenceFields.tsx",
         "src/components/ai/AISettingsForm.tsx",
@@ -1322,6 +1347,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -1344,6 +1370,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -1362,7 +1389,7 @@
       ]
     },
     "gantt": {
-      "sourceHash": "293c9834da1dcdaf0d8248d4b09e0a27a1de1496c4c84609505b42e5ff841630",
+      "sourceHash": "8df33205a8f25d2776d02c38d1c53e245aae2354776321e9980fe43aee7670ae",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1374,6 +1401,7 @@
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/browser-backup/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AIModelSelector.tsx",
         "src/components/ai/AIReferenceFields.tsx",
         "src/components/ai/AISettingsForm.tsx",
@@ -1500,6 +1528,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -1521,6 +1550,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -1539,7 +1569,7 @@
       ]
     },
     "progress": {
-      "sourceHash": "c438fb172fed0cc48dfd3305e6258723b412b06ac51519c4dc91fcb97213d60e",
+      "sourceHash": "0952929b85fed4ac6da6ea04a1cfbebff2bed49eeda9469cb3d20396f02f0182",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1551,6 +1581,7 @@
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/browser-backup/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AIModelSelector.tsx",
         "src/components/ai/AIReferenceFields.tsx",
         "src/components/ai/AISettingsForm.tsx",
@@ -1713,6 +1744,7 @@
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
         "src/app/layout.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/GroupedTaskView.tsx",
@@ -1802,6 +1834,7 @@
         "src/lib/firebase/latestTaskActivity.ts",
         "src/lib/firebase/subtask-order.ts",
         "src/lib/firebase/taskParent.ts",
+        "src/lib/mcp/taskData.ts",
         "src/lib/secretary/interpret.ts",
         "src/lib/secretary/interpretIncoming.ts",
         "src/lib/secretary/repository.ts",
@@ -1841,6 +1874,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -1859,7 +1893,7 @@
       ]
     },
     "frame-trial": {
-      "sourceHash": "293c9834da1dcdaf0d8248d4b09e0a27a1de1496c4c84609505b42e5ff841630",
+      "sourceHash": "8df33205a8f25d2776d02c38d1c53e245aae2354776321e9980fe43aee7670ae",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1871,6 +1905,7 @@
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/browser-backup/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AIModelSelector.tsx",
         "src/components/ai/AIReferenceFields.tsx",
         "src/components/ai/AISettingsForm.tsx",
@@ -1997,6 +2032,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
@@ -2018,6 +2054,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -2036,7 +2073,7 @@
       ]
     },
     "table-trial": {
-      "sourceHash": "d76057067dc9ab1a641ed539513f72b462b27b3cc27a22858bca46d0f23b71b1",
+      "sourceHash": "9f9171155224967fc909fa61703373298d15c47a9241443db10c3e68791a3462",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2048,6 +2085,7 @@
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/browser-backup/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AIModelSelector.tsx",
         "src/components/ai/AIReferenceFields.tsx",
         "src/components/ai/AISettingsForm.tsx",
@@ -2188,6 +2226,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskProgressView.tsx",
@@ -2206,6 +2245,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -2224,7 +2264,7 @@
       ]
     },
     "history-trial": {
-      "sourceHash": "d76057067dc9ab1a641ed539513f72b462b27b3cc27a22858bca46d0f23b71b1",
+      "sourceHash": "9f9171155224967fc909fa61703373298d15c47a9241443db10c3e68791a3462",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2236,6 +2276,7 @@
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/browser-backup/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AIModelSelector.tsx",
         "src/components/ai/AIReferenceFields.tsx",
         "src/components/ai/AISettingsForm.tsx",
@@ -2376,6 +2417,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/ChatMessage.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskProgressView.tsx",
@@ -2394,6 +2436,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -2412,7 +2455,7 @@
       ]
     },
     "neo-brief-row-trial": {
-      "sourceHash": "dce9b0d6e21f4e9d756f06f04cb9da23562457b626985a045e71c639de797834",
+      "sourceHash": "d38e8ef6b7166086ec24467033e7103dc96243a45643b9d38e05ffca6794d7df",
       "direct": [
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskCard.tsx",
@@ -2452,7 +2495,7 @@
       ]
     },
     "neo-brief-assignee-filter-trial": {
-      "sourceHash": "b2973ab4de0b0634e5bc9876aebf765dea041eb2b76dda97a3a7d4cacec70d5f",
+      "sourceHash": "8981376e72e5e8f5ed90dc46c057f81b536e620738ff46b1dde8bf0d32449da5",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2464,6 +2507,7 @@
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/browser-backup/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AIModelSelector.tsx",
         "src/components/ai/AIReferenceFields.tsx",
         "src/components/ai/AISettingsForm.tsx",
@@ -2597,6 +2641,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
         "src/components/board/TaskChildrenSummary.tsx",
         "src/components/board/TaskOutlineView.tsx",
@@ -2616,6 +2661,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -2649,7 +2695,7 @@
       ]
     },
     "task-row-one-line-trial": {
-      "sourceHash": "c6fe239e29c353772b927144c4aaf5bab01855781c8244b19e885f91ac618f0c",
+      "sourceHash": "08072344c8fca74073a11a120158e32fc375e05651de7ce364d1e2b8095c0b2a",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
@@ -2711,13 +2757,14 @@
       ]
     },
     "neo-home-layout-trial": {
-      "sourceHash": "80317c936621c64939cb2840b43c381ddbd916ae91d4861d8ea75bd92c81c1b8",
+      "sourceHash": "41c72e10ef82f19fa3bb59374a6a99f37c13960b70f72b2b4b21bfdfd19a2f5a",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AISettingsForm.tsx",
         "src/components/ai/AISupportSettings.tsx",
         "src/components/ai/CompanionScheduleSettings.tsx",
@@ -2747,6 +2794,7 @@
         "src/app/(dashboard)/settings/google/page.tsx",
         "src/app/desktop-mini/connect/page.tsx",
         "src/app/desktop-mini/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/AISupportAdjust.tsx",
         "src/components/ai/CompanionAI.tsx",
         "src/components/board/AutoArchivePreviewSettings.tsx",
@@ -2761,6 +2809,7 @@
         "/desktop-mini/connect",
         "/help",
         "/login",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -2779,24 +2828,27 @@
       ]
     },
     "detail-header-spacing-trial": {
-      "sourceHash": "ceb9feff1ce265f5356fff32712e41fdd8ba36b62c5112e617847822e6329844",
+      "sourceHash": "1ba69ddae84b9dafbe0bd5f21ed4b72fb45a1d92477c13725ed09a5e6dff7ecd",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/settings/ai/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/board/ListReferencesPanel.tsx",
         "src/components/task/TaskDetailModal.tsx"
       ],
       "indirect": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/board/BoardList.tsx",
         "src/components/board/BoardView.tsx"
       ],
       "routes": [
         "/help",
+        "/mcp-connect",
         "/profile",
         "/projects/[projectId]/board",
         "/projects/[projectId]/gantt",
@@ -2806,7 +2858,7 @@
       ]
     },
     "subtask-view-alignment-trial": {
-      "sourceHash": "58300031719279f6552c26227654b7137fca2cfe811b12df331b80c013ca674a",
+      "sourceHash": "d8a0a26071f5af52beac1d66a0ba7ce248545155782c2c4a73ba64c2f29e0be3",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
@@ -2819,7 +2871,7 @@
       ]
     },
     "task-detail-subtask-order-trial": {
-      "sourceHash": "1f68f9f98453edb780611cee381d8f518f5c78aff52c8644546bc935754f06f8",
+      "sourceHash": "4f31c1c6434a7452e625787af053e5eab224e0b5254e2155ac016065e15f3aad",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx"
@@ -2831,7 +2883,7 @@
       ]
     },
     "proposal-review-flow-trial": {
-      "sourceHash": "b394e2da24497a9490a7e2713184d50f264523de6f24cb0f906393451b8563f9",
+      "sourceHash": "176b5da75189d02c7d2f393dc87a084e647ecf73c1374eff634932bbb48bfc8b",
       "direct": [
         "src/app/(dashboard)/layout.tsx",
         "src/components/dashboard/NeoDashboard.tsx",
@@ -2867,7 +2919,7 @@
       ]
     },
     "calendar-task-create-trial": {
-      "sourceHash": "0918c9dabf1947f313ddd752d0ea6bf8b3077e7ca107826b9d05857894e2ae35",
+      "sourceHash": "45bbab9c6ab65aef80b87cdebdc79d4469a2668b01799654ccb2a7df6e91af26",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/BoardList.tsx",
@@ -2886,7 +2938,7 @@
       ]
     },
     "task-structure-guidance-trial": {
-      "sourceHash": "495704e02afbf2b8ceef36f44249ccfdd8494fed4e473ef96225c0fa9c6b12d2",
+      "sourceHash": "e6df7edb39c6aefa89e9e2d53ffff57f4d1dfca7dfd6a138848a1e7a1272a15f",
       "direct": [
         "src/app/api/tasks/organize/route.ts",
         "src/components/board/TaskRelationshipSuggestions.tsx",

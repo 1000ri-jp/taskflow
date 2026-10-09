@@ -13,10 +13,11 @@ import { useAuthStore } from '@/stores/authStore';
 
 export default function GanttPage() {
   const [dateError, setDateError] = useState<string | null>(null);
-  const params = useParams();
+  // App Router only; pages/ contains OAuth APIs and adds nullable compatibility types.
+  const params = useParams()!;
   const projectId = params.projectId as string;
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const pathname = usePathname()!;
+  const searchParams = useSearchParams()!;
   const router = useRouter();
   const milestoneState = useProjectMilestones(projectId);
   const { user } = useAuthStore();

@@ -25,3 +25,66 @@ env:
     secret: GOOGLE_OAUTH_CLIENT_SECRET
   - variable: GOOGLE_TOKEN_ENCRYPTION_KEY
     secret: GOOGLE_TOKEN_ENCRYPTION_KEY
+  # Authorized Slowth pilot: the existing account and one approved project.
+  - variable: SLOWTH_MCP_EVENTS_ENABLED
+    value: 'true'
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_EVENTS_SYNTHETIC_TEST
+    value: 'false'
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_CALLBACK_HOSTS
+    value: 'connectors.api.openai.com'
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_CALLBACK_HOST_DIAGNOSTICS
+    value: 'false'
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_OAUTH_ENABLED
+    value: 'true'
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_OAUTH_ORIGIN
+    value: https://slowth.1000ri.jp
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_OAUTH_ALLOWED_UID
+    value: cumYzvyN8iewLLRTySiIEb5atqT2
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_OAUTH_CLIENT_ID
+    value: https://chatgpt.com/oauth/client.json
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_OAUTH_REDIRECT_URI
+    value: https://chatgpt.com/connector_platform_oauth_redirect
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_OAUTH_JWKS
+    secret: SLOWTH_MCP_OAUTH_JWKS@1
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_OAUTH_COOKIE_KEYS
+    secret: SLOWTH_MCP_OAUTH_COOKIE_KEYS@1
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_OAUTH_STORAGE_KEY
+    secret: SLOWTH_MCP_OAUTH_STORAGE_KEY@1
+    availability:
+      - RUNTIME
+
+  - variable: SLOWTH_MCP_EVENTS_PRODUCTION
+    value: "true"
+    availability: [RUNTIME]
+  - variable: SLOWTH_MCP_EVENTS_PROJECT_ID
+    value: "SlBpu8BPYgIARk4DoYOV"
+    availability: [RUNTIME]
+
+  - variable: SLOWTH_MCP_TASK_ACCESS
+    value: "true"
+    availability: [RUNTIME]
+  - variable: SLOWTH_MCP_COORDINATION_PROJECT_IDS
+    value: "SlBpu8BPYgIARk4DoYOV"
+    availability: [RUNTIME]

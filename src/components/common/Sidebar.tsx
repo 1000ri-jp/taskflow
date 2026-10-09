@@ -162,7 +162,8 @@ function SortableProjectItem({
 }
 
 export function Sidebar() {
-  const pathname = usePathname();
+  // App Router only; pages/ contains OAuth APIs and adds nullable compatibility types.
+  const pathname = usePathname()!;
   const { isSidebarOpen, isSidebarCollapsed, setSidebarOpen, setSidebarCollapsed, openProjectModal } = useUIStore();
   const { projects, isLoading, error, reorder } = useProjects();
   const { allProjectTasks, projectTaskStatus } = useMyTasks();

@@ -42,9 +42,12 @@ export async function readReactions(uid: string, target: Pick<ReactionTarget, 'p
 }
 
 export async function setReaction(uid: string, raw: Record<string, unknown>): Promise<CommentReaction | null> {
+  return getAdminDb().runTransaction(tx => setReactionInTransaction(tx, uid, raw));
+}
+export async function setReactionInTransaction(tx: Transaction, uid: string, raw: Record<string, unknown>): Promise<CommentReaction | null> {
   const input = validateAction(raw);
   const db = getAdminDb();
-  return db.runTransaction(async tx => {
+
     await access(tx, uid, input);
     const comment = db.doc(commentPath(input));
     const ref = comment.collection('reactions').doc(uid);
@@ -70,7 +73,7 @@ export async function setReaction(uid: string, raw: Record<string, unknown>): Pr
     const next: CommentReaction = { userId: uid, displayName: typeof name === 'string' && name.trim() ? name.slice(0, 80) : 'メンバー', marks };
     tx.set(ref, next);
     return next;
-  });
+
 }
 
 const stampSettingsPath = (uid: string) => `users/${uid}/settings/commentStamps`;

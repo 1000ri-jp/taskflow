@@ -46,7 +46,26 @@
         "firebase.emulators.json",
         "firestore-debug.log",
         "*.zip",
-        "*.tsbuildinfo"
+        "*.tsbuildinfo",
+        "mcp-events-functions",
+        "tools/slowth-worker"
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "source": "mcp-events-functions",
+      "codebase": "slowth-mcp-events",
+      "runtime": "nodejs22",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "*.log",
+        ".env*"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run prepare:source",
+        "npm --prefix \"$RESOURCE_DIR\" run check"
       ]
     }
   ]

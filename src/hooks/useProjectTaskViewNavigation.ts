@@ -12,8 +12,9 @@ import { useAuthStore } from '@/stores/authStore';
 
 export function useProjectTaskViewNavigation(projectId: string) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  // App Router only; pages/ contains OAuth APIs and adds nullable compatibility types.
+  const pathname = usePathname()!;
+  const searchParams = useSearchParams()!;
   const { firebaseUser } = useAuthStore();
   const viewerId = firebaseUser?.uid ?? null;
   const { byScope, hydrated, hydrate, setDefault, persistenceFailed } = useProjectTaskViewStore();

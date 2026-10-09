@@ -20,11 +20,12 @@ import type { Task } from '@/types';
 import { recalculateDates } from '@/lib/utils/task';
 
 export default function BoardPage() {
-  const params = useParams();
+  // App Router only; pages/ contains OAuth APIs and adds nullable compatibility types.
+  const params = useParams()!;
   const projectId = params.projectId as string;
-  const pathname = usePathname();
+  const pathname = usePathname()!;
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams()!;
   const taskIdFromUrl = searchParams.get('task');
   const listId = searchParams.get('list');
   const milestoneState = useProjectMilestones(projectId);

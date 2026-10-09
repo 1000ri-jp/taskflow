@@ -80,7 +80,8 @@ const oauthErrors: Record<string, string> = {
   INVALID_STATE: '接続操作の期限が切れました。もう一度接続してください。',
 };
 export function GoogleWorkspaceSettings() {
-  const google = useGoogleWorkspace(); const params = useSearchParams();
+  // App Router only; pages/ contains OAuth APIs and adds nullable compatibility types.
+  const google = useGoogleWorkspace(); const params = useSearchParams()!;
   const uid = useAuthStore(s => s.user?.id);
   const [choices, setChoices] = useState<{ service: GoogleService; values: GoogleSelection[]; partial: boolean } | null>(null);
   const [selected, setSelected] = useState<string[]>([]); const [selectionError, setSelectionError] = useState<string | null>(null); const [choosing, setChoosing] = useState(false);

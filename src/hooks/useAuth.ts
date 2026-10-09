@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import {
   signInWithGoogle,
+  signInWithGoogleForMcp,
   signInWithTestUser,
   signInWithDemoUser,
   signOut as firebaseSignOut,
@@ -40,6 +41,15 @@ export function useAuth() {
     } finally {
       setLoading(false);
     }
+  }, [setLoading, setFirebaseUser, setUser]);
+
+  const signInForMcp = useCallback(async () => {
+    setLoading(true);
+    try {
+      const fbUser = await signInWithGoogleForMcp();
+      setFirebaseUser(fbUser);
+      setUser(await getUserData(fbUser.uid));
+    } finally { setLoading(false); }
   }, [setLoading, setFirebaseUser, setUser]);
 
   // Sign in with test user (E2E testing)
@@ -100,6 +110,7 @@ export function useAuth() {
     isTestMode: isTestMode(),
     isDemoLoginEnabled: isDemoLoginEnabled(),
     signIn,
+    signInForMcp,
     signInAsTestUser,
     signInAsDemoUser,
     signOut,

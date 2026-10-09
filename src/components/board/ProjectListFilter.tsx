@@ -4,8 +4,9 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { List } from '@/types';
 
 export function ProjectListFilter({ lists }: { lists: List[] }) {
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
+  // App Router only; pages/ contains OAuth APIs and adds nullable compatibility types.
+  const searchParams = useSearchParams()!;
+  const pathname = usePathname()!;
   const router = useRouter();
   const listId = searchParams.get('list') ?? '';
   return <label className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
