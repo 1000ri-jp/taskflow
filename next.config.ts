@@ -2,8 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   outputFileTracingIncludes: { "/api/help/videos/*": ["./src/assets/help-videos/*.mp4"] },
+  serverExternalPackages: ['oidc-provider'],
   // OAuth callbacks contain a short-lived authorization code; keep it out of dev logs.
-  logging: { incomingRequests: { ignore: [/^\/api\/google\/callback(?:\?|$)/] } },
+  logging: { incomingRequests: { ignore: [/^\/api\/google\/callback(?:\?|$)/, /^\/api\/oidc\//, /^\/mcp-connect/] } },
+  async rewrites() {
+    return [{ source: '/mcp-connect/consent', destination: '/api/mcp-consent' }];
+  },
   // Keep the real-data local server isolated from the mock secretary preview
   // when both are opened from this checkout.
   ...(process.env.NEXT_DEV_DIST_DIR ? { distDir: process.env.NEXT_DEV_DIST_DIR } : {}),
@@ -72,6 +76,10 @@ const nextConfig: NextConfig = {
         // Only fictitious UI specimens may be embedded, and only on this origin.
         source: "/ui-guide/preview",
         headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+      },
+      {
+        source: '/mcp-connect/:path*',
+        headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }, { key: 'Cache-Control', value: 'no-store' }],
       },
     ];
   },

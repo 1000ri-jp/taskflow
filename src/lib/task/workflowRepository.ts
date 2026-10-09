@@ -6,13 +6,16 @@ import { organizationAccess } from './organizationRepository';
 import { planWorkflow, workflowReceipt, type WorkflowInput, type WorkflowReceipt } from './workflow';
 import { OrganizationError, validOrganizationId } from './organizationEngine';
 import type { Task } from '@/types';
+import type { Transaction } from 'firebase-admin/firestore';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const date = (value: unknown) => value instanceof Date ? value : value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function' ? value.toDate() as Date : null;
 export async function applyWorkflow(uid: string, projectId: string, taskId: string, input: WorkflowInput) {
   if (![taskId, input.id].every(validOrganizationId)) throw new OrganizationError('仕事と操作を確認してください。');
+  return getAdminDb().runTransaction(tx => applyWorkflowInTransaction(tx, uid, projectId, taskId, input));
+}
+export async function applyWorkflowInTransaction(tx: Transaction, uid: string, projectId: string, taskId: string, input: WorkflowInput) {
   const db = getAdminDb();
-  return db.runTransaction(async tx => {
     const { ref, memberIds } = await organizationAccess(tx, uid, projectId);
     const receiptRef = ref.collection('activityLogs').doc(`workflow-${input.id}`);
     const receipt = await tx.get(receiptRef);
@@ -73,5 +76,5 @@ export async function applyWorkflow(uid: string, projectId: string, taskId: stri
       });
     }
     return { alreadyApplied: false, receipt: resultReceipt };
-  });
+
 }

@@ -1,0 +1,18 @@
+{
+  "schema": "slowth-worker-config/v1",
+  "projectId": "REPLACE_WITH_APPROVED_SLOWTH_PROJECT_ID",
+  "workerId": "REPLACE_WITH_REGISTERED_WORKER_ID",
+  "stateDirectory": "state",
+  "sources": {
+    "slowth-source": "../..",
+    "worker-fixture": "fixtures/source"
+  },
+  "serverSourceRoot": "../..",
+  "firebase": {
+    "projectId": "REPLACE_WITH_FIREBASE_PROJECT_ID",
+    "storageBucket": "REPLACE_WITH_FIREBASE_STORAGE_BUCKET"
+  },
+  "mcpEndpoint": "https://REPLACE_WITH_APPROVED_MCP_HOST/api/mcp",
+  "codexCommand": "codex",
+  "pythonCommand": "python3"
+}

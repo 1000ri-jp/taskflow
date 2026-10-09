@@ -54,6 +54,13 @@ export async function signInWithGoogle(): Promise<User> {
   return (await signInWithGoogleResult()).user;
 }
 
+/** The MCP consent screen must let the user select the pinned Google account. */
+export async function signInWithGoogleForMcp(): Promise<User> {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ hd: ALLOWED_DOMAIN, prompt: 'select_account' });
+  return (await signInWithGoogleResult(provider)).user;
+}
+
 /** A fresh Google sign-in, used only after the user confirms the Mini code. */
 export async function signInWithGoogleForMini() {
   const result = await signInWithGoogleResult();
@@ -72,9 +79,9 @@ export async function completeMiniSignIn(idToken: string, expectedUid: string) {
   await createOrUpdateUser(result.user);
 }
 
-async function signInWithGoogleResult() {
+async function signInWithGoogleResult(provider = googleProvider) {
   const auth = getFirebaseAuth();
-  const result = await signInWithPopup(auth, googleProvider);
+  const result = await signInWithPopup(auth, provider);
 
   // Verify email domain
   const email = result.user.email;

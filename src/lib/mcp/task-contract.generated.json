@@ -1,0 +1,2771 @@
+{
+  "version": "d6d0f04fea178158462b369c3c566fd720d2873322ec487d78b103c461f57388",
+  "models": {
+    "Task": {
+      "type": "object",
+      "properties": {
+        "aiSuggested": {
+          "type": "boolean"
+        },
+        "recurrence": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "seriesId": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "occurrence": {
+                  "type": "number"
+                },
+                "unit": {
+                  "enum": [
+                    "day",
+                    "week",
+                    "month",
+                    "year"
+                  ]
+                },
+                "interval": {
+                  "type": "number"
+                },
+                "anchorDate": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "endDate": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                },
+                "listId": {
+                  "type": "string",
+                  "maxLength": 20000
+                }
+              },
+              "required": [
+                "seriesId",
+                "occurrence",
+                "unit",
+                "interval",
+                "anchorDate",
+                "endDate",
+                "listId"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "completionCriteria": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "primaryAssigneeId": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "workProgress": {
+          "enum": [
+            "not_started",
+            "started"
+          ]
+        },
+        "review": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "urgency": {
+                  "enum": [
+                    "urgent"
+                  ]
+                },
+                "policy": {
+                  "enum": [
+                    "any",
+                    "all"
+                  ]
+                },
+                "round": {
+                  "type": "number"
+                },
+                "request": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "attachments": {
+                  "type": "array",
+                  "maxItems": 1000,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "maxLength": 20000
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 20000
+                      },
+                      "url": {
+                        "type": "string",
+                        "maxLength": 20000
+                      },
+                      "type": {
+                        "type": "string",
+                        "maxLength": 20000
+                      },
+                      "size": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "url",
+                      "type",
+                      "size"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "requestedAt": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "responses": {
+                  "type": "object",
+                  "properties": {},
+                  "required": [],
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "outcome": {
+                        "enum": [
+                          "approved",
+                          "changes_requested"
+                        ]
+                      },
+                      "note": {
+                        "type": "string",
+                        "maxLength": 20000
+                      },
+                      "at": {
+                        "type": "string",
+                        "maxLength": 20000
+                      }
+                    },
+                    "required": [
+                      "outcome",
+                      "note",
+                      "at"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "nextTaskId": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                },
+                "correctedApproval": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "by": {
+                          "type": "string",
+                          "maxLength": 20000
+                        },
+                        "note": {
+                          "type": "string",
+                          "maxLength": 20000
+                        },
+                        "at": {
+                          "type": "string",
+                          "maxLength": 20000
+                        },
+                        "previousResponse": {
+                          "type": "object",
+                          "properties": {
+                            "outcome": {
+                              "enum": [
+                                "approved",
+                                "changes_requested"
+                              ]
+                            },
+                            "note": {
+                              "type": "string",
+                              "maxLength": 20000
+                            },
+                            "at": {
+                              "type": "string",
+                              "maxLength": 20000
+                            }
+                          },
+                          "required": [
+                            "outcome",
+                            "note",
+                            "at"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "by",
+                        "note",
+                        "at",
+                        "previousResponse"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "previousRound": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "responses": {
+                          "type": "object",
+                          "properties": {},
+                          "required": [],
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "outcome": {
+                                "enum": [
+                                  "approved",
+                                  "changes_requested"
+                                ]
+                              },
+                              "note": {
+                                "type": "string",
+                                "maxLength": 20000
+                              },
+                              "at": {
+                                "type": "string",
+                                "maxLength": 20000
+                              }
+                            },
+                            "required": [
+                              "outcome",
+                              "note",
+                              "at"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "round": {
+                          "type": "number"
+                        },
+                        "request": {
+                          "type": "string",
+                          "maxLength": 20000
+                        },
+                        "attachments": {
+                          "type": "array",
+                          "maxItems": 1000,
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "maxLength": 20000
+                              },
+                              "name": {
+                                "type": "string",
+                                "maxLength": 20000
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 20000
+                              },
+                              "type": {
+                                "type": "string",
+                                "maxLength": 20000
+                              },
+                              "size": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "url",
+                              "type",
+                              "size"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "requestedAt": {
+                          "type": "string",
+                          "maxLength": 20000
+                        }
+                      },
+                      "required": [
+                        "responses",
+                        "round",
+                        "request",
+                        "attachments",
+                        "requestedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "policy",
+                "round",
+                "request",
+                "attachments",
+                "requestedAt",
+                "responses"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "reviewRequests": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "commentId": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "assigneeIds": {
+                    "type": "array",
+                    "maxItems": 1000,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  },
+                  "dueDate": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string",
+                        "maxLength": 20000
+                      }
+                    ]
+                  },
+                  "createdBy": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "updatedAt": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "cycle": {
+                    "type": "object",
+                    "properties": {
+                      "urgency": {
+                        "enum": [
+                          "urgent"
+                        ]
+                      },
+                      "policy": {
+                        "enum": [
+                          "any",
+                          "all"
+                        ]
+                      },
+                      "round": {
+                        "type": "number"
+                      },
+                      "request": {
+                        "type": "string",
+                        "maxLength": 20000
+                      },
+                      "attachments": {
+                        "type": "array",
+                        "maxItems": 1000,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "maxLength": 20000
+                            },
+                            "name": {
+                              "type": "string",
+                              "maxLength": 20000
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 20000
+                            },
+                            "type": {
+                              "type": "string",
+                              "maxLength": 20000
+                            },
+                            "size": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "url",
+                            "type",
+                            "size"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "requestedAt": {
+                        "type": "string",
+                        "maxLength": 20000
+                      },
+                      "responses": {
+                        "type": "object",
+                        "properties": {},
+                        "required": [],
+                        "additionalProperties": {
+                          "type": "object",
+                          "properties": {
+                            "outcome": {
+                              "enum": [
+                                "approved",
+                                "changes_requested"
+                              ]
+                            },
+                            "note": {
+                              "type": "string",
+                              "maxLength": 20000
+                            },
+                            "at": {
+                              "type": "string",
+                              "maxLength": 20000
+                            }
+                          },
+                          "required": [
+                            "outcome",
+                            "note",
+                            "at"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "nextTaskId": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string",
+                            "maxLength": 20000
+                          }
+                        ]
+                      },
+                      "correctedApproval": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "by": {
+                                "type": "string",
+                                "maxLength": 20000
+                              },
+                              "note": {
+                                "type": "string",
+                                "maxLength": 20000
+                              },
+                              "at": {
+                                "type": "string",
+                                "maxLength": 20000
+                              },
+                              "previousResponse": {
+                                "type": "object",
+                                "properties": {
+                                  "outcome": {
+                                    "enum": [
+                                      "approved",
+                                      "changes_requested"
+                                    ]
+                                  },
+                                  "note": {
+                                    "type": "string",
+                                    "maxLength": 20000
+                                  },
+                                  "at": {
+                                    "type": "string",
+                                    "maxLength": 20000
+                                  }
+                                },
+                                "required": [
+                                  "outcome",
+                                  "note",
+                                  "at"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "by",
+                              "note",
+                              "at",
+                              "previousResponse"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      "previousRound": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "responses": {
+                                "type": "object",
+                                "properties": {},
+                                "required": [],
+                                "additionalProperties": {
+                                  "type": "object",
+                                  "properties": {
+                                    "outcome": {
+                                      "enum": [
+                                        "approved",
+                                        "changes_requested"
+                                      ]
+                                    },
+                                    "note": {
+                                      "type": "string",
+                                      "maxLength": 20000
+                                    },
+                                    "at": {
+                                      "type": "string",
+                                      "maxLength": 20000
+                                    }
+                                  },
+                                  "required": [
+                                    "outcome",
+                                    "note",
+                                    "at"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "round": {
+                                "type": "number"
+                              },
+                              "request": {
+                                "type": "string",
+                                "maxLength": 20000
+                              },
+                              "attachments": {
+                                "type": "array",
+                                "maxItems": 1000,
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "maxLength": 20000
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "maxLength": 20000
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "maxLength": 20000
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "maxLength": 20000
+                                    },
+                                    "size": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "name",
+                                    "url",
+                                    "type",
+                                    "size"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "requestedAt": {
+                                "type": "string",
+                                "maxLength": 20000
+                              }
+                            },
+                            "required": [
+                              "responses",
+                              "round",
+                              "request",
+                              "attachments",
+                              "requestedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "policy",
+                      "round",
+                      "request",
+                      "attachments",
+                      "requestedAt",
+                      "responses"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "commentId",
+                  "assigneeIds",
+                  "dueDate",
+                  "createdBy",
+                  "createdAt",
+                  "updatedAt",
+                  "cycle"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        },
+        "reviewRecordId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "workState": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "hold",
+                    "wait"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "resumeCondition": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "reviewAt": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "status",
+                "reason",
+                "resumeCondition",
+                "reviewAt"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "relatedTaskIds": {
+          "anyOf": [
+            {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            }
+          ]
+        },
+        "mergedIntoTaskId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "mergedFromTaskIds": {
+          "anyOf": [
+            {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            }
+          ]
+        },
+        "automation": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "merchant": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                },
+                "sourceCommentId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                },
+                "stage": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "const": "in_production"
+                    },
+                    {
+                      "const": "application"
+                    },
+                    {
+                      "const": "registered"
+                    },
+                    {
+                      "const": "ordered"
+                    },
+                    {
+                      "const": "paid"
+                    },
+                    {
+                      "const": "shipped"
+                    },
+                    {
+                      "const": "expected"
+                    },
+                    {
+                      "const": "received"
+                    },
+                    {
+                      "const": "cancelled"
+                    },
+                    {
+                      "const": "refunded"
+                    }
+                  ]
+                },
+                "check": {
+                  "enum": [
+                    "confirmed",
+                    "unconfirmed",
+                    "partial",
+                    "unavailable",
+                    "conflict",
+                    "revoked"
+                  ]
+                },
+                "checkedAt": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "evidenceAt": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                },
+                "ownerId": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "expectedDate": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "stage",
+                "check",
+                "checkedAt",
+                "evidenceAt",
+                "ownerId",
+                "expectedDate"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "deadlinePolicy": {
+          "enum": [
+            "strict"
+          ],
+          "description": "Explicitly marks a hard deadline; it never changes task completion or dates."
+        },
+        "hasChecklistDeadlines": {
+          "type": "boolean",
+          "description": "Subscription hint; checklist dates remain canonical in their checklist."
+        },
+        "completionPolicy": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "all_required_children"
+                },
+                "condition": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "required": {
+                  "type": "array",
+                  "maxItems": 1000,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "taskId": {
+                        "type": "string",
+                        "maxLength": 20000
+                      },
+                      "assigneeId": {
+                        "type": "string",
+                        "maxLength": 20000
+                      }
+                    },
+                    "required": [
+                      "taskId",
+                      "assigneeId"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "grantedBy": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "grantedAt": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "completedByAutomation": {
+                  "type": "boolean",
+                  "description": "Owned completion can be reopened; a manual completion is never claimed."
+                },
+                "completedVersion": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "condition",
+                "required",
+                "grantedBy",
+                "grantedAt"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "parentTaskId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "subtaskOrderIds": {
+          "anyOf": [
+            {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            }
+          ],
+          "description": "Parent-owned order for visible direct subtasks; Task.order remains board order."
+        },
+        "sourceCommentId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "sourceCommentTaskId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "taskKind": {
+          "enum": [
+            "review_request",
+            "decision"
+          ]
+        },
+        "milestoneId": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "projectId": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "listId": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "order": {
+          "type": "number"
+        },
+        "assigneeIds": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "string",
+            "maxLength": 20000
+          }
+        },
+        "labelIds": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "string",
+            "maxLength": 20000
+          }
+        },
+        "tagIds": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "string",
+            "maxLength": 20000
+          }
+        },
+        "dependsOnTaskIds": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "string",
+            "maxLength": 20000
+          }
+        },
+        "priority": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "const": "high"
+            },
+            {
+              "const": "medium"
+            },
+            {
+              "const": "low"
+            }
+          ]
+        },
+        "startDate": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "task-date",
+              "x-date": true
+            }
+          ]
+        },
+        "dueDate": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "task-date",
+              "x-date": true
+            }
+          ]
+        },
+        "durationDays": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "isDueDateFixed": {
+          "type": "boolean"
+        },
+        "isCompleted": {
+          "type": "boolean"
+        },
+        "completedAt": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "task-date",
+              "x-date": true
+            }
+          ]
+        },
+        "isAbandoned": {
+          "type": "boolean"
+        },
+        "isArchived": {
+          "type": "boolean"
+        },
+        "archivedAt": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "task-date",
+              "x-date": true
+            }
+          ]
+        },
+        "archivedBy": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "autoArchiveCompletedAt": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "task-date",
+              "x-date": true
+            }
+          ]
+        },
+        "createdBy": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "task-date",
+          "x-date": true
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "task-date",
+          "x-date": true
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "listId",
+        "title",
+        "description",
+        "order",
+        "assigneeIds",
+        "labelIds",
+        "tagIds",
+        "dependsOnTaskIds",
+        "priority",
+        "startDate",
+        "dueDate",
+        "durationDays",
+        "isDueDateFixed",
+        "isCompleted",
+        "completedAt",
+        "isAbandoned",
+        "isArchived",
+        "archivedAt",
+        "archivedBy",
+        "createdBy",
+        "createdAt",
+        "updatedAt"
+      ],
+      "additionalProperties": false
+    },
+    "Checklist": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "taskId": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "order": {
+          "type": "number"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "isChecked": {
+                "type": "boolean"
+              },
+              "order": {
+                "type": "number"
+              },
+              "dueDate": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "maxLength": 20000
+                  }
+                ]
+              },
+              "dueTime": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "maxLength": 20000
+                  }
+                ],
+                "description": "Japan time, HH:mm."
+              },
+              "deadlinePolicy": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "const": "strict"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "text",
+              "isChecked",
+              "order"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "task-date",
+          "x-date": true
+        }
+      },
+      "required": [
+        "id",
+        "taskId",
+        "title",
+        "order",
+        "items",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "ChecklistItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "isChecked": {
+          "type": "boolean"
+        },
+        "order": {
+          "type": "number"
+        },
+        "dueDate": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "dueTime": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ],
+          "description": "Japan time, HH:mm."
+        },
+        "deadlinePolicy": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "const": "strict"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "isChecked",
+        "order"
+      ],
+      "additionalProperties": false
+    },
+    "Comment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "purpose": {
+          "enum": [
+            "review_request",
+            "memo"
+          ]
+        },
+        "reviewTaskId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "taskId": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "authorId": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "authorLabel": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "authorIcon": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "mentions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "string",
+            "maxLength": 20000
+          }
+        },
+        "attachments": {
+          "anyOf": [
+            {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "url": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "type": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "size": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "url",
+                  "type",
+                  "size"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "task-date",
+          "x-date": true
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "task-date",
+          "x-date": true
+        }
+      },
+      "required": [
+        "id",
+        "taskId",
+        "content",
+        "authorId",
+        "mentions",
+        "createdAt",
+        "updatedAt"
+      ],
+      "additionalProperties": false
+    },
+    "Attachment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "taskId": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "url": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "type": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "size": {
+          "type": "number"
+        },
+        "uploadedBy": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "uploadedAt": {
+          "type": "string",
+          "format": "task-date",
+          "x-date": true
+        }
+      },
+      "required": [
+        "id",
+        "taskId",
+        "name",
+        "url",
+        "type",
+        "size",
+        "uploadedBy",
+        "uploadedAt"
+      ],
+      "additionalProperties": false
+    },
+    "CommentAttachment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "url": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "type": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "size": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "url",
+        "type",
+        "size"
+      ],
+      "additionalProperties": false
+    },
+    "TaskWorkState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "hold",
+            "wait"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "resumeCondition": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "reviewAt": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "reason",
+        "resumeCondition",
+        "reviewAt"
+      ],
+      "additionalProperties": false
+    },
+    "ChecklistItemMutation": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "deadline"
+            },
+            "itemId": {
+              "type": "string",
+              "maxLength": 20000
+            },
+            "dueDate": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "maxLength": 20000
+                }
+              ]
+            },
+            "dueTime": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "maxLength": 20000
+                }
+              ]
+            },
+            "deadlinePolicy": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "const": "strict"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "itemId",
+            "dueDate",
+            "dueTime",
+            "deadlinePolicy"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "dueDate"
+            },
+            "itemId": {
+              "type": "string",
+              "maxLength": 20000
+            },
+            "dueDate": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "maxLength": 20000
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "itemId",
+            "dueDate"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "text"
+            },
+            "itemId": {
+              "type": "string",
+              "maxLength": 20000
+            },
+            "text": {
+              "type": "string",
+              "maxLength": 20000
+            },
+            "expectedText": {
+              "type": "string",
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "itemId",
+            "text",
+            "expectedText"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "add"
+            },
+            "item": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "text": {
+                  "type": "string",
+                  "maxLength": 20000
+                }
+              },
+              "required": [
+                "id",
+                "text"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "kind",
+            "item"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "toggle"
+            },
+            "itemId": {
+              "type": "string",
+              "maxLength": 20000
+            },
+            "isChecked": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "kind",
+            "itemId",
+            "isChecked"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "remove"
+            },
+            "itemId": {
+              "type": "string",
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "kind",
+            "itemId"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "WorkflowInput": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "action": {
+          "enum": [
+            "resume",
+            "edit_subtask",
+            "reparent",
+            "configure",
+            "start",
+            "reset",
+            "archive",
+            "restore",
+            "complete",
+            "reopen",
+            "approve",
+            "request_changes",
+            "resubmit",
+            "correct_approval"
+          ]
+        },
+        "expectedVersion": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "details": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "completionCriteria": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "primaryAssigneeId": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                },
+                "taskKind": {
+                  "enum": [
+                    "decision",
+                    "task"
+                  ]
+                },
+                "milestoneId": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "completionCriteria",
+                "primaryAssigneeId",
+                "taskKind",
+                "milestoneId"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "attachments": {
+          "anyOf": [
+            {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "url": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "type": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "size": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "url",
+                  "type",
+                  "size"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        },
+        "parentTaskId": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "subtaskPatch": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                },
+                "dueDate": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  ]
+                },
+                "assigneeIds": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "maxItems": 1000,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 20000
+                      }
+                    }
+                  ]
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "action",
+        "expectedVersion"
+      ],
+      "additionalProperties": false
+    },
+    "ReviewRequestInput": {
+      "type": "object",
+      "properties": {
+        "urgency": {
+          "enum": [
+            "urgent"
+          ]
+        },
+        "policy": {
+          "enum": [
+            "any",
+            "all"
+          ]
+        },
+        "nextTaskId": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "assigneeIds": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "string",
+            "maxLength": 20000
+          }
+        },
+        "dueDate": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        }
+      },
+      "required": [
+        "content",
+        "assigneeIds",
+        "dueDate"
+      ],
+      "additionalProperties": false
+    },
+    "RecurrenceSettings": {
+      "type": "object",
+      "properties": {
+        "seriesId": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "unit": {
+          "enum": [
+            "day",
+            "week",
+            "month",
+            "year"
+          ]
+        },
+        "interval": {
+          "type": "number"
+        },
+        "anchorDate": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "endDate": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "listId": {
+          "type": "string",
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "seriesId",
+        "unit",
+        "interval",
+        "anchorDate",
+        "endDate",
+        "listId"
+      ],
+      "additionalProperties": false
+    },
+    "AllChildrenCompletionPolicy": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "all_required_children"
+        },
+        "condition": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "required": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "taskId": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "assigneeId": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            },
+            "required": [
+              "taskId",
+              "assigneeId"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "grantedBy": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "grantedAt": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "completedByAutomation": {
+          "type": "boolean",
+          "description": "Owned completion can be reopened; a manual completion is never claimed."
+        },
+        "completedVersion": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "condition",
+        "required",
+        "grantedBy",
+        "grantedAt"
+      ],
+      "additionalProperties": false
+    },
+    "CoordinationPolicy": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "mode": {
+          "enum": [
+            "propose",
+            "active"
+          ]
+        },
+        "aiMemberId": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "humanReviewers": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "string",
+            "maxLength": 20000
+          }
+        },
+        "humans": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "skills": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "type": "string",
+                  "maxLength": 20000
+                }
+              },
+              "availability": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            },
+            "required": [
+              "id",
+              "skills",
+              "availability"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "kinds": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "enum": [
+                    "research",
+                    "draft",
+                    "implementation"
+                  ]
+                }
+              },
+              "executor": {
+                "enum": [
+                  "dot_native",
+                  "local_worker"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "verified",
+                  "transport_required"
+                ]
+              },
+              "availability": {
+                "enum": [
+                  "connected",
+                  "local_only"
+                ]
+              },
+              "evidence": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "type": "string",
+                  "maxLength": 20000
+                }
+              },
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "projectIds": {
+                    "type": "array",
+                    "maxItems": 1000,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  },
+                  "sourceIds": {
+                    "type": "array",
+                    "maxItems": 1000,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 20000
+                    }
+                  }
+                },
+                "required": [
+                  "projectIds",
+                  "sourceIds"
+                ],
+                "additionalProperties": false
+              },
+              "constraints": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "type": "string",
+                  "maxLength": 20000
+                }
+              },
+              "transport": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "mcp",
+                      "file_job"
+                    ]
+                  },
+                  "supported": {
+                    "type": "boolean"
+                  },
+                  "gap": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 20000
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "supported"
+                ],
+                "additionalProperties": false
+              },
+              "requiresHumanReview": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "kinds",
+              "executor",
+              "status",
+              "availability",
+              "evidence",
+              "scope",
+              "constraints",
+              "transport",
+              "requiresHumanReview"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "maxLeaseSeconds": {
+          "type": "number"
+        },
+        "requireHumanReview": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enabled",
+        "mode",
+        "aiMemberId",
+        "humanReviewers",
+        "humans",
+        "capabilities",
+        "maxLeaseSeconds",
+        "requireHumanReview"
+      ],
+      "additionalProperties": false
+    },
+    "CoordinationExecutionInput": {
+      "type": "object",
+      "properties": {
+        "sourceId": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "files": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "expectedSha256": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "maxLength": 20000
+                  }
+                ]
+              }
+            },
+            "required": [
+              "path",
+              "expectedSha256"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "prompt": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "checks": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "node_syntax",
+                  "node_test",
+                  "json_validate"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            },
+            "required": [
+              "type",
+              "path"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "reviewerIds": {
+          "anyOf": [
+            {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "sourceId",
+        "files",
+        "prompt",
+        "checks"
+      ],
+      "additionalProperties": false
+    },
+    "CoordinationPlanInput": {
+      "type": "object",
+      "properties": {
+        "inputFingerprint": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "rationale": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "works": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "kind": {
+                "enum": [
+                  "research",
+                  "draft",
+                  "implementation",
+                  "human"
+                ]
+              },
+              "assigneeType": {
+                "enum": [
+                  "human",
+                  "ai"
+                ]
+              },
+              "assigneeId": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "capabilityId": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "maxLength": 20000
+                  }
+                ]
+              },
+              "dependsOn": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "type": "string",
+                  "maxLength": 20000
+                }
+              },
+              "acceptanceCriteria": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "type": "string",
+                  "maxLength": 20000
+                }
+              },
+              "taskId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 20000
+                  }
+                ]
+              },
+              "execution": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sourceId": {
+                        "type": "string",
+                        "maxLength": 20000
+                      },
+                      "files": {
+                        "type": "array",
+                        "maxItems": 1000,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "path": {
+                              "type": "string",
+                              "maxLength": 20000
+                            },
+                            "expectedSha256": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string",
+                                  "maxLength": 20000
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "path",
+                            "expectedSha256"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "prompt": {
+                        "type": "string",
+                        "maxLength": 20000
+                      },
+                      "checks": {
+                        "type": "array",
+                        "maxItems": 1000,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "enum": [
+                                "node_syntax",
+                                "node_test",
+                                "json_validate"
+                              ]
+                            },
+                            "path": {
+                              "type": "string",
+                              "maxLength": 20000
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "path"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "reviewerIds": {
+                        "anyOf": [
+                          {
+                            "type": "array",
+                            "maxItems": 1000,
+                            "items": {
+                              "type": "string",
+                              "maxLength": 20000
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "sourceId",
+                      "files",
+                      "prompt",
+                      "checks"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "description",
+              "kind",
+              "assigneeType",
+              "assigneeId",
+              "capabilityId",
+              "dependsOn",
+              "acceptanceCriteria"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "inputFingerprint",
+        "rationale",
+        "works"
+      ],
+      "additionalProperties": false
+    },
+    "CoordinationCheckpointInput": {
+      "type": "object",
+      "properties": {
+        "work_id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "lease_token": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "artifacts": {
+          "anyOf": [
+            {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "url": {
+                    "type": "string",
+                    "maxLength": 20000
+                  }
+                },
+                "required": [
+                  "label",
+                  "url"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        },
+        "checks": {
+          "anyOf": [
+            {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "passed": {
+                    "type": "boolean"
+                  },
+                  "detail": {
+                    "type": "string",
+                    "maxLength": 20000
+                  }
+                },
+                "required": [
+                  "name",
+                  "passed",
+                  "detail"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        },
+        "review_task_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        }
+      },
+      "required": [
+        "work_id",
+        "lease_token",
+        "summary"
+      ],
+      "additionalProperties": false
+    },
+    "CoordinationWaitInput": {
+      "type": "object",
+      "properties": {
+        "work_id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "lease_token": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 20000
+            }
+          ]
+        },
+        "question": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "comment_id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "comment_version": {
+          "type": "string",
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "work_id",
+        "question",
+        "comment_id",
+        "comment_version"
+      ],
+      "additionalProperties": false
+    },
+    "CoordinationResumeInput": {
+      "type": "object",
+      "properties": {
+        "work_id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "answer_comment_id": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "answer_comment_version": {
+          "type": "string",
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "work_id",
+        "answer_comment_id",
+        "answer_comment_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -45,8 +45,7 @@ Recommended repository-level merge settings:
 
 ## Deploy Behavior
 
-Production deploy is handled after merge by `taskflow-deploy`.
-Do not add deploy as a required pre-merge check. Keep `taskflow-ci` as the merge gate, and let deploy run from the successful `main` build.
+No deployment Actions workflow is currently configured. Provider-side Git connections and automatic rollout settings must be verified separately before merging. Keep `taskflow-ci` as the required merge gate; follow [the deployment workflow](DEPLOYMENT.md) for a separately authorized production rollout.
 
 ## When To Tighten Rules
 

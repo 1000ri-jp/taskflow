@@ -21,9 +21,10 @@ export default function ProjectLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const params = useParams();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  // App Router only; pages/ contains OAuth APIs and adds nullable compatibility types.
+  const params = useParams()!;
+  const pathname = usePathname()!;
+  const searchParams = useSearchParams()!;
   const projectId = params.projectId as string;
   const { project: loadedProject, isLoading, error, update } = useProject(projectId);
   // A route change may briefly retain the previous subscription's project.

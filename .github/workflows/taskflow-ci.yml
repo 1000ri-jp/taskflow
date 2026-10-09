@@ -21,12 +21,15 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Test audit policy
+        run: npm run audit:policy:test
 
       - name: Run audit
         run: npm run audit
@@ -42,7 +45,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -63,7 +66,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -72,6 +75,15 @@ jobs:
 
       - name: Run tests
         run: npm run test:run
+
+      - name: Check MCP contract and Functions source
+        run: npm run mcp:check
+
+      - name: Check local worker source
+        run: npm run worker:check
+
+      - name: Test local worker with fictional fixtures
+        run: npm run worker:test
 
   build:
     name: taskflow-ci / build
@@ -84,7 +96,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -105,7 +117,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
 

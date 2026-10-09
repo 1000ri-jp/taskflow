@@ -15,7 +15,8 @@ import type { Milestone, Task } from '@/types';
 
 
 export default function ProjectMilestonesPage() {
-  const params = useParams();
+  // App Router only; pages/ contains OAuth APIs and adds nullable compatibility types.
+  const params = useParams()!;
   const projectId = params.projectId as string;
   const { user } = useAuthStore();
   const { project, isLoading: projectLoading } = useProject(projectId);

@@ -54,7 +54,8 @@ const PROJECT_ICONS = ['📁', '🦙', '🚀', '💼', '🎯', '📊', '🔧', '
 
 export default function ProjectSettingsPage() {
   const user = useAuthStore(state => state.user);
-  const params = useParams();
+  // App Router only; pages/ contains OAuth APIs and adds nullable compatibility types.
+  const params = useParams()!;
   const router = useRouter();
   const projectId = params.projectId as string;
   const { project, members, isLoading, update, archive, remove, addMember, removeMember, updateRole } = useProject(projectId);

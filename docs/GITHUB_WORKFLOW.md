@@ -116,6 +116,7 @@ Single-operator default:
 
 `audit`, `lint`, `test`, `build`, and `e2e-smoke` should all be configured as required checks for `main`.
 See [`LINT_DEBT.md`](./LINT_DEBT.md) for the current lint maintenance rules.
+The audit gate runs the full dependency report and the production report through the reviewed [audit policy](./AUDIT_POLICY.md). A dated, owner-approved exception records an accepted risk; it does not remove the audit job or declare a vulnerability fixed. `npm run audit:raw` remains available for the unfiltered npm result.
 
 Repository merge settings should be:
 
@@ -126,9 +127,9 @@ Repository merge settings should be:
 
 Production deployment:
 
-- `taskflow-deploy` runs after `taskflow-ci` succeeds on a `main` push
-- deploy configuration lives in [`DEPLOYMENT.md`](./DEPLOYMENT.md)
-- deploy is post-merge and does not replace the required PR checks
+- this repository currently has no automatic deployment Actions workflow
+- provider-side Git connections and automatic rollout settings must be checked before a `main` merge; the workflow inventory alone does not establish production behavior
+- deploy configuration lives in [`DEPLOYMENT.md`](./DEPLOYMENT.md); an authorized production rollout is a separate stage and does not replace the required PR checks
 
 ## Dependency Maintenance
 

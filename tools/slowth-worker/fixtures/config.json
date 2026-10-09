@@ -1,0 +1,18 @@
+{
+  "schema": "slowth-worker-config/v1",
+  "projectId": "fixture-project",
+  "workerId": "fixture-worker",
+  "stateDirectory": "../state",
+  "sources": {
+    "slowth-source": "../../..",
+    "worker-fixture": "source"
+  },
+  "serverSourceRoot": "../../..",
+  "firebase": {
+    "projectId": "demo-slowth-worker",
+    "storageBucket": "demo-slowth-worker.invalid"
+  },
+  "mcpEndpoint": "https://mcp.invalid/api/mcp",
+  "codexCommand": "codex",
+  "pythonCommand": "python3"
+}

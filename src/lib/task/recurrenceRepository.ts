@@ -44,11 +44,14 @@ export async function updateTaskWithRecurrence(ref: DocumentReference, patch: Re
   });
 }
 export async function saveRecurrence(uid: string, projectId: string, taskId: string, expectedVersion: string, settings: RecurrenceSettings | null) {
+  return getAdminDb().runTransaction(tx => saveRecurrenceInTransaction(tx, uid, projectId, taskId, expectedVersion, settings));
+}
+export async function saveRecurrenceInTransaction(tx: Transaction, uid: string, projectId: string, taskId: string, expectedVersion: string, settings: RecurrenceSettings | null) {
   // Lazy import avoids a cycle when organization adoption itself completes a recurring task.
   const { organizationAccess } = await import('./organizationRepository');
   const { OrganizationError, validOrganizationId } = await import('./organizationEngine');
   if (!validOrganizationId(taskId) || typeof expectedVersion !== 'string' || settings !== null && (!validRecurrence({ ...settings, occurrence:0 }) || Object.keys(settings).some(k => !['seriesId','unit','interval','anchorDate','endDate','listId'].includes(k)))) throw new OrganizationError('繰り返し設定を確認してください。');
-  return getAdminDb().runTransaction(async tx => {
+
     const { ref } = await organizationAccess(tx, uid, projectId);
     const taskRef = ref.collection('tasks').doc(taskId), snapshot = await tx.get(taskRef);
     const task = snapshot.data(); if (!task) throw new OrganizationError('タスクが見つかりません。',404);
@@ -73,7 +76,7 @@ export async function saveRecurrence(uid: string, projectId: string, taskId: str
     const recurrence = settings ? { ...settings, occurrence:0 } : null;
     tx.update(taskRef, stampTaskWrite(taskRef, { recurrence, updatedAt:new Date() }));
     return recurrence;
-  });
+
 }
 
 export async function completeFromBoard(uid: string, projectId: string, taskId: string, raw: Record<string, unknown>) {

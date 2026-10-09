@@ -1,0 +1,223 @@
+{
+  "schema": "taskflow-audit-exceptions/v1",
+  "exceptions": [
+    {
+      "advisory": "GHSA-vfj7-8cjw-p6xm",
+      "expiresAt": "2026-10-17T00:00:00+09:00",
+      "scope": "dev-only-current-eslint-chain",
+      "acceptedRisk": "The owner accepts this dev-only lint-chain risk through October 16 JST. The vulnerability is not fixed. No downgrade, production/shared use, added advisory, changed package/configuration or expiry extension is authorized.",
+      "eslintConfig": {
+        "path": "eslint.config.mjs",
+        "sha256": "870f1adccecf3051cbcd9fd307cef51d7633cf510979c181a81f4b1797273493"
+      },
+      "lintCommand": "eslint src e2e scripts playwright*.config.ts eslint.config.mjs next.config.ts && npm run ui:check",
+      "packages": [
+        {
+          "name": "eslint-config-next",
+          "path": "node_modules/eslint-config-next",
+          "version": "16.3.8",
+          "integrity": "sha512-81vovwMe6NGnoFsl0KUJWzlS+y239i3fdsxs49gSEX3pDQW2cuKy+fxUPXNkQqqx6OCPheYPtBlSufc9aZ0k+w==",
+          "dev": true
+        },
+        {
+          "name": "@next/eslint-plugin-next",
+          "path": "node_modules/@next/eslint-plugin-next",
+          "version": "16.3.8",
+          "integrity": "sha512-eCR9RcLTZrVS+K3+VOhi0xMdUUGNuriCHHhU1ZoABC/QQ/Gp0OWbLKQxV2/9DkmihYdYRcQWFmZXW8M1AMUXYw==",
+          "dev": true
+        },
+        {
+          "name": "fast-glob",
+          "path": "node_modules/fast-glob",
+          "version": "3.3.1",
+          "integrity": "sha512-kNFPyjhh5cKjrUltxs+wFx+ZkbRaxxmZ+X0ZU31SOsxCEtP9VPgtq2teZw1DebupL5GmDaNQ6yKMMVcM41iqDg==",
+          "dev": true
+        },
+        {
+          "name": "micromatch",
+          "path": "node_modules/micromatch",
+          "version": "4.0.8",
+          "integrity": "sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==",
+          "dev": true
+        },
+        {
+          "name": "braces",
+          "path": "node_modules/braces",
+          "version": "3.0.3",
+          "integrity": "sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==",
+          "dev": true
+        }
+      ],
+      "incomingEdges": [
+        {
+          "from": "",
+          "field": "devDependencies",
+          "dependency": "eslint-config-next",
+          "range": "16.3.8"
+        },
+        {
+          "from": "node_modules/eslint-config-next",
+          "field": "dependencies",
+          "dependency": "@next/eslint-plugin-next",
+          "range": "16.3.8"
+        },
+        {
+          "from": "node_modules/@next/eslint-plugin-next",
+          "field": "dependencies",
+          "dependency": "fast-glob",
+          "range": "3.3.1"
+        },
+        {
+          "from": "node_modules/fast-glob",
+          "field": "dependencies",
+          "dependency": "micromatch",
+          "range": "^4.0.4"
+        },
+        {
+          "from": "node_modules/micromatch",
+          "field": "dependencies",
+          "dependency": "braces",
+          "range": "^3.0.3"
+        }
+      ],
+      "findings": {
+        "@next/eslint-plugin-next": {
+          "name": "@next/eslint-plugin-next",
+          "severity": "high",
+          "isDirect": false,
+          "via": [
+            "fast-glob"
+          ],
+          "effects": [
+            "eslint-config-next"
+          ],
+          "range": ">=14.3.0-canary.0",
+          "nodes": [
+            "node_modules/@next/eslint-plugin-next"
+          ],
+          "fixAvailable": {
+            "name": "eslint-config-next",
+            "version": "14.2.35",
+            "isSemVerMajor": true
+          }
+        },
+        "braces": {
+          "name": "braces",
+          "severity": "high",
+          "isDirect": false,
+          "via": [
+            {
+              "source": 1240992,
+              "name": "braces",
+              "dependency": "braces",
+              "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns",
+              "url": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+              "severity": "high",
+              "cwe": [
+                "CWE-674"
+              ],
+              "cvss": {
+                "score": 7.5,
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+              },
+              "range": "<=3.0.3"
+            }
+          ],
+          "effects": [
+            "micromatch"
+          ],
+          "range": "*",
+          "nodes": [
+            "node_modules/braces"
+          ],
+          "fixAvailable": {
+            "name": "eslint-config-next",
+            "version": "14.2.35",
+            "isSemVerMajor": true
+          }
+        },
+        "eslint-config-next": {
+          "name": "eslint-config-next",
+          "severity": "high",
+          "isDirect": true,
+          "via": [
+            "@next/eslint-plugin-next"
+          ],
+          "effects": [],
+          "range": ">=14.3.0-canary.0",
+          "nodes": [
+            "node_modules/eslint-config-next"
+          ],
+          "fixAvailable": {
+            "name": "eslint-config-next",
+            "version": "14.2.35",
+            "isSemVerMajor": true
+          }
+        },
+        "fast-glob": {
+          "name": "fast-glob",
+          "severity": "high",
+          "isDirect": false,
+          "via": [
+            "micromatch"
+          ],
+          "effects": [
+            "@next/eslint-plugin-next"
+          ],
+          "range": "*",
+          "nodes": [
+            "node_modules/fast-glob"
+          ],
+          "fixAvailable": {
+            "name": "eslint-config-next",
+            "version": "14.2.35",
+            "isSemVerMajor": true
+          }
+        },
+        "micromatch": {
+          "name": "micromatch",
+          "severity": "high",
+          "isDirect": false,
+          "via": [
+            "braces"
+          ],
+          "effects": [
+            "fast-glob"
+          ],
+          "range": ">=0.2.0",
+          "nodes": [
+            "node_modules/micromatch"
+          ],
+          "fixAvailable": {
+            "name": "eslint-config-next",
+            "version": "14.2.35",
+            "isSemVerMajor": true
+          }
+        }
+      },
+      "runtimeUseGuard": {
+        "requiredRoots": [
+          "src",
+          "scripts/mcp-events",
+          "mcp-events-functions",
+          "tools/slowth-worker"
+        ],
+        "rootFiles": [
+          "next.config.ts",
+          "next.config.js",
+          "next.config.mjs",
+          "middleware.ts",
+          "middleware.js",
+          "instrumentation.ts",
+          "instrumentation.js"
+        ],
+        "computedImportAllowlist": [
+          {
+            "path": "tools/slowth-worker/domain-loader.mjs",
+            "sha256": "0ffc7be3c2bea85e44af8bf7467d032b6ee32748204e691f8dbdda36cee443d2"
+          }
+        ]
+      }
+    }
+  ]
+}
