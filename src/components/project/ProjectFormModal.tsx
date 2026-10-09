@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuthStore } from '@/stores/authStore';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Dialog,
@@ -20,20 +20,21 @@ import { useUIStore } from '@/stores/uiStore';
 import { LIST_COLORS } from '@/types';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-
-const PROJECT_ICONS = ['📁', '🦙', '🚀', '💼', '🎯', '📊', '🔧', '💡', '🎨', '📱', '🌐'];
+import { ProjectEmojiPicker } from './ProjectEmojiPicker';
+import { DEFAULT_PROJECT_EMOJI } from '@/lib/project-emojis';
 
 export function ProjectFormModal() {
   const router = useRouter();
   const { isProjectModalOpen, selectedProjectId, closeProjectModal } = useUIStore();
   const { create } = useProjects();
   const user = useAuthStore(state => state.user);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [defaultToMe, setDefaultToMe] = useState(false);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState<string>(LIST_COLORS[0].value);
-  const [icon, setIcon] = useState<string>(PROJECT_ICONS[0]);
+  const [icon, setIcon] = useState<string>(DEFAULT_PROJECT_EMOJI);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,7 +65,7 @@ export function ProjectFormModal() {
     setName('');
       setDescription('');
       setColor(LIST_COLORS[0].value);
-      setIcon(PROJECT_ICONS[0]);
+      setIcon(DEFAULT_PROJECT_EMOJI);
       closeProjectModal();
 
       // Navigate to the new project
@@ -82,14 +83,18 @@ export function ProjectFormModal() {
     setName('');
     setDescription('');
     setColor(LIST_COLORS[0].value);
-    setIcon(PROJECT_ICONS[0]);
+    setIcon(DEFAULT_PROJECT_EMOJI);
     setError(null);
     closeProjectModal();
   };
 
   return (
     <Dialog open={isProjectModalOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent ref={contentRef} className="max-h-[90dvh] overflow-y-auto sm:max-w-[425px]"
+        onOpenAutoFocus={event => {
+          const choice = contentRef.current?.querySelector<HTMLButtonElement>('button[aria-label="絵文字アイコンを変更"]');
+          if (choice) { event.preventDefault(); choice.focus(); }
+        }}>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
@@ -104,23 +109,7 @@ export function ProjectFormModal() {
             {/* Icon Selection */}
             <div className="space-y-2">
               <Label>アイコン</Label>
-              <div className="flex flex-wrap gap-2">
-                {PROJECT_ICONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setIcon(emoji)}
-                    className={cn(
-                      'flex h-10 w-10 items-center justify-center rounded-lg border-2 text-xl transition-colors',
-                      icon === emoji
-                        ? 'border-primary bg-primary/10'
-                        : 'border-transparent bg-muted hover:bg-muted/80'
-                    )}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
+              <ProjectEmojiPicker value={icon} onChange={setIcon} disabled={isSubmitting} />
             </div>
 
             {/* Color Selection */}

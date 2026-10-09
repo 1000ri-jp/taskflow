@@ -34,6 +34,10 @@ function BusinessProviders({ children }: ProvidersProps) {
 // Appearance remains shared, so specimens match the actual screen theme.
 export function Providers({ children }: ProvidersProps) {
   const pathname = usePathname();
+  // OAuth consent must never trigger task automation or auto-archive.
+  if (pathname === '/mcp-connect' || pathname?.startsWith('/mcp-connect/')) {
+    return <AuthProvider>{children}</AuthProvider>;
+  }
   if (pathname === '/ui-guide' || pathname?.startsWith('/ui-guide/')) {
     return <AppearanceProvider>{children}</AppearanceProvider>;
   }

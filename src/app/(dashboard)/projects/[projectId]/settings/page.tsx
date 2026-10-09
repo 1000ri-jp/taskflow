@@ -50,7 +50,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const PROJECT_ICONS = ['📁', '🦙', '🚀', '💼', '🎯', '📊', '🔧', '💡', '🎨', '📱', '🌐'];
+import { ProjectEmojiPicker } from '@/components/project/ProjectEmojiPicker';
 
 export default function ProjectSettingsPage() {
   const user = useAuthStore(state => state.user);
@@ -503,23 +503,7 @@ export default function ProjectSettingsPage() {
               {/* Emoji Icons remain selectable even when an image icon exists. */}
               <>
                   <div className="text-sm text-muted-foreground">または絵文字を選択</div>
-                  <div className="flex flex-wrap gap-2">
-                    {PROJECT_ICONS.map((emoji) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => setIcon(emoji)}
-                        className={cn(
-                          'flex h-10 w-10 items-center justify-center rounded-lg border-2 text-xl transition-colors',
-                          (icon || project.icon) === emoji
-                            ? 'border-primary bg-primary/10'
-                            : 'border-transparent bg-muted hover:bg-muted/80'
-                        )}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
+                  <ProjectEmojiPicker value={icon || project.icon} onChange={setIcon} disabled={isSaving} />
               </>
             </div>
 

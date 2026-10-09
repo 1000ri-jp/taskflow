@@ -1,9 +1,9 @@
 {
   "revision": "ui-guide-2026-09-18.17",
-  "graphHash": "c278ea9c47c484eb7a7f4873d1d537704c03c8fa45a48af3932b8713b0c0dd5f",
+  "graphHash": "2361077dcf3e4ad43d5b41bc32aff3424f92dfe034c4f674ae653a206a85469d",
   "entries": {
     "text": {
-      "sourceHash": "68f321d79d4e5150acec68bf37bc95af53c09ba3edd4bf043a5effb7d8368c3a",
+      "sourceHash": "3946de2e00d26cab440827e93861d1da5e4d44926ba2dbb36c213d7f5fcea2cc",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -13,11 +13,13 @@
         "src/app/mcp-connect/consent.tsx",
         "src/components/board/ReferenceComments.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/task/TaskDetailModal.tsx",
         "src/components/task/TaskWorkflow.tsx",
         "src/components/ui/setting-field.tsx"
       ],
       "indirect": [
+        "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/neo/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
@@ -29,7 +31,8 @@
         "src/components/dashboard/NeoDashboard.tsx",
         "src/components/dashboard/NeoToday.tsx",
         "src/components/dashboard/NeoWorkContinuation.tsx",
-        "src/components/project/ProjectDefaultAssignee.tsx"
+        "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectFormModal.tsx"
       ],
       "routes": [
         "/",
@@ -57,7 +60,7 @@
       ]
     },
     "button": {
-      "sourceHash": "307b182c0c47df390aa4e9a7a8d4799c3600f8c9a8cbf5c97569cdda08f2364c",
+      "sourceHash": "f223a5fdd1eeda0acd6d2760997542d543658a3961b1cdb1badcfa2a840a89a9",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -151,6 +154,7 @@
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/project/ProjectMark.tsx",
         "src/components/project/ProjectMembers.tsx",
@@ -245,7 +249,7 @@
       ]
     },
     "input": {
-      "sourceHash": "dfbf32293c0f9f936a8bb54cfc17e0aa4bfce0d37af359012aef4601a656a16c",
+      "sourceHash": "6b2b8f26f13f3e35e09dbaaefe19568933483a99b5dcc67351d30bd9bdc8788e",
       "direct": [
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
@@ -285,6 +289,7 @@
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
         "src/components/gantt/GanttChart.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/task/ChecklistItemAssignees.tsx",
         "src/components/task/ChecklistItemDueDate.tsx",
@@ -359,7 +364,7 @@
       ]
     },
     "navigation": {
-      "sourceHash": "5bb2e70b576ae9917af622d0c8fdd1fd366bfe855858b763094ad41a7f1db344",
+      "sourceHash": "2303afcdcad77edef79c6a0964df9570c7cbdf9cb4c1f01e5c332f2d0953f365",
       "direct": [
         "src/components/common/Header.tsx",
         "src/components/common/NotificationDropdown.tsx",
@@ -394,7 +399,7 @@
       ]
     },
     "card": {
-      "sourceHash": "8baf50e955c91c771fd54226fd741ab3ae234d911a9dcaccb7b3995174be89d7",
+      "sourceHash": "f9f260c054264c0c3b0009ee3951d5f847620c04dce5545033035af7dbb1dafc",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -466,7 +471,7 @@
       ]
     },
     "states": {
-      "sourceHash": "9e626e6a31e05f3765437ce4fde519a2864167b7bb4516521175d381daf6e6a8",
+      "sourceHash": "a61e7d4b7f8f0be62ac16b9c60d089f0642d45e9631d1d3d45a59a9d3c94f0e1",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/components/common/CommandPalette.tsx",
@@ -501,7 +506,7 @@
       ]
     },
     "outline": {
-      "sourceHash": "04761197c7d9d71e76f61e74ab7905afc391f03e6fedc72fd0c19ca0ac05b343",
+      "sourceHash": "fa45264aab723974d5e6a845356fa27b1705f9a2007a15c0fbd88eaed29afc35",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/AutoArchiveSettings.tsx",
@@ -567,7 +572,7 @@
       ]
     },
     "table": {
-      "sourceHash": "980fc1c6ca1577e6b5a3f143804d7c8f2e75a00dc005fa31b9863160c02e630f",
+      "sourceHash": "1bd0d883984f789b624e5e192c957f2c5451c0ffd7c68a0112b8e0a58fc2b0f3",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/AutoArchiveSettings.tsx",
@@ -629,7 +634,7 @@
       ]
     },
     "proposal": {
-      "sourceHash": "69a1cef895ab45ad8b9fbabf2b2e4ab0fd73b2c6d7f7c4cb9375d34cf23e7e85",
+      "sourceHash": "f83925f3eeb7acef00043e16e8af2fcbe23c0475b1f35a03370221fb9f77b19d",
       "direct": [
         "src/components/dashboard/OrganizationReviewInbox.tsx",
         "src/components/task/TaskOrganizer.tsx"
@@ -702,25 +707,44 @@
       ]
     },
     "setting": {
-      "sourceHash": "91997c9c289be5564e7e81b2185fca4e83297f1dd438a110a0fc758031ce9ec2",
+      "sourceHash": "6cc5e9133e96e75cc8d3d020589333eff831d220e2fad5a8a12e5f8b74d58d93",
       "direct": [
         "src/app/mcp-connect/consent.tsx",
         "src/components/help/HelpVideos.tsx",
-        "src/components/project/ProjectDefaultAssignee.tsx"
+        "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx"
       ],
       "indirect": [
         "src/app/(dashboard)/help/page.tsx",
+        "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
-        "src/app/mcp-connect/page.tsx"
+        "src/app/mcp-connect/page.tsx",
+        "src/components/project/ProjectFormModal.tsx"
       ],
       "routes": [
+        "/",
+        "/classic",
         "/help",
         "/mcp-connect",
-        "/projects/[projectId]/settings"
+        "/my-dashboard",
+        "/neo",
+        "/neo/meetings",
+        "/profile",
+        "/projects",
+        "/projects/[projectId]/activity",
+        "/projects/[projectId]/board",
+        "/projects/[projectId]/gantt",
+        "/projects/[projectId]/milestones",
+        "/projects/[projectId]/settings",
+        "/settings",
+        "/settings/ai",
+        "/settings/api-keys",
+        "/settings/browser-backup",
+        "/settings/google"
       ]
     },
     "list-layout": {
-      "sourceHash": "662d781ba4b5892a99b62b29e51c7ad67a761d59eb179ee8eb6d80b477f63852",
+      "sourceHash": "b98fd9966f8eebc74796c49a2b1b4cf3a008783cf7c653ede7a14b99e9996936",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx"
       ],
@@ -732,7 +756,7 @@
       ]
     },
     "detail-layout": {
-      "sourceHash": "9f5c1a3d9105aa1f12d12ac5f9b4edcec9e4b8c8d0578b7457f075ee0a081408",
+      "sourceHash": "b5795c1fd4850ba7c22195b0a7d9fa8eafd17dffc72c49ad2dd3880568dca48b",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -762,7 +786,7 @@
       ]
     },
     "settings-layout": {
-      "sourceHash": "65b71d80fcbe59a013f6938c0da01de3050898e12a65ae74d0bb1706c3a292eb",
+      "sourceHash": "ded2b04f9518d9a203e2c16d1e4c4145cee823eb69b734005e9ecfe7c706497e",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/help/page.tsx",
@@ -788,6 +812,7 @@
         "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/task/TaskDetailModal.tsx"
       ],
       "indirect": [
@@ -813,6 +838,7 @@
         "src/components/dashboard/NeoToday.tsx",
         "src/components/dashboard/NeoWorkContinuation.tsx",
         "src/components/desktop/DesktopMiniApp.tsx",
+        "src/components/project/ProjectFormModal.tsx",
         "src/components/secretary/SecretaryPanel.tsx"
       ],
       "routes": [
@@ -841,13 +867,13 @@
       ]
     },
     "settings-dashboard-order-trial": {
-      "sourceHash": "36543b75e08fbf8d439f21eef18809486923172f165710284f76cd17907a67d1",
+      "sourceHash": "e3f51f3e23e6a2ac157bff8539e04b4a3afd9904d2485e9b16d10106c7faee41",
       "direct": [],
       "indirect": [],
       "routes": []
     },
     "search": {
-      "sourceHash": "be88f5028f87be39a92cec2cc440c75516e0feeed3b49d1bc46173f7cab75ad7",
+      "sourceHash": "e610a880514079e6ef60216080397547255afcfd282311db7313e5ebc49717a3",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -943,6 +969,7 @@
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/secretary/IncomingCandidates.tsx",
         "src/components/secretary/SecretaryPanel.tsx",
@@ -1029,7 +1056,7 @@
       ]
     },
     "notifications": {
-      "sourceHash": "8df33205a8f25d2776d02c38d1c53e245aae2354776321e9980fe43aee7670ae",
+      "sourceHash": "8196ac73696b45194937b5be4c1f23d2fc6f492339b5db99d9a3133a01eefb75",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1124,6 +1151,7 @@
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/secretary/IncomingCandidates.tsx",
         "src/components/secretary/SecretaryPanel.tsx",
@@ -1209,7 +1237,7 @@
       ]
     },
     "calendar": {
-      "sourceHash": "8df33205a8f25d2776d02c38d1c53e245aae2354776321e9980fe43aee7670ae",
+      "sourceHash": "8196ac73696b45194937b5be4c1f23d2fc6f492339b5db99d9a3133a01eefb75",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1301,6 +1329,7 @@
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/secretary/IncomingCandidates.tsx",
         "src/components/secretary/SecretaryPanel.tsx",
@@ -1389,7 +1418,7 @@
       ]
     },
     "gantt": {
-      "sourceHash": "8df33205a8f25d2776d02c38d1c53e245aae2354776321e9980fe43aee7670ae",
+      "sourceHash": "8196ac73696b45194937b5be4c1f23d2fc6f492339b5db99d9a3133a01eefb75",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1482,6 +1511,7 @@
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/secretary/IncomingCandidates.tsx",
         "src/components/secretary/SecretaryPanel.tsx",
@@ -1569,7 +1599,7 @@
       ]
     },
     "progress": {
-      "sourceHash": "0952929b85fed4ac6da6ea04a1cfbebff2bed49eeda9469cb3d20396f02f0182",
+      "sourceHash": "9942d787c6df36f7b931ed279a85cbd0e88a4e931efe7a240ac1773a3d399c65",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1669,6 +1699,7 @@
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/secretary/IncomingCandidates.tsx",
         "src/components/secretary/SecretaryPanel.tsx",
@@ -1893,7 +1924,7 @@
       ]
     },
     "frame-trial": {
-      "sourceHash": "8df33205a8f25d2776d02c38d1c53e245aae2354776321e9980fe43aee7670ae",
+      "sourceHash": "8196ac73696b45194937b5be4c1f23d2fc6f492339b5db99d9a3133a01eefb75",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1986,6 +2017,7 @@
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/secretary/IncomingCandidates.tsx",
         "src/components/secretary/SecretaryPanel.tsx",
@@ -2073,7 +2105,7 @@
       ]
     },
     "table-trial": {
-      "sourceHash": "9f9171155224967fc909fa61703373298d15c47a9241443db10c3e68791a3462",
+      "sourceHash": "e80dcbc4aae707dcfa74123effd36039f768ebe1fa8b490ffbd2b0e994f83f40",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2178,6 +2210,7 @@
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/secretary/IncomingCandidates.tsx",
         "src/components/secretary/SecretaryPanel.tsx",
@@ -2264,7 +2297,7 @@
       ]
     },
     "history-trial": {
-      "sourceHash": "9f9171155224967fc909fa61703373298d15c47a9241443db10c3e68791a3462",
+      "sourceHash": "e80dcbc4aae707dcfa74123effd36039f768ebe1fa8b490ffbd2b0e994f83f40",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2369,6 +2402,7 @@
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/secretary/IncomingCandidates.tsx",
         "src/components/secretary/SecretaryPanel.tsx",
@@ -2455,7 +2489,7 @@
       ]
     },
     "neo-brief-row-trial": {
-      "sourceHash": "d38e8ef6b7166086ec24467033e7103dc96243a45643b9d38e05ffca6794d7df",
+      "sourceHash": "d966d5df3d4d77c58588171a840bd308ee5fd1b94cd7b6fd10f8c57e92ca51e3",
       "direct": [
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskCard.tsx",
@@ -2495,7 +2529,7 @@
       ]
     },
     "neo-brief-assignee-filter-trial": {
-      "sourceHash": "8981376e72e5e8f5ed90dc46c057f81b536e620738ff46b1dde8bf0d32449da5",
+      "sourceHash": "78ad9c30c90217084a382a9d2de0a46561830930839e83ead04b8bd8e57f9beb",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2592,6 +2626,7 @@
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
+        "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/project/ProjectMembers.tsx",
         "src/components/secretary/IncomingCandidates.tsx",
@@ -2680,7 +2715,7 @@
       ]
     },
     "neo-shared-countdown-trial": {
-      "sourceHash": "fdee1d9d315cb3fb3b8f1d12921e3916bf72442585a3576af754f67631cda467",
+      "sourceHash": "981739bb38d7ec9a9ef4f0ebcd1ae3c781f4c78da11013494619e4e07a3083e0",
       "direct": [
         "src/components/dashboard/KozueDashboard.tsx",
         "src/components/dashboard/NeoDashboard.tsx"
@@ -2695,7 +2730,7 @@
       ]
     },
     "task-row-one-line-trial": {
-      "sourceHash": "08072344c8fca74073a11a120158e32fc375e05651de7ce364d1e2b8095c0b2a",
+      "sourceHash": "b90f38622f69c8ef41a3df27dda310926237408e9e3f730b883705158aee1c93",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
@@ -2757,7 +2792,7 @@
       ]
     },
     "neo-home-layout-trial": {
-      "sourceHash": "41c72e10ef82f19fa3bb59374a6a99f37c13960b70f72b2b4b21bfdfd19a2f5a",
+      "sourceHash": "257dfd33ea902be8d0dd9f3b9498b6d4bad2eb95467f628fe4cd75cd12a3bbf5",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2828,7 +2863,7 @@
       ]
     },
     "detail-header-spacing-trial": {
-      "sourceHash": "1ba69ddae84b9dafbe0bd5f21ed4b72fb45a1d92477c13725ed09a5e6dff7ecd",
+      "sourceHash": "bd2a7d9d765f62f462b50a0ec91f4573dab9e8ec34084fb0d30dba0a63e1e965",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2858,7 +2893,7 @@
       ]
     },
     "subtask-view-alignment-trial": {
-      "sourceHash": "d8a0a26071f5af52beac1d66a0ba7ce248545155782c2c4a73ba64c2f29e0be3",
+      "sourceHash": "104cf52527dcecaf3a2bbdd789747647d983a4cc0fc7a01e92a639e3cca2cf53",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
@@ -2871,7 +2906,7 @@
       ]
     },
     "task-detail-subtask-order-trial": {
-      "sourceHash": "4f31c1c6434a7452e625787af053e5eab224e0b5254e2155ac016065e15f3aad",
+      "sourceHash": "746fe3431c1a5a954e28b5a019b9c70e6d0363473b58c0eabbfb56ff010df34f",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx"
@@ -2883,7 +2918,7 @@
       ]
     },
     "proposal-review-flow-trial": {
-      "sourceHash": "176b5da75189d02c7d2f393dc87a084e647ecf73c1374eff634932bbb48bfc8b",
+      "sourceHash": "28dc89b16000632f6ab1eecd2ea9080c1cb604f27294ae00280714c4146a9f53",
       "direct": [
         "src/app/(dashboard)/layout.tsx",
         "src/components/dashboard/NeoDashboard.tsx",
@@ -2919,7 +2954,7 @@
       ]
     },
     "calendar-task-create-trial": {
-      "sourceHash": "45bbab9c6ab65aef80b87cdebdc79d4469a2668b01799654ccb2a7df6e91af26",
+      "sourceHash": "baf35b682fa171e60babcd11424a7a83454f0038f40ba9cd9982638c954ab212",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/BoardList.tsx",
@@ -2938,7 +2973,7 @@
       ]
     },
     "task-structure-guidance-trial": {
-      "sourceHash": "e6df7edb39c6aefa89e9e2d53ffff57f4d1dfca7dfd6a138848a1e7a1272a15f",
+      "sourceHash": "99f08c5efcded8dd4e69a09bc4473c82a149edd931b65e9166470a7c7c4a5755",
       "direct": [
         "src/app/api/tasks/organize/route.ts",
         "src/components/board/TaskRelationshipSuggestions.tsx",
@@ -2999,12 +3034,12 @@
       "count": 87
     },
     {
-      "file": "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
-      "count": 86
-    },
-    {
       "file": "src/app/(dashboard)/settings/api-keys/page.tsx",
       "count": 85
+    },
+    {
+      "file": "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
+      "count": 82
     },
     {
       "file": "src/components/dashboard/NeoWorkContinuation.tsx",
@@ -3247,10 +3282,6 @@
       "count": 15
     },
     {
-      "file": "src/components/project/ProjectFormModal.tsx",
-      "count": 15
-    },
-    {
       "file": "src/components/ai/ScopedConversation.tsx",
       "count": 14
     },
@@ -3328,6 +3359,10 @@
     },
     {
       "file": "src/components/board/TaskListPicker.tsx",
+      "count": 11
+    },
+    {
+      "file": "src/components/project/ProjectFormModal.tsx",
       "count": 11
     },
     {

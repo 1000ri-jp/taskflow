@@ -27,6 +27,8 @@ const buttonVariants = cva(
         icon: "size-9",
         "icon-sm": "size-8",
         "icon-lg": "size-10",
+        emoji: "size-11 text-xl",
+        "project-icon": "size-16 rounded-lg text-3xl",
       },
     },
     defaultVariants: {
