@@ -27,6 +27,7 @@
     "test:e2e:ui": "playwright test --ui",
     "ui:refresh": "node scripts/ui-guide.mjs --refresh",
     "release:prepare": "node scripts/prepare-release.mjs",
+    "release:test": "node --test scripts/prepare-release.test.mjs",
     "ui:check": "node scripts/ui-guide.mjs",
     "ui:compare": "node scripts/ui-guide.mjs --compare-worktree",
     "ui:test": "node --test scripts/ui-guide.test.mjs",

@@ -144,3 +144,23 @@ it('shows archive failure instead of zero, retains basic input and retries witho
   expect(input).toHaveValue('未保存の長い日本語のプロジェクト名');
   expect(mocks.update).not.toHaveBeenCalled();
 });
+
+it('selects a flag from the full catalog, saves through the existing update and restores it on reopen', async () => {
+  vi.clearAllMocks();
+  mocks.update.mockResolvedValue(undefined);
+  const { unmount } = render(<ProjectSettingsPage />);
+  fireEvent.click(screen.getByRole('button', {name:'絵文字アイコンを変更'}));
+  fireEvent.change(await screen.findByLabelText('絵文字を検索'), { target: { value: '日本' } });
+  fireEvent.click(await screen.findByRole('button', { name: '🇯🇵 旗: 日本' }));
+  expect(mocks.update).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '保存' }));
+  await waitFor(() => expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ icon: '🇯🇵' })));
+  unmount();
+  mocks.project.icon = '🇯🇵';
+  render(<ProjectSettingsPage />);
+  const group = screen.getByRole('group', { name: 'プロジェクトの絵文字' });
+  expect(group).toHaveTextContent('🇯🇵');
+  fireEvent.click(screen.getByRole('button', {name:'絵文字アイコンを変更'}));
+  await waitFor(() => expect(group).toHaveTextContent('選択中：旗: 日本'));
+  mocks.project.icon = '📁';
+});

@@ -16,3 +16,9 @@ export function SettingField({ id, label, description, children, onSave, saveLab
   </div>;
 }
 export const settingSelect = 'h-9 min-w-0 max-w-full rounded-md border bg-background px-2 text-sm';
+
+/** Shared grouping for settings controls and finite choice palettes. */
+export const settingControlStack = 'min-w-0 space-y-2';
+export const settingChoiceRow = 'flex flex-wrap gap-1';
+export const settingSelectionRow = 'flex min-w-0 items-center gap-2';
+export const settingActionRow = 'flex flex-wrap gap-2';

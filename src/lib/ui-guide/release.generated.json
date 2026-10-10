@@ -15,7 +15,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "45771944273f5aab632e1fcfd496fdf42a6d70a8aa2c96942b2625c44961e553"
+      "sha256": "599a4b0db8862394fe0a76ac83351577a10deb291dead72a5f95dfc5398b0551"
     },
     {
       "path": "scripts/ui-guide.mjs",
@@ -59,7 +59,7 @@
     },
     {
       "path": "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
-      "sha256": "dd40b7404e6a3db0e636ef6cd6e7fddd46eeff0bcac8c8e977f6bda97eb17bfc"
+      "sha256": "93164978d8c529ec62a8acb792a5dbdf68ccc4f0b144c5ada84184f1c023d064"
     },
     {
       "path": "src/app/(dashboard)/projects/page.tsx",
@@ -594,8 +594,12 @@
       "sha256": "a0eec3374de150d19195ed93ac4123fdc1277186958978b11dd18183e2718bbf"
     },
     {
+      "path": "src/components/project/ProjectEmojiPicker.tsx",
+      "sha256": "2f7758c85d43ef25a903544b3535244de927715310b79617557fb59c02a023b4"
+    },
+    {
       "path": "src/components/project/ProjectFormModal.tsx",
-      "sha256": "77be99f152cdd4a7b90d593f8ee05796548b3bd117448db1276fd6ec22c0a324"
+      "sha256": "a7be6b78afea3c1524dc65d4d5dd0796a18f060328d88e3754c328032471ef5f"
     },
     {
       "path": "src/components/project/ProjectMark.tsx",
@@ -619,11 +623,11 @@
     },
     {
       "path": "src/components/providers/index.tsx",
-      "sha256": "054ad0a83a20bfd487cbe8b32f1458f23dfc987aa33d3f37aedb3923c0581e8a"
+      "sha256": "ec9ba2e80556a400304deae1a104db4a744c60b03141fa2be78da5f4680f5659"
     },
     {
       "path": "src/components/providers/ui-guide-isolation.test.tsx",
-      "sha256": "e119e0b3b9b7e53f0b98923aaa98a801521e6ea05b4400c6cd2fa13e8a6a77c4"
+      "sha256": "b730cd2f121f6a12359d1135ae578e4a10db045e304593a6c0fb050cd7cfc028"
     },
     {
       "path": "src/components/secretary/IncomingCandidates.tsx",
@@ -835,7 +839,7 @@
     },
     {
       "path": "src/components/ui/button.tsx",
-      "sha256": "5a5c4b8b60a8a80ba7b8b5d0319be2d3c61bfd2ce4fc2a645371dee9f6db0a77"
+      "sha256": "ca312231d614ccdf68626c03387895861d72f07437cba9b7fce38bcb601336ba"
     },
     {
       "path": "src/components/ui/calendar.tsx",
@@ -907,7 +911,7 @@
     },
     {
       "path": "src/components/ui/setting-field.tsx",
-      "sha256": "e5ba6d39e547ef7ea3a660807c241e711f44adfa6e9e906bef7acad9b02af7ae"
+      "sha256": "e6f2a89adef174594cef3e90f472942c928a1dec0b1a4104756b87e6f728744d"
     },
     {
       "path": "src/components/ui/sheet.tsx",
@@ -1550,6 +1554,10 @@
       "sha256": "04bdfd10f77abf980821b23d742fb375615249562853e0496ad70249d200548e"
     },
     {
+      "path": "src/lib/project-emojis.ts",
+      "sha256": "cc6aa6785fbf1f9e365a6d6f1ac54d50dd45c777b69de4d958a5ff6deefec58a"
+    },
+    {
       "path": "src/lib/project/progress.ts",
       "sha256": "2417ebcdba7943b70425167015c7046c1fbf8f86234d16681e776fde2ef7a0b2"
     },
@@ -1787,7 +1795,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "00049296f6046c15d08d5f733de5b8bb475467279ffbc688cdc00d3cfdb7a7ba"
+      "sha256": "760f4b3f871446517ed468c5b3666808b6b7b5a553d7c25bc9cdf51e1c90291f"
     },
     {
       "path": "src/lib/ui-guide/verification.json",
