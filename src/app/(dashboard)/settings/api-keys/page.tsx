@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Prose } from '@/components/ui/typography';
 import {
   Dialog,
   DialogContent,
@@ -675,27 +676,20 @@ export default function ApiKeysPage() {
         <CardHeader>
           <CardTitle>MCP サーバー設定</CardTitle>
           <CardDescription>
-            Claude DesktopやCursorなどのMCPクライアントで使用する設定です
+            Claude Web／DesktopやChatGPTからSlowthに接続します
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg bg-muted p-4">
             <p className="text-sm text-muted-foreground mb-2">
-              MCPクライアントの設定ファイルに以下を追加してください:
+              Claudeの「設定 → コネクタ」からカスタムコネクタを追加し、次のURLを指定してください:
             </p>
             <pre className="text-xs bg-background p-3 rounded overflow-x-auto">
-{`{
-  "mcpServers": {
-    "taskflow": {
-      "command": "npx",
-      "args": ["-y", "@taskflow/mcp-server"],
-      "env": {
-        "TASKFLOW_API_KEY": "your-api-key-here"
-      }
-    }
-  }
-}`}
+              https://slowth.1000ri.jp/api/mcp
             </pre>
+            <Prose>
+              「接続」を選び、許可済みのGoogleアカウントでログインして、プロジェクトと接続内容を確認します。ChatGPTでも同じURLを使用します。
+            </Prose>
           </div>
         </CardContent>
       </Card>

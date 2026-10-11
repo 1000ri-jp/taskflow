@@ -6,7 +6,11 @@ const nextConfig: NextConfig = {
   // OAuth callbacks contain a short-lived authorization code; keep it out of dev logs.
   logging: { incomingRequests: { ignore: [/^\/api\/google\/callback(?:\?|$)/, /^\/api\/oidc\//, /^\/mcp-connect/] } },
   async rewrites() {
-    return [{ source: '/mcp-connect/consent', destination: '/api/mcp-consent' }];
+    return [
+      { source: '/mcp-connect/consent', destination: '/api/mcp-consent' },
+      { source: '/.well-known/oauth-authorization-server/api/oidc', destination: '/api/oidc/.well-known/oauth-authorization-server' },
+      { source: '/.well-known/openid-configuration/api/oidc', destination: '/api/oidc/.well-known/openid-configuration' },
+    ];
   },
   // Keep the real-data local server isolated from the mock secretary preview
   // when both are opened from this checkout.

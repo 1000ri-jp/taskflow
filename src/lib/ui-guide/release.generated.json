@@ -11,7 +11,7 @@
     },
     {
       "path": "next.config.ts",
-      "sha256": "1f3c4264ace313298722271db025da64f13bd529e8fcd1ebb19e438ec209a6eb"
+      "sha256": "5bff652883f4c8b15fabcc735a2a1379f3462dae5d71a51939071af248d68130"
     },
     {
       "path": "package.json",
@@ -71,7 +71,7 @@
     },
     {
       "path": "src/app/(dashboard)/settings/api-keys/page.tsx",
-      "sha256": "1c1e00e538dccc66f1c0cacf5520888dd3b327e35ad08d05505f1e9ce66ae500"
+      "sha256": "5f8c268fadf4a3d80a5d177e107d0708662edd94742e3adc5992196e9c58420e"
     },
     {
       "path": "src/app/(dashboard)/settings/browser-backup/page.tsx",
@@ -95,7 +95,7 @@
     },
     {
       "path": "src/app/mcp-connect/consent.tsx",
-      "sha256": "28d88e3f985277350a5a1ee4f98150db924e223b4425d3cb439b654c2a109209"
+      "sha256": "8f311995e36ec9331fdd3d60accb782b3804ec67220dc3ce9c27ab0b1f855c23"
     },
     {
       "path": "src/app/neo-appearance.css",
@@ -1795,7 +1795,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "760f4b3f871446517ed468c5b3666808b6b7b5a553d7c25bc9cdf51e1c90291f"
+      "sha256": "8467544542422fa8e7ca3775fabafa04ce7f82e92733d00b1487bec7e0b1811e"
     },
     {
       "path": "src/lib/ui-guide/verification.json",

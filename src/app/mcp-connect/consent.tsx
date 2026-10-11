@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 export default function Consent({ interaction }: { interaction: string }) {
   const { firebaseUser, isLoading, signInForMcp } = useAuth();
-  const [data, setData] = useState<{ uid: string; taskScopes: string[]; mode: 'test' | 'production'; projects: { id: string; name: string }[] } | null>(null);
+  const [data, setData] = useState<{ uid: string; clientName: 'ChatGPT' | 'Claude'; taskScopes: string[]; mode: 'test' | 'production'; projects: { id: string; name: string }[] } | null>(null);
   const [projectId, setProjectId] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -19,6 +19,7 @@ export default function Consent({ interaction }: { interaction: string }) {
   const taskRead = ready && data?.taskScopes.includes('tasks:read');
   const taskWrite = ready && data?.taskScopes.includes('tasks:write');
   const production = ready && data?.mode === 'production';
+  const clientName = ready ? data?.clientName : null;
   useEffect(() => {
     let active = true;
     if (!firebaseUser) return;
@@ -29,8 +30,8 @@ export default function Consent({ interaction }: { interaction: string }) {
         });
         if (!response.ok) throw new Error();
         const result = await response.json();
-        if (active) { setData({ uid: firebaseUser.uid, taskScopes: Array.isArray(result.taskScopes) ? result.taskScopes : [], mode: result.mode === 'production' ? 'production' : 'test', projects: result.projects }); setProjectId(''); setError(''); }
-      } catch { if (active) { setData(null); setError('接続を確認できません。SlowthのGoogleアカウントで再ログインしてください。認可画面の期限が切れている場合は、ChatGPTからやり直してください。'); } }
+        if (active) { setData({ uid: firebaseUser.uid, clientName: result.clientName === 'Claude' ? 'Claude' : 'ChatGPT', taskScopes: Array.isArray(result.taskScopes) ? result.taskScopes : [], mode: result.mode === 'production' ? 'production' : 'test', projects: result.projects }); setProjectId(''); setError(''); }
+      } catch { if (active) { setData(null); setError('接続を確認できません。SlowthのGoogleアカウントで再ログインしてください。認可画面の期限が切れている場合は、接続元のアプリからやり直してください。'); } }
     })();
     return () => { active = false; };
   }, [firebaseUser, interaction, attempt]);
@@ -54,15 +55,15 @@ export default function Consent({ interaction }: { interaction: string }) {
       const next = new URL(result.redirect);
       if (next.origin !== window.location.origin || !next.pathname.startsWith('/api/oidc/')) throw new Error();
       window.location.assign(next.href);
-    } catch { setError('接続を完了できません。ChatGPTからやり直してください。'); setBusy(false); }
+    } catch { setError('接続を完了できません。接続元のアプリからやり直してください。'); setBusy(false); }
   }
   return <main className="mx-auto max-w-lg">
     <Card density="compact"><CardContent><SettingsLayout align="start">
-    <PageHeading>ChatGPTとの接続確認</PageHeading>
+    <PageHeading>{clientName ? `${clientName}との接続確認` : 'MCPの接続確認'}</PageHeading>
     <Prose>{!ready ? '接続許可の内容を確認中…' : taskRead
-      ? `「タスク管理ツール」のタスク全項目・コメント・確認依頼と回答・サブタスク・チェックリスト・添付・共有履歴をChatGPTが読み取ります。${taskWrite ? '作成、編集、確認への回答、完了、アーカイブと復元、繰り返し設定も許可します。操作はこのGoogleアカウントの権限で記録します。' : ''}更新通知も継続します。有効期間は最大30日間です。個人のメール本文や他のプロジェクトにはアクセスしません。ChatGPTで接続を解除すると停止できます。`
+      ? `「タスク管理ツール」のタスク全項目・コメント・確認依頼と回答・サブタスク・チェックリスト・添付・共有履歴を${clientName}が読み取ります。${taskWrite ? '作成、編集、確認への回答、完了、アーカイブと復元、繰り返し設定も許可します。操作はこのGoogleアカウントの権限で記録します。' : ''}${clientName === 'Claude' ? '更新履歴は接続中に取得できます。' : '更新通知も継続します。'}有効期間は最大30日間です。個人のメール本文や他のプロジェクトにはアクセスしません。${clientName}で接続を解除すると停止できます。`
       : production
-      ? '「タスク管理ツール」のタスク作成・変更・削除について、タイトルと完了状態をChatGPTのDotへ通知します。接続は最大30日間有効で、認証は自動更新されます。タスクの変更や他のプロジェクトへのアクセスは許可しません。ChatGPTで接続を解除すると通知を停止できます。'
+      ? `${clientName === 'Claude' ? '「タスク管理ツール」のタスク作成・変更・削除について、タイトルと完了状態をClaudeから取得できます。' : '「タスク管理ツール」のタスク作成・変更・削除について、タイトルと完了状態をChatGPTのDotへ通知します。'}接続は最大30日間有効で、認証は自動更新されます。タスクの変更や他のプロジェクトへのアクセスは許可しません。${clientName}で接続を解除すると停止できます。`
       : '選択した1つのプロジェクトで、架空のタスク更新通知をテストします。有効期間は最大15分です。実タスクの読み取り・変更や、実際の更新通知は許可しません。'}</Prose>
     {error && <Prose role="alert">{error}</Prose>}
     {isLoading ? <Prose>ログイン状態を確認中…</Prose> : !firebaseUser ?

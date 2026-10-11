@@ -11,7 +11,8 @@ export function firestoreAdapter(db, key) {
     return { iv: iv.toString('base64'), tag: cipher.getAuthTag().toString('base64'), body: body.toString('base64') };
   }
   function open(record) {
-    if (!record || record.expiresAt.toMillis() <= Date.now()) return undefined;
+    const expiresAt = record?.expiresAt?.toMillis?.() ?? record?.expiresAt?.getTime?.();
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return undefined;
     const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(record.iv, 'base64'));
     decipher.setAuthTag(Buffer.from(record.tag, 'base64'));
     const payload = JSON.parse(Buffer.concat([decipher.update(Buffer.from(record.body, 'base64')), decipher.final()]).toString());
@@ -21,6 +22,9 @@ export function firestoreAdapter(db, key) {
     constructor(name) { this.name = name; }
     ref(id) { return collection.doc(hash(`${this.name}:${id}`)); }
     async upsert(id, payload, expiresIn) {
+      // oidc-provider stores registered clients without a TTL. Keep their
+      // metadata for a bounded year; access and consent still expire separately.
+      if (this.name === 'Client' && expiresIn === undefined) expiresIn = 365 * 86400;
       if (!Number.isFinite(expiresIn) || expiresIn <= 0) throw new Error('Finite OAuth lifetime required');
       const reference = this.ref(id);
       await db.runTransaction(async tx => {

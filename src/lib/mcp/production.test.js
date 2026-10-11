@@ -5,6 +5,7 @@ import { taskEvent, deliveryOutcome, connectionAuthorized, createProductionPipel
 import { subscriptionStore } from '../../../scripts/mcp-events/subscription-store.mjs';
 import { signature } from '../../../scripts/mcp-events/core.mjs';
 import { PILOT_PROJECT, RETENTION_MS, authorizationMode } from '../../../scripts/mcp-events/policy.mjs';
+import { firestoreAdapter } from '../../../scripts/mcp-events/oidc-store.mjs';
 
 let db, auth, config, connection, clock, pipeline, post, store;
 const key = Buffer.alloc(32, 4), secret = 'whsec_' + Buffer.alloc(32, 7).toString('base64');
@@ -68,6 +69,28 @@ it('persists journal and delivery before webhook, then survives new worker insta
   await replacement.sweep();
   expect(post).toHaveBeenCalledOnce(); expect(jobs()[0][1].state).toBe('delivered');
   expect((await listTaskUpdates(principal(), PILOT_PROJECT, 20, () => clock)).events).toHaveLength(1);
+});
+
+it('retains a Claude polling feed only while its own client registration and binding are valid', async () => {
+  const id = 'slowth-claude-00000000-0000-0000-0000-000000000001';
+  config.claudeEnabled = true;
+  const Adapter = firestoreAdapter(db, key), clients = new Adapter('Client');
+  await clients.upsert(id, { client_id: id, application_type: 'web', token_endpoint_auth_method: 'none', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'], grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] });
+  connection.clientId = id;
+  await db.collection('mcpEventConnections').doc('fixture-owner').set(connection);
+  await db.collection('mcpOAuthGrants').doc('fixture-binding').update({ clientId: id });
+  await principal().collection('subscriptions').doc('fixture-sub').delete();
+  expect(await pipeline.capture(change())).toEqual({ captured: 1 });
+  expect((await listTaskUpdates(principal(), PILOT_PROJECT, 20, () => clock)).events).toHaveLength(1);
+  expect(jobs()).toHaveLength(0); expect(post).not.toHaveBeenCalled();
+  config.claudeEnabled = false;
+  expect(await pipeline.capture(change({ id: 'disabled-client' }))).toEqual({ captured: 0 });
+  config.claudeEnabled = true;
+  await db.collection('mcpOAuthGrants').doc('fixture-binding').update({ clientId: config.clientId });
+  expect(await pipeline.capture(change({ id: 'wrong-client-binding' }))).toEqual({ captured: 0 });
+  await db.collection('mcpOAuthGrants').doc('fixture-binding').update({ clientId: id });
+  await clients.destroy(id);
+  expect(await pipeline.capture(change({ id: 'removed-client' }))).toEqual({ captured: 0 });
 });
 it('retains bursts and removes only acknowledged events, idempotently', async () => {
   for (let n = 0; n < 3; n++) await pipeline.capture(change({ id: 'fixture-' + n }));

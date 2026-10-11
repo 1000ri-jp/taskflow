@@ -2,11 +2,13 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import handler from '@/pages/api/mcp-consent';
 import { PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
-const f = vi.hoisted(() => ({ production: false, taskAccess: false, details: vi.fn(), finish: vi.fn(), user: vi.fn(), access: vi.fn(), create: vi.fn(), save: vi.fn(), write: vi.fn(), projects: vi.fn(), oidcScope: vi.fn(), resourceScope: vi.fn() }));
+import { allowedOAuthClient } from '../../../scripts/mcp-events/oauth-clients.mjs';
+const f = vi.hoisted(() => ({ production: false, taskAccess: false, claudeEnabled: false, claudeMetadata: null, grant: vi.fn(), details: vi.fn(), finish: vi.fn(), user: vi.fn(), access: vi.fn(), create: vi.fn(), save: vi.fn(), write: vi.fn(), projects: vi.fn(), oidcScope: vi.fn(), resourceScope: vi.fn() }));
 vi.mock('@/lib/mcp/oidc', () => ({
-  oidcConfig: () => ({ origin: 'https://slowth.example.test', clientId: 'fixture-client', redirectUri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', productionEnabled: f.production, taskAccessEnabled: f.taskAccess }),
+  oidcConfig: () => ({ origin: 'https://slowth.example.test', clientId: 'fixture-client', redirectUri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', productionEnabled: f.production, taskAccessEnabled: f.taskAccess, claudeEnabled: f.claudeEnabled }),
+  oauthClient: async (id, settings, redirectUri) => allowedOAuthClient(settings, id, f.claudeMetadata, redirectUri),
   oidcProvider: () => ({ interactionDetails: f.details, interactionResult: f.finish,
-    Grant: class { addOIDCScope(scope) { f.oidcScope(scope); } addResourceScope(resource, scope) { f.resourceScope(resource, scope); } save() { return f.save(); } } }),
+    Grant: class { constructor(args) { f.grant(args); } addOIDCScope(scope) { f.oidcScope(scope); } addResourceScope(resource, scope) { f.resourceScope(resource, scope); } save() { return f.save(); } } }),
   firebaseConsentUser: f.user, assertProject: f.access, digest: value => value,
 }));
 vi.mock('@/lib/firebase/admin', () => ({ getAdminDb: () => ({ collection: () => ({ doc: () => ({ create: f.create, set: f.write }) }) }) }));
@@ -22,6 +24,7 @@ function response() {
 beforeEach(() => {
   vi.clearAllMocks();
   f.production = false; f.taskAccess = false;
+  f.claudeEnabled = false; f.claudeMetadata = null;
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   f.details.mockResolvedValue({ uid: 'fixture-interaction', params: { client_id: 'fixture-client', redirect_uri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', scope: 'events:test' } });
   f.user.mockResolvedValue({ uid: 'fixture-user', auth_time: 123 });
@@ -113,4 +116,20 @@ it('records exact expanded consent and checks write membership before issuing an
   f.access.mockRejectedValueOnce(new Error('viewer')); f.create.mockClear();
   const viewer = response(); await handler(request({ body: { interaction: 'fixture-interaction', approve: true, projectId: PILOT_PROJECT } }), viewer);
   expect(viewer.code).toBe(403); expect(f.create).not.toHaveBeenCalled();
+});
+
+it('shows Claude and binds both consent and events to its registered client', async () => {
+  f.production = true; f.taskAccess = true; f.claudeEnabled = true;
+  const id = 'slowth-claude-00000000-0000-0000-0000-000000000001', redirect = 'https://claude.ai/api/mcp/auth_callback';
+  f.claudeMetadata = { client_id: id, application_type: 'web', token_endpoint_auth_method: 'none', redirect_uris: [redirect], grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] };
+  f.details.mockResolvedValue({ uid: 'fixture-interaction', params: { client_id: id, redirect_uri: redirect, resource: 'https://slowth.example.test/api/mcp', scope: 'events:read tasks:read tasks:write openid offline_access' } });
+  f.projects.mockResolvedValue([{ id: PILOT_PROJECT, name: 'タスク管理ツール' }]);
+  const selector = response(); await handler(request({ method: 'GET', query: { interaction: 'fixture-interaction' } }), selector);
+  expect(selector.body.clientName).toBe('Claude');
+  const approved = response(); await handler(request({ body: { interaction: 'fixture-interaction', approve: true, projectId: PILOT_PROJECT } }), approved);
+  expect(approved.code).toBe(200); expect(f.grant).toHaveBeenCalledWith({ accountId: 'fixture-user', clientId: id });
+  for (const [binding] of f.write.mock.calls) expect(binding.clientId).toBe(id);
+  f.claudeEnabled = false; f.save.mockClear();
+  const denied = response(); await handler(request({ body: { interaction: 'fixture-interaction', approve: true, projectId: PILOT_PROJECT } }), denied);
+  expect(denied.code).toBe(403); expect(f.save).not.toHaveBeenCalled();
 });

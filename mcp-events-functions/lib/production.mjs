@@ -3,6 +3,7 @@ import { signedPost } from './core.mjs';
 import { subscriptionStore } from './subscription-store.mjs';
 import { PILOT_PROJECT, RETENTION_MS } from './policy.mjs';
 import { TASK_EVENT_FIELDS as fields } from './task-fields.generated.mjs';
+import { resolveOAuthClient } from './oauth-clients.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const millis = value => value?.toMillis?.() ?? (value instanceof Date ? value.getTime() : value);
@@ -36,11 +37,12 @@ export function taskEvent({ id, time, projectId, taskId, before, after, detail }
 }
 
 // Check the actual grant, binding, Firebase revocation, and both membership representations on every delivery.
-export async function connectionAuthorized(db, auth, connection, config, now = Date.now) {
+export async function connectionAuthorized(db, auth, connection, config, now = Date.now, key) {
   if (!config.enabled || config.projectId !== PILOT_PROJECT || connection?.mode !== 'production' ||
       connection.projectId !== PILOT_PROJECT || connection.userId !== config.allowedUid ||
-      connection.clientId !== config.clientId || connection.resource !== config.resource ||
+      connection.resource !== config.resource ||
       !Number.isFinite(millis(connection.expiresAt)) || millis(connection.expiresAt) <= now()) return false;
+  if (!await resolveOAuthClient(db, key, config, connection.clientId)) return false;
   const [operations, binding, grant, project, members, user, profile] = await Promise.all([
     db.collection('mcpEventOperations').doc('pilot').get(),
     db.collection('mcpOAuthGrants').doc(connection.bindingId).get(),
@@ -55,7 +57,7 @@ export async function connectionAuthorized(db, auth, connection, config, now = D
   ]);
   const b = binding.data(), g = grant.data(), p = project.data();
   return operations.data()?.stopped !== true && b?.mode === 'production' && b.userId === connection.userId &&
-    b.projectId === connection.projectId && b.clientId === config.clientId && b.resource === config.resource &&
+    b.projectId === connection.projectId && b.clientId === connection.clientId && b.resource === config.resource &&
     Number.isFinite(millis(b.expiresAt)) && millis(b.expiresAt) > now() &&
     Number.isFinite(millis(g?.expiresAt)) && millis(g.expiresAt) > now() &&
     profile.exists && Boolean(user) && !user.disabled && user.emailVerified && user.email?.endsWith('@1000ri.jp') &&
@@ -89,7 +91,7 @@ export function createProductionPipeline({ db, auth, config, key, post, now = Da
       let captured = 0;
       for (const doc of candidates.docs) {
         const connection = doc.data();
-        if (!await connectionAuthorized(db, auth, connection, config, now) || occurredAt < connection.createdAt) continue;
+        if (!await connectionAuthorized(db, auth, connection, config, now, key) || occurredAt < connection.createdAt) continue;
         const active = (await subscriptions(doc.id).values()).filter(sub => sub.expiresAt > now() &&
           sub.projectId === PILOT_PROJECT && Number.isFinite(sub.createdAt) && sub.createdAt <= occurredAt);
         // Retain the authorized feed during a subscription renewal interruption.
@@ -135,7 +137,7 @@ export function createProductionPipeline({ db, auth, config, key, post, now = Da
         const sub = await store.get(job.subscriptionId);
         const journal = (await principal(job.owner).collection('journal').doc(job.eventId).get()).data();
         if (!sub || sub.expiresAt <= now() || !journal || journal.expiresAt <= now() ||
-            !await connectionAuthorized(db, auth, connection, config, now) || sub.expiresAt <= now() || journal.expiresAt <= now()) {
+            !await connectionAuthorized(db, auth, connection, config, now, key) || sub.expiresAt <= now() || journal.expiresAt <= now()) {
           outcome = { state: 'cancelled', reason: 'authorization_or_subscription_ended', completedAt: now() };
         } else if (job.kind === 'recovery_wake' && journal.acknowledged) {
           outcome = { state: 'cancelled', reason: 'already_acknowledged', completedAt: now() };

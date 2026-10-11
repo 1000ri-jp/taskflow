@@ -58,3 +58,15 @@ it('shows production data destination, thirty-day consent, and the selected proj
   expect(approve).toBeDisabled(); fireEvent.change(screen.getByRole('combobox'), { target: { value: 'fixture-project' } });
   expect(approve).toBeEnabled(); expect(screen.queryByRole('button', { name: '架空通知のテストを許可' })).not.toBeInTheDocument();
 });
+
+it('identifies Claude as the data recipient on its read-write consent screen', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ clientName: 'Claude', mode: 'production', taskScopes: ['tasks:read', 'tasks:write'], projects: [{ id: 'fixture-project', name: 'タスク管理ツール' }] }))));
+  render(<Consent interaction="fixture-interaction" />);
+  await screen.findByRole('heading', { name: 'Claudeとの接続確認' });
+  expect(screen.getByText(/添付・共有履歴をClaudeが読み取ります/)).toHaveTextContent('最大30日間');
+  expect(screen.queryByText(/ChatGPT/)).not.toBeInTheDocument();
+  const approve = screen.getByRole('button', { name: '30日間のタスク読み書きを許可' });
+  expect(approve).toBeDisabled();
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'fixture-project' } });
+  expect(approve).toBeEnabled();
+});

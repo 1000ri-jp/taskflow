@@ -1,5 +1,7 @@
 import Provider, { errors } from 'oidc-provider';
+import { randomUUID } from 'node:crypto';
 import { authorizationMode, CONSENT_MS, READ_SCOPE, TEST_SCOPE, TASK_READ_SCOPE, TASK_WRITE_SCOPE } from './policy.mjs';
+import { allowedOAuthClient, isClaudeClientId } from './oauth-clients.mjs';
 
 export { TEST_SCOPE };
 
@@ -14,10 +16,18 @@ export function isTestAuthorizationScope(scope) {
 
 // Protocol validation/code issuance/PKCE/replay protection are owned by oidc-provider.
 export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, cookieKeys,
-  adapter, findAccount, clients = [], productionEnabled = false, taskAccessEnabled = false }) {
+  adapter, findAccount, clients = [], productionEnabled = false, taskAccessEnabled = false, claudeEnabled = false }) {
   if (!jwks?.keys?.length || !cookieKeys?.length) throw new Error('Explicit OAuth keys required');
+  const clientConfig = { clientId, redirectUri, claudeEnabled };
   const provider = new Provider(issuer, {
     adapter, jwks, clients, findAccount,
+    clientDefaults: { application_type: 'web', token_endpoint_auth_method: 'none',
+      grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] },
+    extraClientMetadata: { properties: ['slowth_client'], validator: (_ctx, _key, _value, metadata) => {
+      if (metadata.client_id === clientId) return;
+      if (!allowedOAuthClient(clientConfig, metadata.client_id, metadata)) throw new errors.InvalidClientMetadata('Only Claude Web/Desktop callbacks are supported');
+      metadata.slowth_client = 'claude';
+    } },
     cookies: { keys: cookieKeys, short: { signed: true }, long: { signed: true } },
     scopes: productionEnabled ? [TEST_SCOPE, READ_SCOPE, 'offline_access', ...(taskAccessEnabled ? [TASK_READ_SCOPE, TASK_WRITE_SCOPE] : [])] : [TEST_SCOPE], claims: {},
     pkce: { required: () => true },
@@ -36,7 +46,7 @@ export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, co
     },
     features: {
       devInteractions: { enabled: false },
-      registration: { enabled: false },
+      registration: { enabled: claudeEnabled, idFactory: () => 'slowth-claude-' + randomUUID(), issueRegistrationAccessToken: false },
       revocation: { enabled: true },
       clientIdMetadataDocument: {
         enabled: true, ack: 'draft-02',
@@ -48,19 +58,39 @@ export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, co
         defaultResource: () => { throw new errors.InvalidTarget('resource is required'); },
         useGrantedResource: () => false,
         getResourceServerInfo: async (_ctx, target, client) => {
-          if (target !== resource || client.clientId !== clientId) throw new errors.InvalidTarget();
+          if (target !== resource || !allowedOAuthClient(clientConfig, client.clientId, client.metadata())) throw new errors.InvalidTarget();
           return { scope: productionEnabled ? `${TEST_SCOPE} ${READ_SCOPE}${taskAccessEnabled ? ` ${TASK_READ_SCOPE} ${TASK_WRITE_SCOPE}` : ''}` : TEST_SCOPE,
             audience: resource, accessTokenFormat: 'opaque', accessTokenTTL: productionEnabled ? 3600 : 900 };
         },
       },
     },
-    renderError: async (ctx) => { ctx.type = 'text/plain'; ctx.body = 'OAuth request could not be completed. Return to ChatGPT and retry.'; },
+    renderError: async (ctx) => { ctx.type = 'text/plain'; ctx.body = 'OAuth request could not be completed. Return to your MCP client and retry.'; },
   });
   provider.proxy = true;
   provider.use(async (ctx, next) => {
-    // Reject before any redirect. One pinned client and exact callback only.
+    // Reject before any redirect. ChatGPT remains pinned; registered Claude
+    // clients must use one of their exact, approved callbacks.
     if (ctx.path === '/auth') {
-      if (ctx.method !== 'GET' || ctx.query.client_id !== clientId || ctx.query.redirect_uri !== redirectUri ||
+      let client;
+      if (ctx.query.client_id === clientId) client = allowedOAuthClient(clientConfig, clientId, undefined, ctx.query.redirect_uri);
+      else if (claudeEnabled && isClaudeClientId(ctx.query.client_id)) {
+        const registered = await provider.Client.find(ctx.query.client_id);
+        client = allowedOAuthClient(clientConfig, ctx.query.client_id, registered?.metadata(), ctx.query.redirect_uri);
+      }
+      if (client?.name === 'Claude') {
+        // MCP clients request resource scopes rather than OIDC identity/offline
+        // scopes. The same explicit, thirty-day consent applies to both clients.
+        const scope = ctx.query.scope ?? (productionEnabled
+          ? `${READ_SCOPE}${taskAccessEnabled ? ` ${TASK_READ_SCOPE} ${TASK_WRITE_SCOPE}` : ''}` : TEST_SCOPE);
+        if (typeof scope === 'string') {
+          const scopes = scope.split(' ');
+          if (new Set(scopes).size === scopes.length && scopes.every(Boolean)) {
+            const extras = scopes.includes(READ_SCOPE) ? ['openid', 'offline_access'] : ['openid'];
+            ctx.query.scope = [...scopes, ...extras.filter(value => !scopes.includes(value))].join(' ');
+          }
+        }
+      }
+      if (ctx.method !== 'GET' || !client ||
           !authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled) || ctx.query.resource !== resource ||
           ctx.query.response_type !== 'code' || ctx.query.code_challenge_method !== 'S256' ||
           typeof ctx.query.state !== 'string' || !ctx.query.state || ctx.query.state.length > 1024) {
@@ -77,6 +107,12 @@ export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, co
       }
     }
     await next();
+    if (claudeEnabled && productionEnabled && ctx.path.startsWith('/.well-known/') && ctx.body?.issuer === issuer) {
+      // Production and synthetic scopes describe separate grants. Advertising
+      // both together makes clients that request discovery scopes ask for an
+      // invalid combination. Explicit synthetic requests remain supported.
+      ctx.body.scopes_supported = [READ_SCOPE, 'openid', 'offline_access', ...(taskAccessEnabled ? [TASK_READ_SCOPE, TASK_WRITE_SCOPE] : [])];
+    }
   });
   return provider;
 }
@@ -86,8 +122,14 @@ export function mountedCallback(provider, mountPath) {
   const callback = provider.callback();
   return async (req, res) => {
     const original = req.url;
-    req.originalUrl = original;
-    req.url = original.slice(mountPath.length) || '/';
+    const pathname = original.split('?')[0];
+    // Next rewrites preserve the public request URL on req.url. RFC 8414
+    // discovery puts the issuer path after /.well-known, outside our mount.
+    const discovery = ['oauth-authorization-server', 'openid-configuration']
+      .find(name => pathname === `/.well-known/${name}${mountPath}`);
+    const mounted = discovery ? `${mountPath}/.well-known/${discovery}${original.slice(pathname.length)}` : original;
+    req.originalUrl = mounted;
+    req.url = mounted.slice(mountPath.length) || '/';
     try { await callback(req, res); } finally { req.url = original; }
   };
 }

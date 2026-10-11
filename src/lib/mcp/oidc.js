@@ -4,6 +4,7 @@ import { getProjectAccess } from '@/lib/auth/projectAccess';
 import { makeProvider, TEST_SCOPE } from '../../../scripts/mcp-events/oidc-provider.mjs';
 import { firestoreAdapter } from '../../../scripts/mcp-events/oidc-store.mjs';
 import { PILOT_PROJECT, READ_SCOPE, TASK_READ_SCOPE, TASK_WRITE_SCOPE } from '../../../scripts/mcp-events/policy.mjs';
+import { resolveOAuthClient } from '../../../scripts/mcp-events/oauth-clients.mjs';
 
 export const digest = value => createHash('sha256').update(value).digest('hex');
 export function oidcConfig() {
@@ -17,7 +18,12 @@ export function oidcConfig() {
       !/^https:\/\/chatgpt\.com\/(?:connector_platform_oauth_redirect|connector\/oauth\/[A-Za-z0-9_-]+)$/.test(redirectUri ?? '')) throw new Error('OAuth configuration incomplete');
   const productionEnabled = process.env.SLOWTH_MCP_EVENTS_PRODUCTION === 'true';
   if (productionEnabled && process.env.SLOWTH_MCP_EVENTS_PROJECT_ID !== PILOT_PROJECT) throw new Error('Pilot project required');
-  return { origin, issuer: origin + '/api/oidc', resource: origin + '/api/mcp', allowedUid, clientId, redirectUri, productionEnabled, taskAccessEnabled: productionEnabled && process.env.SLOWTH_MCP_TASK_ACCESS === 'true' };
+  return { origin, issuer: origin + '/api/oidc', resource: origin + '/api/mcp', allowedUid, clientId, redirectUri,
+    claudeEnabled: process.env.SLOWTH_MCP_OAUTH_CLAUDE_ENABLED === 'true', productionEnabled,
+    taskAccessEnabled: productionEnabled && process.env.SLOWTH_MCP_TASK_ACCESS === 'true' };
+}
+export async function oauthClient(id, config = oidcConfig(), redirectUri) {
+  return resolveOAuthClient(getAdminDb(), Buffer.from(process.env.SLOWTH_MCP_OAUTH_STORAGE_KEY ?? '', 'base64'), config, id, redirectUri);
 }
 let instance;
 export function oidcProvider() {
@@ -34,6 +40,7 @@ export function oidcProvider() {
         if (artifact) {
           const binding = (await getAdminDb().collection('mcpOAuthGrants').doc(digest(artifact.grantId)).get()).data();
           if (!config.productionEnabled || binding?.mode !== 'production' || binding.userId !== uid ||
+              binding.clientId !== artifact.clientId || binding.resource !== config.resource || !await oauthClient(binding.clientId, oidcConfig()) ||
               binding.projectId !== PILOT_PROJECT || binding.expiresAt?.toMillis?.() <= Date.now() ||
               !Number.isFinite(binding.expiresAt?.toMillis?.())) throw new Error('Forbidden');
           await activeUser(uid, config, binding.authTime);
@@ -75,7 +82,7 @@ export async function authenticateMcp(header) {
   const validScopes = token?.scope === TEST_SCOPE || production && new Set(scopes).size === scopes.length &&
     scopes.every(s => [READ_SCOPE, ...(config.taskAccessEnabled ? [TASK_READ_SCOPE, TASK_WRITE_SCOPE] : [])].includes(s)) &&
     (!scopes.includes(TASK_WRITE_SCOPE) || scopes.includes(TASK_READ_SCOPE));
-  if (!token || token.clientId !== config.clientId || token.aud !== config.resource ||
+  if (!token || !await oauthClient(token.clientId, config) || token.aud !== config.resource ||
       !validScopes ||
       !token.grantId || !Number.isFinite(token.exp)) throw new Error('Unauthorized');
   const grant = await provider.Grant.find(token.grantId);
@@ -83,7 +90,7 @@ export async function authenticateMcp(header) {
   const binding = (await getAdminDb().collection('mcpOAuthGrants').doc(digest(token.grantId)).get()).data();
   const deadlines = [binding?.expiresAt?.toMillis?.(), grant.exp * 1000, token.exp * 1000];
   const expiresAt = Math.min(...deadlines);
-  if (!binding || binding.userId !== token.accountId || binding.clientId !== config.clientId ||
+  if (!binding || binding.userId !== token.accountId || binding.clientId !== token.clientId ||
       binding.resource !== config.resource || !deadlines.every(Number.isFinite) || expiresAt <= Date.now()) throw new Error('Unauthorized');
   const taskScopes = scopes.filter(s => [TASK_READ_SCOPE, TASK_WRITE_SCOPE].includes(s));
   if (taskScopes.some(s => !binding.taskScopes?.includes(s))) throw new Error('Unauthorized');

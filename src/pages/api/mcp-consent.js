@@ -1,4 +1,4 @@
-import { oidcProvider, oidcConfig, firebaseConsentUser, assertProject, digest } from '@/lib/mcp/oidc';
+import { oidcProvider, oidcConfig, oauthClient, firebaseConsentUser, assertProject, digest } from '@/lib/mcp/oidc';
 import { getAdminDb } from '@/lib/firebase/admin';
 import { listUserProjects } from '@/lib/firebase/admin-projects';
 import { authorizationMode, TEST_SCOPE, READ_SCOPE, TASK_READ_SCOPE, TASK_WRITE_SCOPE, CONSENT_MS, PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
@@ -20,8 +20,8 @@ export default async function handler(req, res) {
     const taskScopes = details.params.scope.split(' ').filter(s => [TASK_READ_SCOPE, TASK_WRITE_SCOPE].includes(s));
     const resourceScope = mode === 'production' ? [READ_SCOPE, ...taskScopes].join(' ') : TEST_SCOPE;
     const requested = req.method === 'GET' ? req.query.interaction : req.body?.interaction;
-    if (details.uid !== requested || details.params.client_id !== settings.clientId ||
-        details.params.redirect_uri !== settings.redirectUri || details.params.resource !== settings.resource ||
+    const client = await oauthClient(details.params.client_id, settings, details.params.redirect_uri);
+    if (details.uid !== requested || !client || details.params.resource !== settings.resource ||
         !mode) {
       console.warn('Slowth MCP consent rejected', { stage: 'interaction_binding' });
       res.status(403).end(); return;
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       stage = 'project_selector';
       const projects = (await listUserProjects(user.uid)).filter(p => mode !== 'production' || p.id === PILOT_PROJECT)
         .map(p => ({ id: p.id, name: p.name }));
-      res.json({ projects, scope: resourceScope, mode, taskScopes,
+      res.json({ projects, scope: resourceScope, mode, taskScopes, clientName: client.name,
         maxDays: mode === 'production' ? 30 : null }); return;
     }
     if (typeof req.body.approve !== 'boolean') { res.status(400).end(); return; }
@@ -45,13 +45,13 @@ export default async function handler(req, res) {
     // One explicit consent per interaction, even for concurrent double-clicks.
     await getAdminDb().collection('mcpOAuthConsents').doc(digest(details.uid)).create({ expiresAt: new Date(Date.now() + 300000) });
     stage = 'grant_storage';
-    const grant = new provider.Grant({ accountId: user.uid, clientId: settings.clientId });
+    const grant = new provider.Grant({ accountId: user.uid, clientId: client.id });
     grant.addOIDCScope(details.params.scope); grant.addResourceScope(settings.resource, resourceScope);
     const grantId = await grant.save();
     const expiresAt = new Date(Date.now() + (mode === 'production' ? CONSENT_MS : 900000));
     const binding = {
       userId: user.uid, authTime: user.auth_time, projectId: req.body.projectId,
-      clientId: settings.clientId, resource: settings.resource, mode, expiresAt, ...(taskScopes.length ? { taskScopes } : {}),
+      clientId: client.id, resource: settings.resource, mode, expiresAt, ...(taskScopes.length ? { taskScopes } : {}),
     };
     await getAdminDb().collection('mcpOAuthGrants').doc(digest(grantId)).set(binding);
     if (mode === 'production') {
@@ -67,6 +67,6 @@ export default async function handler(req, res) {
   } catch {
     // Fixed stage names only: never include exception text, tokens, cookies or account IDs.
     console.warn('Slowth MCP consent rejected', { stage });
-    if (!res.headersSent) res.status(403).json({ error: 'Connection could not be authorized. Start again from ChatGPT.' });
+    if (!res.headersSent) res.status(403).json({ error: 'Connection could not be authorized. Start again from your MCP client.' });
   }
 }

@@ -2,16 +2,17 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { authenticateMcp, activeUser, firebaseConsentUser } from './oidc';
 import { PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
-const fake = vi.hoisted(() => ({ find: vi.fn(), grant: vi.fn(), user: vi.fn(), verify: vi.fn(), access: vi.fn(), binding: null }));
+const fake = vi.hoisted(() => ({ find: vi.fn(), client: vi.fn(), grant: vi.fn(), user: vi.fn(), verify: vi.fn(), access: vi.fn(), binding: null }));
 vi.mock('@/lib/firebase/admin', () => ({
   getAdminAuth: () => ({ getUser: fake.user, verifyIdToken: fake.verify }),
   getAdminDb: () => ({ collection: name => ({ doc: () => ({ get: async () => name === 'users' ? { exists: true } : { data: () => fake.binding } }) }) }),
 }));
 vi.mock('@/lib/auth/projectAccess', () => ({ getProjectAccess: fake.access }));
 vi.mock('../../../scripts/mcp-events/oidc-provider.mjs', () => ({ TEST_SCOPE: 'events:test', makeProvider: () => ({ AccessToken: { find: fake.find }, Grant: { find: fake.grant } }) }));
-vi.mock('../../../scripts/mcp-events/oidc-store.mjs', () => ({ firestoreAdapter: () => class {} }));
+vi.mock('../../../scripts/mcp-events/oidc-store.mjs', () => ({ firestoreAdapter: () => class { find(id) { return fake.client(id); } } }));
 beforeEach(() => {
   vi.clearAllMocks();
+  fake.client.mockResolvedValue(undefined);
   for (const [key, value] of Object.entries({ ENABLED: 'true', ORIGIN: 'https://slowth.example.test', ALLOWED_UID: 'fixture-user',
     CLIENT_ID: 'https://chatgpt.com/oauth/client.json', REDIRECT_URI: 'https://chatgpt.com/connector_platform_oauth_redirect',
     JWKS: '{"keys":[{"d":"fixture"}]}', COOKIE_KEYS: JSON.stringify(['fixture-cookie-key-not-a-secret'.repeat(2)]), STORAGE_KEY: Buffer.alloc(32, 3).toString('base64'),
@@ -107,5 +108,24 @@ it('requires fresh task scopes in token and grant; legacy event tokens never acq
   fake.find.mockResolvedValue({ ...original, scope: 'events:read tasks:write' });
   await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
   fake.find.mockResolvedValue({ ...original, scope: 'events:read tasks:read tasks:write' }); vi.stubEnv('SLOWTH_MCP_TASK_ACCESS', 'false');
+  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+});
+
+it('authenticates only registered Claude clients and rejects disabled, removed and cross-client bindings', async () => {
+  vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE_ENABLED', 'true');
+  const id = 'slowth-claude-00000000-0000-0000-0000-000000000001';
+  const metadata = { client_id: id, application_type: 'web', token_endpoint_auth_method: 'none', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'], grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] };
+  fake.client.mockResolvedValue(metadata);
+  fake.find.mockResolvedValue({ ...(await fake.find()), clientId: id });
+  fake.binding.clientId = id;
+  expect(await authenticateMcp('Bearer fixture-only')).toMatchObject({ userId: 'fixture-user', projectIds: ['fixture-project'] });
+  fake.binding.clientId = 'https://chatgpt.com/oauth/client.json';
+  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+  fake.binding.clientId = id;
+  fake.client.mockResolvedValueOnce(undefined);
+  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+  fake.client.mockResolvedValueOnce({ ...metadata, redirect_uris: ['https://attacker.example/callback'] });
+  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+  vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE_ENABLED', 'false');
   await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
 });

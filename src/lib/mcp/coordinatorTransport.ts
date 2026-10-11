@@ -4,7 +4,7 @@ import { getAdminDb } from '@/lib/firebase/admin';
 import { assertId, TaskDataError } from './taskContract';
 import { coordinationFingerprint } from './coordinatorProvenance';
 import { coordinationProjectIds } from './coordinator';
-import { activeUser, oidcConfig } from './oidc';
+import { activeUser, oidcConfig, oauthClient } from './oidc';
 import type { CoordinationCapability, CoordinationPolicy } from './coordinatorTypes';
 import type { TaskPrincipal } from './taskData';
 
@@ -93,7 +93,7 @@ export async function assertCoordinationDelegation(auth: TaskPrincipal, projectI
   if (!Number.isFinite(sourceExpiry) || sourceExpiry <= Date.now()) denied('DELEGATION_REVOKED', '元のOAuth許可が失効または取消されました。', 403);
   try {
     const config = oidcConfig();
-    if (!config.productionEnabled || !config.taskAccessEnabled || binding.clientId !== config.clientId ||
+    if (!config.productionEnabled || !config.taskAccessEnabled || !await oauthClient(binding.clientId, config) ||
         binding.resource !== config.resource || !Number.isFinite(binding.authTime)) throw new Error('Invalid source authorization');
     await activeUser(auth.userId, config, binding.authTime);
   } catch { denied('DELEGATION_REVOKED', '元のOAuth許可またはGoogleアカウントが無効になりました。', 403); }

@@ -1,6 +1,32 @@
-# Slowth MCP と Dot の連携
+# Slowth MCP と ChatGPT・Claude の連携
 
 Taskflow のタスク・コメント・確認・サブタスク・チェックリスト・添付を、既存の共有サービス経由で MCP から読み書きします。画面や PAT の API を置き換えず、OAuth 接続に許可された範囲で同じデータを扱います。
+
+## Claude Web / Desktop の接続
+
+本番にこの変更を反映した後、Claude の「設定 → コネクタ」からカスタムコネクタを追加します。
+
+1. 名前を `Slowth`、リモート MCP サーバー URL を `https://slowth.1000ri.jp/api/mcp` に設定する。
+2. 「接続」を選び、Slowth で許可済みの Google アカウントでログインする。
+3. 「Claudeとの接続確認」で対象プロジェクトと、タスク読み取り・書き込みの内容を確認して許可する。
+4. Claude で `get_task_contract`、`read_task_data` を使用してタスクやコメントを取得する。添付本体は `attachment_content` で取得する。
+
+OAuth の client ID は自動登録されるため、詳細設定の client ID / client secret は入力しません。Web で設定したリモートコネクタを Desktop からも利用します。Claude Code やローカル stdio サーバーの設定は、この接続手順の対象に含みません。
+
+ChatGPT の既存の client ID とコールバックを維持し、Claude には別の client ID・同意・更新履歴を保存します。タスクの対象プロジェクトと許可済み Google アカウントの制限は継続します。Claude では更新履歴をツールから取得します。ChatGPT の Dot の通知コールバックは既存の設定を使用します。
+
+## Claude の認証設定
+
+- App Hosting: `SLOWTH_MCP_OAUTH_CLAUDE_ENABLED=true`。`apphosting.yaml` に設定済み。false にすると Claude の登録・新規認可・保存済み許可によるアクセスを停止する。
+- 通知 Functions: 同じフラグを配備先の非秘密設定で true にする。`mcp-events-functions/.env.example` の既定値は false。Claude の `list_task_updates` 用に変更履歴を保存する場合は、Functions の更新も必要。
+- OAuth クライアント登録: `/api/oidc/reg`。PKCE S256 を必須とする公開クライアントのみを登録する。コールバックは `https://claude.ai/api/mcp/auth_callback` と `https://claude.com/api/mcp/auth_callback` の完全一致に限定する。
+- 登録情報は既存の OAuth 暗号化ストアに保存し、有効期間は1年。同意の最大30日、アクセストークンの1時間とは独立している。登録が期限切れの場合は Claude のコネクタを追加し直す。
+- 標準 OAuth 検出 URL: `/.well-known/oauth-authorization-server/api/oidc`。既存の `/api/oidc/.well-known/oauth-authorization-server` も利用できる。
+- Claude がリソース用の scope だけを要求する場合は、同意画面で確認する30日間の認可に必要な identity / offline scope を補う。要求済みの読み取り権限に書き込み権限を追加しない。scope が省略された新規接続では、公開しているタスク権限を同意画面に表示する。
+
+登録や認可を許可することは、対象アカウント・プロジェクトを増やすことではない。認可の解除・期限切れ・現在の Google 本人情報とプロジェクト権限の再確認は両クライアントに適用する。
+
+配備には [本番ソースの復元](PRODUCTION_SOURCE_PRESERVATION.md) と [私有動画の供給](HELP_VIDEO_ASSETS.md) を含む既存の候補作成手順を使用する。この Git checkout 単体を、私有資材を欠いたまま本番ソースとして配備しない。
 
 ## 構成と契約
 
