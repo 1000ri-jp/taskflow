@@ -1,0 +1,1297 @@
+diff --git a/apphosting.yaml b/apphosting.yaml
+index 99f5361..1924471 100644
+--- a/apphosting.yaml
++++ b/apphosting.yaml
+@@ -62,6 +62,10 @@ env:
+     value: https://chatgpt.com/connector_platform_oauth_redirect
+     availability:
+       - RUNTIME
++  - variable: SLOWTH_MCP_OAUTH_CLAUDE_ENABLED
++    value: 'true'
++    availability:
++      - RUNTIME
+   - variable: SLOWTH_MCP_OAUTH_JWKS
+     secret: SLOWTH_MCP_OAUTH_JWKS@1
+     availability:
+diff --git a/docs/SLOWTH_MCP.md b/docs/SLOWTH_MCP.md
+index 50e2bb9..491ce1e 100644
+--- a/docs/SLOWTH_MCP.md
++++ b/docs/SLOWTH_MCP.md
+@@ -1,7 +1,33 @@
+-# Slowth MCP と Dot の連携
++# Slowth MCP と ChatGPT・Claude の連携
+ 
+ Taskflow のタスク・コメント・確認・サブタスク・チェックリスト・添付を、既存の共有サービス経由で MCP から読み書きします。画面や PAT の API を置き換えず、OAuth 接続に許可された範囲で同じデータを扱います。
+ 
++## Claude Web / Desktop の接続
++
++本番にこの変更を反映した後、Claude の「設定 → コネクタ」からカスタムコネクタを追加します。
++
++1. 名前を `Slowth`、リモート MCP サーバー URL を `https://slowth.1000ri.jp/api/mcp` に設定する。
++2. 「接続」を選び、Slowth で許可済みの Google アカウントでログインする。
++3. 「Claudeとの接続確認」で対象プロジェクトと、タスク読み取り・書き込みの内容を確認して許可する。
++4. Claude で `get_task_contract`、`read_task_data` を使用してタスクやコメントを取得する。添付本体は `attachment_content` で取得する。
++
++OAuth の client ID は自動登録されるため、詳細設定の client ID / client secret は入力しません。Web で設定したリモートコネクタを Desktop からも利用します。Claude Code やローカル stdio サーバーの設定は、この接続手順の対象に含みません。
++
++ChatGPT の既存の client ID とコールバックを維持し、Claude には別の client ID・同意・更新履歴を保存します。タスクの対象プロジェクトと許可済み Google アカウントの制限は継続します。Claude では更新履歴をツールから取得します。ChatGPT の Dot の通知コールバックは既存の設定を使用します。
++
++## Claude の認証設定
++
++- App Hosting: `SLOWTH_MCP_OAUTH_CLAUDE_ENABLED=true`。`apphosting.yaml` に設定済み。false にすると Claude の登録・新規認可・保存済み許可によるアクセスを停止する。
++- 通知 Functions: 同じフラグを配備先の非秘密設定で true にする。`mcp-events-functions/.env.example` の既定値は false。Claude の `list_task_updates` 用に変更履歴を保存する場合は、Functions の更新も必要。
++- OAuth クライアント登録: `/api/oidc/reg`。PKCE S256 を必須とする公開クライアントのみを登録する。コールバックは `https://claude.ai/api/mcp/auth_callback` と `https://claude.com/api/mcp/auth_callback` の完全一致に限定する。
++- 登録情報は既存の OAuth 暗号化ストアに保存し、有効期間は1年。同意の最大30日、アクセストークンの1時間とは独立している。登録が期限切れの場合は Claude のコネクタを追加し直す。
++- 標準 OAuth 検出 URL: `/.well-known/oauth-authorization-server/api/oidc`。既存の `/api/oidc/.well-known/oauth-authorization-server` も利用できる。
++- Claude がリソース用の scope だけを要求する場合は、同意画面で確認する30日間の認可に必要な identity / offline scope を補う。要求済みの読み取り権限に書き込み権限を追加しない。scope が省略された新規接続では、公開しているタスク権限を同意画面に表示する。
++
++登録や認可を許可することは、対象アカウント・プロジェクトを増やすことではない。認可の解除・期限切れ・現在の Google 本人情報とプロジェクト権限の再確認は両クライアントに適用する。
++
++配備には [本番ソースの復元](PRODUCTION_SOURCE_PRESERVATION.md) と [私有動画の供給](HELP_VIDEO_ASSETS.md) を含む既存の候補作成手順を使用する。この Git checkout 単体を、私有資材を欠いたまま本番ソースとして配備しない。
++
+ ## 構成と契約
+ 
+ - `src/app/api/mcp/route.js`：MCP の JSON-RPC 入口。
+diff --git a/mcp-events-functions/.env.example b/mcp-events-functions/.env.example
+index b277bae..84ce8ba 100644
+--- a/mcp-events-functions/.env.example
++++ b/mcp-events-functions/.env.example
+@@ -3,6 +3,7 @@
+ SLOWTH_MCP_WORKER_ENABLED=false
+ SLOWTH_MCP_EVENTS_PROJECT_ID=<APPROVED_SLOWTH_PROJECT_ID>
+ SLOWTH_MCP_OAUTH_ALLOWED_UID=<APPROVED_FIREBASE_AUTH_UID>
++SLOWTH_MCP_OAUTH_CLAUDE_ENABLED=false
+ 
+ # SLOWTH_MCP_OAUTH_STORAGE_KEY is a Firebase Secret Manager secret.
+ # Do not put its value, OAuth tokens, callback URLs or signing keys in this file.
+diff --git a/mcp-events-functions/index.mjs b/mcp-events-functions/index.mjs
+index c2d19bd..6d506d8 100644
+--- a/mcp-events-functions/index.mjs
++++ b/mcp-events-functions/index.mjs
+@@ -13,13 +13,14 @@ initializeApp();
+ const enabled = defineBoolean('SLOWTH_MCP_WORKER_ENABLED', { default: false });
+ const projectId = defineString('SLOWTH_MCP_EVENTS_PROJECT_ID', { default: 'SlBpu8BPYgIARk4DoYOV' });
+ const allowedUid = defineString('SLOWTH_MCP_OAUTH_ALLOWED_UID');
++const claudeEnabled = defineBoolean('SLOWTH_MCP_OAUTH_CLAUDE_ENABLED', { default: false });
+ const storageKey = defineSecret('SLOWTH_MCP_OAUTH_STORAGE_KEY');
+ const options = { region: 'asia-northeast1', memory: '256MiB', maxInstances: 1, concurrency: 4,
+   timeoutSeconds: 300, secrets: [storageKey],
+   serviceAccount: 'firebase-app-hosting-compute@projectmanager-e3308.iam.gserviceaccount.com' };
+ function pipeline() {
+   return createProductionPipeline({ db: getFirestore(), auth: getAuth(),
+-    config: { enabled: enabled.value(), projectId: projectId.value(), allowedUid: allowedUid.value(),
++    config: { enabled: enabled.value(), projectId: projectId.value(), allowedUid: allowedUid.value(), claudeEnabled: claudeEnabled.value(),
+       clientId: 'https://chatgpt.com/oauth/client.json', resource: 'https://slowth.1000ri.jp/api/mcp' },
+     key: Buffer.from(storageKey.value(), 'base64'), post: createSafePost(['connectors.api.openai.com']),
+     report: result => result.state === 'dead' ? logger.error('slowth_mcp_delivery', result) : logger.info('slowth_mcp_delivery', result) });
+diff --git a/mcp-events-functions/lib/production.mjs b/mcp-events-functions/lib/production.mjs
+index 10e4a79..6c8dd91 100644
+--- a/mcp-events-functions/lib/production.mjs
++++ b/mcp-events-functions/lib/production.mjs
+@@ -3,6 +3,7 @@ import { signedPost } from './core.mjs';
+ import { subscriptionStore } from './subscription-store.mjs';
+ import { PILOT_PROJECT, RETENTION_MS } from './policy.mjs';
+ import { TASK_EVENT_FIELDS as fields } from './task-fields.generated.mjs';
++import { resolveOAuthClient } from './oauth-clients.mjs';
+ 
+ const hash = value => createHash('sha256').update(value).digest('hex');
+ const millis = value => value?.toMillis?.() ?? (value instanceof Date ? value.getTime() : value);
+@@ -36,11 +37,12 @@ export function taskEvent({ id, time, projectId, taskId, before, after, detail }
+ }
+ 
+ // Check the actual grant, binding, Firebase revocation, and both membership representations on every delivery.
+-export async function connectionAuthorized(db, auth, connection, config, now = Date.now) {
++export async function connectionAuthorized(db, auth, connection, config, now = Date.now, key) {
+   if (!config.enabled || config.projectId !== PILOT_PROJECT || connection?.mode !== 'production' ||
+       connection.projectId !== PILOT_PROJECT || connection.userId !== config.allowedUid ||
+-      connection.clientId !== config.clientId || connection.resource !== config.resource ||
++      connection.resource !== config.resource ||
+       !Number.isFinite(millis(connection.expiresAt)) || millis(connection.expiresAt) <= now()) return false;
++  if (!await resolveOAuthClient(db, key, config, connection.clientId)) return false;
+   const [operations, binding, grant, project, members, user, profile] = await Promise.all([
+     db.collection('mcpEventOperations').doc('pilot').get(),
+     db.collection('mcpOAuthGrants').doc(connection.bindingId).get(),
+@@ -55,7 +57,7 @@ export async function connectionAuthorized(db, auth, connection, config, now = D
+   ]);
+   const b = binding.data(), g = grant.data(), p = project.data();
+   return operations.data()?.stopped !== true && b?.mode === 'production' && b.userId === connection.userId &&
+-    b.projectId === connection.projectId && b.clientId === config.clientId && b.resource === config.resource &&
++    b.projectId === connection.projectId && b.clientId === connection.clientId && b.resource === config.resource &&
+     Number.isFinite(millis(b.expiresAt)) && millis(b.expiresAt) > now() &&
+     Number.isFinite(millis(g?.expiresAt)) && millis(g.expiresAt) > now() &&
+     profile.exists && Boolean(user) && !user.disabled && user.emailVerified && user.email?.endsWith('@1000ri.jp') &&
+@@ -89,7 +91,7 @@ export function createProductionPipeline({ db, auth, config, key, post, now = Da
+       let captured = 0;
+       for (const doc of candidates.docs) {
+         const connection = doc.data();
+-        if (!await connectionAuthorized(db, auth, connection, config, now) || occurredAt < connection.createdAt) continue;
++        if (!await connectionAuthorized(db, auth, connection, config, now, key) || occurredAt < connection.createdAt) continue;
+         const active = (await subscriptions(doc.id).values()).filter(sub => sub.expiresAt > now() &&
+           sub.projectId === PILOT_PROJECT && Number.isFinite(sub.createdAt) && sub.createdAt <= occurredAt);
+         // Retain the authorized feed during a subscription renewal interruption.
+@@ -135,7 +137,7 @@ export function createProductionPipeline({ db, auth, config, key, post, now = Da
+         const sub = await store.get(job.subscriptionId);
+         const journal = (await principal(job.owner).collection('journal').doc(job.eventId).get()).data();
+         if (!sub || sub.expiresAt <= now() || !journal || journal.expiresAt <= now() ||
+-            !await connectionAuthorized(db, auth, connection, config, now) || sub.expiresAt <= now() || journal.expiresAt <= now()) {
++            !await connectionAuthorized(db, auth, connection, config, now, key) || sub.expiresAt <= now() || journal.expiresAt <= now()) {
+           outcome = { state: 'cancelled', reason: 'authorization_or_subscription_ended', completedAt: now() };
+         } else if (job.kind === 'recovery_wake' && journal.acknowledged) {
+           outcome = { state: 'cancelled', reason: 'already_acknowledged', completedAt: now() };
+diff --git a/mcp-events-functions/scripts/prepare.mjs b/mcp-events-functions/scripts/prepare.mjs
+index 9f9d5a2..4b5ccde 100644
+--- a/mcp-events-functions/scripts/prepare.mjs
++++ b/mcp-events-functions/scripts/prepare.mjs
+@@ -1,5 +1,5 @@
+ import { mkdir, copyFile } from 'node:fs/promises';
+-const files = ['policy.mjs', 'core.mjs', 'protocol.mjs', 'subscription-store.mjs', 'production.mjs', 'transport.mjs', 'task-fields.generated.mjs'];
++const files = ['policy.mjs', 'core.mjs', 'protocol.mjs', 'subscription-store.mjs', 'production.mjs', 'transport.mjs', 'task-fields.generated.mjs', 'oauth-clients.mjs', 'oidc-store.mjs'];
+ await mkdir(new URL('../lib/', import.meta.url), { recursive: true });
+ for (const file of files) await copyFile(new URL(`../../scripts/mcp-events/${file}`, import.meta.url), new URL(`../lib/${file}`, import.meta.url));
+ console.log('Prepared shared MCP worker modules.');
+diff --git a/next.config.ts b/next.config.ts
+index c00bf5f..621c450 100644
+--- a/next.config.ts
++++ b/next.config.ts
+@@ -6,7 +6,11 @@ const nextConfig: NextConfig = {
+   // OAuth callbacks contain a short-lived authorization code; keep it out of dev logs.
+   logging: { incomingRequests: { ignore: [/^\/api\/google\/callback(?:\?|$)/, /^\/api\/oidc\//, /^\/mcp-connect/] } },
+   async rewrites() {
+-    return [{ source: '/mcp-connect/consent', destination: '/api/mcp-consent' }];
++    return [
++      { source: '/mcp-connect/consent', destination: '/api/mcp-consent' },
++      { source: '/.well-known/oauth-authorization-server/api/oidc', destination: '/api/oidc/.well-known/oauth-authorization-server' },
++      { source: '/.well-known/openid-configuration/api/oidc', destination: '/api/oidc/.well-known/openid-configuration' },
++    ];
+   },
+   // Keep the real-data local server isolated from the mock secretary preview
+   // when both are opened from this checkout.
+diff --git a/scripts/mcp-events/oidc-provider.mjs b/scripts/mcp-events/oidc-provider.mjs
+index 382b215..8118233 100644
+--- a/scripts/mcp-events/oidc-provider.mjs
++++ b/scripts/mcp-events/oidc-provider.mjs
+@@ -1,5 +1,7 @@
+ import Provider, { errors } from 'oidc-provider';
++import { randomUUID } from 'node:crypto';
+ import { authorizationMode, CONSENT_MS, READ_SCOPE, TEST_SCOPE, TASK_READ_SCOPE, TASK_WRITE_SCOPE } from './policy.mjs';
++import { allowedOAuthClient, isClaudeClientId } from './oauth-clients.mjs';
+ 
+ export { TEST_SCOPE };
+ 
+@@ -14,10 +16,18 @@ export function isTestAuthorizationScope(scope) {
+ 
+ // Protocol validation/code issuance/PKCE/replay protection are owned by oidc-provider.
+ export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, cookieKeys,
+-  adapter, findAccount, clients = [], productionEnabled = false, taskAccessEnabled = false }) {
++  adapter, findAccount, clients = [], productionEnabled = false, taskAccessEnabled = false, claudeEnabled = false }) {
+   if (!jwks?.keys?.length || !cookieKeys?.length) throw new Error('Explicit OAuth keys required');
++  const clientConfig = { clientId, redirectUri, claudeEnabled };
+   const provider = new Provider(issuer, {
+     adapter, jwks, clients, findAccount,
++    clientDefaults: { application_type: 'web', token_endpoint_auth_method: 'none',
++      grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] },
++    extraClientMetadata: { properties: ['slowth_client'], validator: (_ctx, _key, _value, metadata) => {
++      if (metadata.client_id === clientId) return;
++      if (!allowedOAuthClient(clientConfig, metadata.client_id, metadata)) throw new errors.InvalidClientMetadata('Only Claude Web/Desktop callbacks are supported');
++      metadata.slowth_client = 'claude';
++    } },
+     cookies: { keys: cookieKeys, short: { signed: true }, long: { signed: true } },
+     scopes: productionEnabled ? [TEST_SCOPE, READ_SCOPE, 'offline_access', ...(taskAccessEnabled ? [TASK_READ_SCOPE, TASK_WRITE_SCOPE] : [])] : [TEST_SCOPE], claims: {},
+     pkce: { required: () => true },
+@@ -36,7 +46,7 @@ export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, co
+     },
+     features: {
+       devInteractions: { enabled: false },
+-      registration: { enabled: false },
++      registration: { enabled: claudeEnabled, idFactory: () => 'slowth-claude-' + randomUUID(), issueRegistrationAccessToken: false },
+       revocation: { enabled: true },
+       clientIdMetadataDocument: {
+         enabled: true, ack: 'draft-02',
+@@ -48,19 +58,39 @@ export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, co
+         defaultResource: () => { throw new errors.InvalidTarget('resource is required'); },
+         useGrantedResource: () => false,
+         getResourceServerInfo: async (_ctx, target, client) => {
+-          if (target !== resource || client.clientId !== clientId) throw new errors.InvalidTarget();
++          if (target !== resource || !allowedOAuthClient(clientConfig, client.clientId, client.metadata())) throw new errors.InvalidTarget();
+           return { scope: productionEnabled ? `${TEST_SCOPE} ${READ_SCOPE}${taskAccessEnabled ? ` ${TASK_READ_SCOPE} ${TASK_WRITE_SCOPE}` : ''}` : TEST_SCOPE,
+             audience: resource, accessTokenFormat: 'opaque', accessTokenTTL: productionEnabled ? 3600 : 900 };
+         },
+       },
+     },
+-    renderError: async (ctx) => { ctx.type = 'text/plain'; ctx.body = 'OAuth request could not be completed. Return to ChatGPT and retry.'; },
++    renderError: async (ctx) => { ctx.type = 'text/plain'; ctx.body = 'OAuth request could not be completed. Return to your MCP client and retry.'; },
+   });
+   provider.proxy = true;
+   provider.use(async (ctx, next) => {
+-    // Reject before any redirect. One pinned client and exact callback only.
++    // Reject before any redirect. ChatGPT remains pinned; registered Claude
++    // clients must use one of their exact, approved callbacks.
+     if (ctx.path === '/auth') {
+-      if (ctx.method !== 'GET' || ctx.query.client_id !== clientId || ctx.query.redirect_uri !== redirectUri ||
++      let client;
++      if (ctx.query.client_id === clientId) client = allowedOAuthClient(clientConfig, clientId, undefined, ctx.query.redirect_uri);
++      else if (claudeEnabled && isClaudeClientId(ctx.query.client_id)) {
++        const registered = await provider.Client.find(ctx.query.client_id);
++        client = allowedOAuthClient(clientConfig, ctx.query.client_id, registered?.metadata(), ctx.query.redirect_uri);
++      }
++      if (client?.name === 'Claude') {
++        // MCP clients request resource scopes rather than OIDC identity/offline
++        // scopes. The same explicit, thirty-day consent applies to both clients.
++        const scope = ctx.query.scope ?? (productionEnabled
++          ? `${READ_SCOPE}${taskAccessEnabled ? ` ${TASK_READ_SCOPE} ${TASK_WRITE_SCOPE}` : ''}` : TEST_SCOPE);
++        if (typeof scope === 'string') {
++          const scopes = scope.split(' ');
++          if (new Set(scopes).size === scopes.length && scopes.every(Boolean)) {
++            const extras = scopes.includes(READ_SCOPE) ? ['openid', 'offline_access'] : ['openid'];
++            ctx.query.scope = [...scopes, ...extras.filter(value => !scopes.includes(value))].join(' ');
++          }
++        }
++      }
++      if (ctx.method !== 'GET' || !client ||
+           !authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled) || ctx.query.resource !== resource ||
+           ctx.query.response_type !== 'code' || ctx.query.code_challenge_method !== 'S256' ||
+           typeof ctx.query.state !== 'string' || !ctx.query.state || ctx.query.state.length > 1024) {
+@@ -77,6 +107,12 @@ export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, co
+       }
+     }
+     await next();
++    if (claudeEnabled && productionEnabled && ctx.path.startsWith('/.well-known/') && ctx.body?.issuer === issuer) {
++      // Production and synthetic scopes describe separate grants. Advertising
++      // both together makes clients that request discovery scopes ask for an
++      // invalid combination. Explicit synthetic requests remain supported.
++      ctx.body.scopes_supported = [READ_SCOPE, 'openid', 'offline_access', ...(taskAccessEnabled ? [TASK_READ_SCOPE, TASK_WRITE_SCOPE] : [])];
++    }
+   });
+   return provider;
+ }
+@@ -86,8 +122,14 @@ export function mountedCallback(provider, mountPath) {
+   const callback = provider.callback();
+   return async (req, res) => {
+     const original = req.url;
+-    req.originalUrl = original;
+-    req.url = original.slice(mountPath.length) || '/';
++    const pathname = original.split('?')[0];
++    // Next rewrites preserve the public request URL on req.url. RFC 8414
++    // discovery puts the issuer path after /.well-known, outside our mount.
++    const discovery = ['oauth-authorization-server', 'openid-configuration']
++      .find(name => pathname === `/.well-known/${name}${mountPath}`);
++    const mounted = discovery ? `${mountPath}/.well-known/${discovery}${original.slice(pathname.length)}` : original;
++    req.originalUrl = mounted;
++    req.url = mounted.slice(mountPath.length) || '/';
+     try { await callback(req, res); } finally { req.url = original; }
+   };
+ }
+diff --git a/scripts/mcp-events/oidc-store.mjs b/scripts/mcp-events/oidc-store.mjs
+index 07c81bc..2341ad4 100644
+--- a/scripts/mcp-events/oidc-store.mjs
++++ b/scripts/mcp-events/oidc-store.mjs
+@@ -11,7 +11,8 @@ export function firestoreAdapter(db, key) {
+     return { iv: iv.toString('base64'), tag: cipher.getAuthTag().toString('base64'), body: body.toString('base64') };
+   }
+   function open(record) {
+-    if (!record || record.expiresAt.toMillis() <= Date.now()) return undefined;
++    const expiresAt = record?.expiresAt?.toMillis?.() ?? record?.expiresAt?.getTime?.();
++    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return undefined;
+     const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(record.iv, 'base64'));
+     decipher.setAuthTag(Buffer.from(record.tag, 'base64'));
+     const payload = JSON.parse(Buffer.concat([decipher.update(Buffer.from(record.body, 'base64')), decipher.final()]).toString());
+@@ -21,6 +22,9 @@ export function firestoreAdapter(db, key) {
+     constructor(name) { this.name = name; }
+     ref(id) { return collection.doc(hash(`${this.name}:${id}`)); }
+     async upsert(id, payload, expiresIn) {
++      // oidc-provider stores registered clients without a TTL. Keep their
++      // metadata for a bounded year; access and consent still expire separately.
++      if (this.name === 'Client' && expiresIn === undefined) expiresIn = 365 * 86400;
+       if (!Number.isFinite(expiresIn) || expiresIn <= 0) throw new Error('Finite OAuth lifetime required');
+       const reference = this.ref(id);
+       await db.runTransaction(async tx => {
+diff --git a/scripts/mcp-events/production.mjs b/scripts/mcp-events/production.mjs
+index 10e4a79..6c8dd91 100644
+--- a/scripts/mcp-events/production.mjs
++++ b/scripts/mcp-events/production.mjs
+@@ -3,6 +3,7 @@ import { signedPost } from './core.mjs';
+ import { subscriptionStore } from './subscription-store.mjs';
+ import { PILOT_PROJECT, RETENTION_MS } from './policy.mjs';
+ import { TASK_EVENT_FIELDS as fields } from './task-fields.generated.mjs';
++import { resolveOAuthClient } from './oauth-clients.mjs';
+ 
+ const hash = value => createHash('sha256').update(value).digest('hex');
+ const millis = value => value?.toMillis?.() ?? (value instanceof Date ? value.getTime() : value);
+@@ -36,11 +37,12 @@ export function taskEvent({ id, time, projectId, taskId, before, after, detail }
+ }
+ 
+ // Check the actual grant, binding, Firebase revocation, and both membership representations on every delivery.
+-export async function connectionAuthorized(db, auth, connection, config, now = Date.now) {
++export async function connectionAuthorized(db, auth, connection, config, now = Date.now, key) {
+   if (!config.enabled || config.projectId !== PILOT_PROJECT || connection?.mode !== 'production' ||
+       connection.projectId !== PILOT_PROJECT || connection.userId !== config.allowedUid ||
+-      connection.clientId !== config.clientId || connection.resource !== config.resource ||
++      connection.resource !== config.resource ||
+       !Number.isFinite(millis(connection.expiresAt)) || millis(connection.expiresAt) <= now()) return false;
++  if (!await resolveOAuthClient(db, key, config, connection.clientId)) return false;
+   const [operations, binding, grant, project, members, user, profile] = await Promise.all([
+     db.collection('mcpEventOperations').doc('pilot').get(),
+     db.collection('mcpOAuthGrants').doc(connection.bindingId).get(),
+@@ -55,7 +57,7 @@ export async function connectionAuthorized(db, auth, connection, config, now = D
+   ]);
+   const b = binding.data(), g = grant.data(), p = project.data();
+   return operations.data()?.stopped !== true && b?.mode === 'production' && b.userId === connection.userId &&
+-    b.projectId === connection.projectId && b.clientId === config.clientId && b.resource === config.resource &&
++    b.projectId === connection.projectId && b.clientId === connection.clientId && b.resource === config.resource &&
+     Number.isFinite(millis(b.expiresAt)) && millis(b.expiresAt) > now() &&
+     Number.isFinite(millis(g?.expiresAt)) && millis(g.expiresAt) > now() &&
+     profile.exists && Boolean(user) && !user.disabled && user.emailVerified && user.email?.endsWith('@1000ri.jp') &&
+@@ -89,7 +91,7 @@ export function createProductionPipeline({ db, auth, config, key, post, now = Da
+       let captured = 0;
+       for (const doc of candidates.docs) {
+         const connection = doc.data();
+-        if (!await connectionAuthorized(db, auth, connection, config, now) || occurredAt < connection.createdAt) continue;
++        if (!await connectionAuthorized(db, auth, connection, config, now, key) || occurredAt < connection.createdAt) continue;
+         const active = (await subscriptions(doc.id).values()).filter(sub => sub.expiresAt > now() &&
+           sub.projectId === PILOT_PROJECT && Number.isFinite(sub.createdAt) && sub.createdAt <= occurredAt);
+         // Retain the authorized feed during a subscription renewal interruption.
+@@ -135,7 +137,7 @@ export function createProductionPipeline({ db, auth, config, key, post, now = Da
+         const sub = await store.get(job.subscriptionId);
+         const journal = (await principal(job.owner).collection('journal').doc(job.eventId).get()).data();
+         if (!sub || sub.expiresAt <= now() || !journal || journal.expiresAt <= now() ||
+-            !await connectionAuthorized(db, auth, connection, config, now) || sub.expiresAt <= now() || journal.expiresAt <= now()) {
++            !await connectionAuthorized(db, auth, connection, config, now, key) || sub.expiresAt <= now() || journal.expiresAt <= now()) {
+           outcome = { state: 'cancelled', reason: 'authorization_or_subscription_ended', completedAt: now() };
+         } else if (job.kind === 'recovery_wake' && journal.acknowledged) {
+           outcome = { state: 'cancelled', reason: 'already_acknowledged', completedAt: now() };
+diff --git a/src/app/(dashboard)/settings/api-keys/page.tsx b/src/app/(dashboard)/settings/api-keys/page.tsx
+index 4167af4..8a3d946 100644
+--- a/src/app/(dashboard)/settings/api-keys/page.tsx
++++ b/src/app/(dashboard)/settings/api-keys/page.tsx
+@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
+ import { Checkbox } from '@/components/ui/checkbox';
+ import { Badge } from '@/components/ui/badge';
+ import { Separator } from '@/components/ui/separator';
++import { Prose } from '@/components/ui/typography';
+ import {
+   Dialog,
+   DialogContent,
+@@ -675,27 +676,20 @@ export default function ApiKeysPage() {
+         <CardHeader>
+           <CardTitle>MCP サーバー設定</CardTitle>
+           <CardDescription>
+-            Claude DesktopやCursorなどのMCPクライアントで使用する設定です
++            Claude Web／DesktopやChatGPTからSlowthに接続します
+           </CardDescription>
+         </CardHeader>
+         <CardContent>
+           <div className="rounded-lg bg-muted p-4">
+             <p className="text-sm text-muted-foreground mb-2">
+-              MCPクライアントの設定ファイルに以下を追加してください:
++              Claudeの「設定 → コネクタ」からカスタムコネクタを追加し、次のURLを指定してください:
+             </p>
+             <pre className="text-xs bg-background p-3 rounded overflow-x-auto">
+-{`{
+-  "mcpServers": {
+-    "taskflow": {
+-      "command": "npx",
+-      "args": ["-y", "@taskflow/mcp-server"],
+-      "env": {
+-        "TASKFLOW_API_KEY": "your-api-key-here"
+-      }
+-    }
+-  }
+-}`}
++              https://slowth.1000ri.jp/api/mcp
+             </pre>
++            <Prose>
++              「接続」を選び、許可済みのGoogleアカウントでログインして、プロジェクトと接続内容を確認します。ChatGPTでも同じURLを使用します。
++            </Prose>
+           </div>
+         </CardContent>
+       </Card>
+diff --git a/src/app/.well-known/oauth-protected-resource/api/mcp/route.js b/src/app/.well-known/oauth-protected-resource/api/mcp/route.js
+index fa3130d..09b6584 100644
+--- a/src/app/.well-known/oauth-protected-resource/api/mcp/route.js
++++ b/src/app/.well-known/oauth-protected-resource/api/mcp/route.js
+@@ -4,7 +4,7 @@ export function GET() {
+   try {
+     const config = oidcConfig();
+     return Response.json({ resource: config.resource, authorization_servers: [config.issuer],
+-      scopes_supported: config.productionEnabled ? ['events:test', 'events:read', ...(config.taskAccessEnabled ? ['tasks:read', 'tasks:write'] : [])] : ['events:test'],
++      scopes_supported: config.productionEnabled ? ['events:read', ...(config.taskAccessEnabled ? ['tasks:read', 'tasks:write'] : [])] : ['events:test'],
+       bearer_methods_supported: ['header'] }, { headers: { 'Cache-Control': 'no-store' } });
+   } catch { return Response.json({ error: 'Not configured' }, { status: 404 }); }
+ }
+diff --git a/src/app/mcp-connect/consent.test.tsx b/src/app/mcp-connect/consent.test.tsx
+index 14ed887..81c10a1 100644
+--- a/src/app/mcp-connect/consent.test.tsx
++++ b/src/app/mcp-connect/consent.test.tsx
+@@ -58,3 +58,15 @@ it('shows production data destination, thirty-day consent, and the selected proj
+   expect(approve).toBeDisabled(); fireEvent.change(screen.getByRole('combobox'), { target: { value: 'fixture-project' } });
+   expect(approve).toBeEnabled(); expect(screen.queryByRole('button', { name: '架空通知のテストを許可' })).not.toBeInTheDocument();
+ });
++
++it('identifies Claude as the data recipient on its read-write consent screen', async () => {
++  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ clientName: 'Claude', mode: 'production', taskScopes: ['tasks:read', 'tasks:write'], projects: [{ id: 'fixture-project', name: 'タスク管理ツール' }] }))));
++  render(<Consent interaction="fixture-interaction" />);
++  await screen.findByRole('heading', { name: 'Claudeとの接続確認' });
++  expect(screen.getByText(/添付・共有履歴をClaudeが読み取ります/)).toHaveTextContent('最大30日間');
++  expect(screen.queryByText(/ChatGPT/)).not.toBeInTheDocument();
++  const approve = screen.getByRole('button', { name: '30日間のタスク読み書きを許可' });
++  expect(approve).toBeDisabled();
++  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'fixture-project' } });
++  expect(approve).toBeEnabled();
++});
+diff --git a/src/app/mcp-connect/consent.tsx b/src/app/mcp-connect/consent.tsx
+index 018998a..8afe6ca 100644
+--- a/src/app/mcp-connect/consent.tsx
++++ b/src/app/mcp-connect/consent.tsx
+@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
+ 
+ export default function Consent({ interaction }: { interaction: string }) {
+   const { firebaseUser, isLoading, signInForMcp } = useAuth();
+-  const [data, setData] = useState<{ uid: string; taskScopes: string[]; mode: 'test' | 'production'; projects: { id: string; name: string }[] } | null>(null);
++  const [data, setData] = useState<{ uid: string; clientName: 'ChatGPT' | 'Claude'; taskScopes: string[]; mode: 'test' | 'production'; projects: { id: string; name: string }[] } | null>(null);
+   const [projectId, setProjectId] = useState('');
+   const [busy, setBusy] = useState(false);
+   const [error, setError] = useState('');
+@@ -19,6 +19,7 @@ export default function Consent({ interaction }: { interaction: string }) {
+   const taskRead = ready && data?.taskScopes.includes('tasks:read');
+   const taskWrite = ready && data?.taskScopes.includes('tasks:write');
+   const production = ready && data?.mode === 'production';
++  const clientName = ready ? data?.clientName : null;
+   useEffect(() => {
+     let active = true;
+     if (!firebaseUser) return;
+@@ -29,8 +30,8 @@ export default function Consent({ interaction }: { interaction: string }) {
+         });
+         if (!response.ok) throw new Error();
+         const result = await response.json();
+-        if (active) { setData({ uid: firebaseUser.uid, taskScopes: Array.isArray(result.taskScopes) ? result.taskScopes : [], mode: result.mode === 'production' ? 'production' : 'test', projects: result.projects }); setProjectId(''); setError(''); }
+-      } catch { if (active) { setData(null); setError('接続を確認できません。SlowthのGoogleアカウントで再ログインしてください。認可画面の期限が切れている場合は、ChatGPTからやり直してください。'); } }
++        if (active) { setData({ uid: firebaseUser.uid, clientName: result.clientName === 'Claude' ? 'Claude' : 'ChatGPT', taskScopes: Array.isArray(result.taskScopes) ? result.taskScopes : [], mode: result.mode === 'production' ? 'production' : 'test', projects: result.projects }); setProjectId(''); setError(''); }
++      } catch { if (active) { setData(null); setError('接続を確認できません。SlowthのGoogleアカウントで再ログインしてください。認可画面の期限が切れている場合は、接続元のアプリからやり直してください。'); } }
+     })();
+     return () => { active = false; };
+   }, [firebaseUser, interaction, attempt]);
+@@ -54,15 +55,15 @@ export default function Consent({ interaction }: { interaction: string }) {
+       const next = new URL(result.redirect);
+       if (next.origin !== window.location.origin || !next.pathname.startsWith('/api/oidc/')) throw new Error();
+       window.location.assign(next.href);
+-    } catch { setError('接続を完了できません。ChatGPTからやり直してください。'); setBusy(false); }
++    } catch { setError('接続を完了できません。接続元のアプリからやり直してください。'); setBusy(false); }
+   }
+   return <main className="mx-auto max-w-lg">
+     <Card density="compact"><CardContent><SettingsLayout align="start">
+-    <PageHeading>ChatGPTとの接続確認</PageHeading>
++    <PageHeading>{clientName ? `${clientName}との接続確認` : 'MCPの接続確認'}</PageHeading>
+     <Prose>{!ready ? '接続許可の内容を確認中…' : taskRead
+-      ? `「タスク管理ツール」のタスク全項目・コメント・確認依頼と回答・サブタスク・チェックリスト・添付・共有履歴をChatGPTが読み取ります。${taskWrite ? '作成、編集、確認への回答、完了、アーカイブと復元、繰り返し設定も許可します。操作はこのGoogleアカウントの権限で記録します。' : ''}更新通知も継続します。有効期間は最大30日間です。個人のメール本文や他のプロジェクトにはアクセスしません。ChatGPTで接続を解除すると停止できます。`
++      ? `「タスク管理ツール」のタスク全項目・コメント・確認依頼と回答・サブタスク・チェックリスト・添付・共有履歴を${clientName}が読み取ります。${taskWrite ? '作成、編集、確認への回答、完了、アーカイブと復元、繰り返し設定も許可します。操作はこのGoogleアカウントの権限で記録します。' : ''}${clientName === 'Claude' ? '更新履歴は接続中に取得できます。' : '更新通知も継続します。'}有効期間は最大30日間です。個人のメール本文や他のプロジェクトにはアクセスしません。${clientName}で接続を解除すると停止できます。`
+       : production
+-      ? '「タスク管理ツール」のタスク作成・変更・削除について、タイトルと完了状態をChatGPTのDotへ通知します。接続は最大30日間有効で、認証は自動更新されます。タスクの変更や他のプロジェクトへのアクセスは許可しません。ChatGPTで接続を解除すると通知を停止できます。'
++      ? `${clientName === 'Claude' ? '「タスク管理ツール」のタスク作成・変更・削除について、タイトルと完了状態をClaudeから取得できます。' : '「タスク管理ツール」のタスク作成・変更・削除について、タイトルと完了状態をChatGPTのDotへ通知します。'}接続は最大30日間有効で、認証は自動更新されます。タスクの変更や他のプロジェクトへのアクセスは許可しません。${clientName}で接続を解除すると停止できます。`
+       : '選択した1つのプロジェクトで、架空のタスク更新通知をテストします。有効期間は最大15分です。実タスクの読み取り・変更や、実際の更新通知は許可しません。'}</Prose>
+     {error && <Prose role="alert">{error}</Prose>}
+     {isLoading ? <Prose>ログイン状態を確認中…</Prose> : !firebaseUser ?
+diff --git a/src/lib/mcp/consent.test.js b/src/lib/mcp/consent.test.js
+index d6306fe..728b736 100644
+--- a/src/lib/mcp/consent.test.js
++++ b/src/lib/mcp/consent.test.js
+@@ -2,11 +2,13 @@
+ import { beforeEach, afterEach, expect, it, vi } from 'vitest';
+ import handler from '@/pages/api/mcp-consent';
+ import { PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
+-const f = vi.hoisted(() => ({ production: false, taskAccess: false, details: vi.fn(), finish: vi.fn(), user: vi.fn(), access: vi.fn(), create: vi.fn(), save: vi.fn(), write: vi.fn(), projects: vi.fn(), oidcScope: vi.fn(), resourceScope: vi.fn() }));
++import { allowedOAuthClient } from '../../../scripts/mcp-events/oauth-clients.mjs';
++const f = vi.hoisted(() => ({ production: false, taskAccess: false, claudeEnabled: false, claudeMetadata: null, grant: vi.fn(), details: vi.fn(), finish: vi.fn(), user: vi.fn(), access: vi.fn(), create: vi.fn(), save: vi.fn(), write: vi.fn(), projects: vi.fn(), oidcScope: vi.fn(), resourceScope: vi.fn() }));
+ vi.mock('@/lib/mcp/oidc', () => ({
+-  oidcConfig: () => ({ origin: 'https://slowth.example.test', clientId: 'fixture-client', redirectUri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', productionEnabled: f.production, taskAccessEnabled: f.taskAccess }),
++  oidcConfig: () => ({ origin: 'https://slowth.example.test', clientId: 'fixture-client', redirectUri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', productionEnabled: f.production, taskAccessEnabled: f.taskAccess, claudeEnabled: f.claudeEnabled }),
++  oauthClient: async (id, settings, redirectUri) => allowedOAuthClient(settings, id, f.claudeMetadata, redirectUri),
+   oidcProvider: () => ({ interactionDetails: f.details, interactionResult: f.finish,
+-    Grant: class { addOIDCScope(scope) { f.oidcScope(scope); } addResourceScope(resource, scope) { f.resourceScope(resource, scope); } save() { return f.save(); } } }),
++    Grant: class { constructor(args) { f.grant(args); } addOIDCScope(scope) { f.oidcScope(scope); } addResourceScope(resource, scope) { f.resourceScope(resource, scope); } save() { return f.save(); } } }),
+   firebaseConsentUser: f.user, assertProject: f.access, digest: value => value,
+ }));
+ vi.mock('@/lib/firebase/admin', () => ({ getAdminDb: () => ({ collection: () => ({ doc: () => ({ create: f.create, set: f.write }) }) }) }));
+@@ -22,6 +24,7 @@ function response() {
+ beforeEach(() => {
+   vi.clearAllMocks();
+   f.production = false; f.taskAccess = false;
++  f.claudeEnabled = false; f.claudeMetadata = null;
+   vi.spyOn(console, 'warn').mockImplementation(() => {});
+   f.details.mockResolvedValue({ uid: 'fixture-interaction', params: { client_id: 'fixture-client', redirect_uri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', scope: 'events:test' } });
+   f.user.mockResolvedValue({ uid: 'fixture-user', auth_time: 123 });
+@@ -114,3 +117,19 @@ it('records exact expanded consent and checks write membership before issuing an
+   const viewer = response(); await handler(request({ body: { interaction: 'fixture-interaction', approve: true, projectId: PILOT_PROJECT } }), viewer);
+   expect(viewer.code).toBe(403); expect(f.create).not.toHaveBeenCalled();
+ });
++
++it('shows Claude and binds both consent and events to its registered client', async () => {
++  f.production = true; f.taskAccess = true; f.claudeEnabled = true;
++  const id = 'slowth-claude-00000000-0000-0000-0000-000000000001', redirect = 'https://claude.ai/api/mcp/auth_callback';
++  f.claudeMetadata = { client_id: id, application_type: 'web', token_endpoint_auth_method: 'none', redirect_uris: [redirect], grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] };
++  f.details.mockResolvedValue({ uid: 'fixture-interaction', params: { client_id: id, redirect_uri: redirect, resource: 'https://slowth.example.test/api/mcp', scope: 'events:read tasks:read tasks:write openid offline_access' } });
++  f.projects.mockResolvedValue([{ id: PILOT_PROJECT, name: 'タスク管理ツール' }]);
++  const selector = response(); await handler(request({ method: 'GET', query: { interaction: 'fixture-interaction' } }), selector);
++  expect(selector.body.clientName).toBe('Claude');
++  const approved = response(); await handler(request({ body: { interaction: 'fixture-interaction', approve: true, projectId: PILOT_PROJECT } }), approved);
++  expect(approved.code).toBe(200); expect(f.grant).toHaveBeenCalledWith({ accountId: 'fixture-user', clientId: id });
++  for (const [binding] of f.write.mock.calls) expect(binding.clientId).toBe(id);
++  f.claudeEnabled = false; f.save.mockClear();
++  const denied = response(); await handler(request({ body: { interaction: 'fixture-interaction', approve: true, projectId: PILOT_PROJECT } }), denied);
++  expect(denied.code).toBe(403); expect(f.save).not.toHaveBeenCalled();
++});
+diff --git a/src/lib/mcp/coordinatorTransport.ts b/src/lib/mcp/coordinatorTransport.ts
+index bbfd5d4..a1fd1c5 100644
+--- a/src/lib/mcp/coordinatorTransport.ts
++++ b/src/lib/mcp/coordinatorTransport.ts
+@@ -4,7 +4,7 @@ import { getAdminDb } from '@/lib/firebase/admin';
+ import { assertId, TaskDataError } from './taskContract';
+ import { coordinationFingerprint } from './coordinatorProvenance';
+ import { coordinationProjectIds } from './coordinator';
+-import { activeUser, oidcConfig } from './oidc';
++import { activeUser, oidcConfig, oauthClient } from './oidc';
+ import type { CoordinationCapability, CoordinationPolicy } from './coordinatorTypes';
+ import type { TaskPrincipal } from './taskData';
+ 
+@@ -93,7 +93,7 @@ export async function assertCoordinationDelegation(auth: TaskPrincipal, projectI
+   if (!Number.isFinite(sourceExpiry) || sourceExpiry <= Date.now()) denied('DELEGATION_REVOKED', '元のOAuth許可が失効または取消されました。', 403);
+   try {
+     const config = oidcConfig();
+-    if (!config.productionEnabled || !config.taskAccessEnabled || binding.clientId !== config.clientId ||
++    if (!config.productionEnabled || !config.taskAccessEnabled || !await oauthClient(binding.clientId, config) ||
+         binding.resource !== config.resource || !Number.isFinite(binding.authTime)) throw new Error('Invalid source authorization');
+     await activeUser(auth.userId, config, binding.authTime);
+   } catch { denied('DELEGATION_REVOKED', '元のOAuth許可またはGoogleアカウントが無効になりました。', 403); }
+diff --git a/src/lib/mcp/oidc.js b/src/lib/mcp/oidc.js
+index 1d86dd5..b64d4c3 100644
+--- a/src/lib/mcp/oidc.js
++++ b/src/lib/mcp/oidc.js
+@@ -4,6 +4,7 @@ import { getProjectAccess } from '@/lib/auth/projectAccess';
+ import { makeProvider, TEST_SCOPE } from '../../../scripts/mcp-events/oidc-provider.mjs';
+ import { firestoreAdapter } from '../../../scripts/mcp-events/oidc-store.mjs';
+ import { PILOT_PROJECT, READ_SCOPE, TASK_READ_SCOPE, TASK_WRITE_SCOPE } from '../../../scripts/mcp-events/policy.mjs';
++import { resolveOAuthClient } from '../../../scripts/mcp-events/oauth-clients.mjs';
+ 
+ export const digest = value => createHash('sha256').update(value).digest('hex');
+ export function oidcConfig() {
+@@ -17,7 +18,12 @@ export function oidcConfig() {
+       !/^https:\/\/chatgpt\.com\/(?:connector_platform_oauth_redirect|connector\/oauth\/[A-Za-z0-9_-]+)$/.test(redirectUri ?? '')) throw new Error('OAuth configuration incomplete');
+   const productionEnabled = process.env.SLOWTH_MCP_EVENTS_PRODUCTION === 'true';
+   if (productionEnabled && process.env.SLOWTH_MCP_EVENTS_PROJECT_ID !== PILOT_PROJECT) throw new Error('Pilot project required');
+-  return { origin, issuer: origin + '/api/oidc', resource: origin + '/api/mcp', allowedUid, clientId, redirectUri, productionEnabled, taskAccessEnabled: productionEnabled && process.env.SLOWTH_MCP_TASK_ACCESS === 'true' };
++  return { origin, issuer: origin + '/api/oidc', resource: origin + '/api/mcp', allowedUid, clientId, redirectUri,
++    claudeEnabled: process.env.SLOWTH_MCP_OAUTH_CLAUDE_ENABLED === 'true', productionEnabled,
++    taskAccessEnabled: productionEnabled && process.env.SLOWTH_MCP_TASK_ACCESS === 'true' };
++}
++export async function oauthClient(id, config = oidcConfig(), redirectUri) {
++  return resolveOAuthClient(getAdminDb(), Buffer.from(process.env.SLOWTH_MCP_OAUTH_STORAGE_KEY ?? '', 'base64'), config, id, redirectUri);
+ }
+ let instance;
+ export function oidcProvider() {
+@@ -34,6 +40,7 @@ export function oidcProvider() {
+         if (artifact) {
+           const binding = (await getAdminDb().collection('mcpOAuthGrants').doc(digest(artifact.grantId)).get()).data();
+           if (!config.productionEnabled || binding?.mode !== 'production' || binding.userId !== uid ||
++              binding.clientId !== artifact.clientId || binding.resource !== config.resource || !await oauthClient(binding.clientId, oidcConfig()) ||
+               binding.projectId !== PILOT_PROJECT || binding.expiresAt?.toMillis?.() <= Date.now() ||
+               !Number.isFinite(binding.expiresAt?.toMillis?.())) throw new Error('Forbidden');
+           await activeUser(uid, config, binding.authTime);
+@@ -75,7 +82,7 @@ export async function authenticateMcp(header) {
+   const validScopes = token?.scope === TEST_SCOPE || production && new Set(scopes).size === scopes.length &&
+     scopes.every(s => [READ_SCOPE, ...(config.taskAccessEnabled ? [TASK_READ_SCOPE, TASK_WRITE_SCOPE] : [])].includes(s)) &&
+     (!scopes.includes(TASK_WRITE_SCOPE) || scopes.includes(TASK_READ_SCOPE));
+-  if (!token || token.clientId !== config.clientId || token.aud !== config.resource ||
++  if (!token || !await oauthClient(token.clientId, config) || token.aud !== config.resource ||
+       !validScopes ||
+       !token.grantId || !Number.isFinite(token.exp)) throw new Error('Unauthorized');
+   const grant = await provider.Grant.find(token.grantId);
+@@ -83,7 +90,7 @@ export async function authenticateMcp(header) {
+   const binding = (await getAdminDb().collection('mcpOAuthGrants').doc(digest(token.grantId)).get()).data();
+   const deadlines = [binding?.expiresAt?.toMillis?.(), grant.exp * 1000, token.exp * 1000];
+   const expiresAt = Math.min(...deadlines);
+-  if (!binding || binding.userId !== token.accountId || binding.clientId !== config.clientId ||
++  if (!binding || binding.userId !== token.accountId || binding.clientId !== token.clientId ||
+       binding.resource !== config.resource || !deadlines.every(Number.isFinite) || expiresAt <= Date.now()) throw new Error('Unauthorized');
+   const taskScopes = scopes.filter(s => [TASK_READ_SCOPE, TASK_WRITE_SCOPE].includes(s));
+   if (taskScopes.some(s => !binding.taskScopes?.includes(s))) throw new Error('Unauthorized');
+diff --git a/src/lib/mcp/oidc.test.js b/src/lib/mcp/oidc.test.js
+index d4ccebb..7256af6 100644
+--- a/src/lib/mcp/oidc.test.js
++++ b/src/lib/mcp/oidc.test.js
+@@ -2,16 +2,17 @@
+ import { beforeEach, afterEach, expect, it, vi } from 'vitest';
+ import { authenticateMcp, activeUser, firebaseConsentUser } from './oidc';
+ import { PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
+-const fake = vi.hoisted(() => ({ find: vi.fn(), grant: vi.fn(), user: vi.fn(), verify: vi.fn(), access: vi.fn(), binding: null }));
++const fake = vi.hoisted(() => ({ find: vi.fn(), client: vi.fn(), grant: vi.fn(), user: vi.fn(), verify: vi.fn(), access: vi.fn(), binding: null }));
+ vi.mock('@/lib/firebase/admin', () => ({
+   getAdminAuth: () => ({ getUser: fake.user, verifyIdToken: fake.verify }),
+   getAdminDb: () => ({ collection: name => ({ doc: () => ({ get: async () => name === 'users' ? { exists: true } : { data: () => fake.binding } }) }) }),
+ }));
+ vi.mock('@/lib/auth/projectAccess', () => ({ getProjectAccess: fake.access }));
+ vi.mock('../../../scripts/mcp-events/oidc-provider.mjs', () => ({ TEST_SCOPE: 'events:test', makeProvider: () => ({ AccessToken: { find: fake.find }, Grant: { find: fake.grant } }) }));
+-vi.mock('../../../scripts/mcp-events/oidc-store.mjs', () => ({ firestoreAdapter: () => class {} }));
++vi.mock('../../../scripts/mcp-events/oidc-store.mjs', () => ({ firestoreAdapter: () => class { find(id) { return fake.client(id); } } }));
+ beforeEach(() => {
+   vi.clearAllMocks();
++  fake.client.mockResolvedValue(undefined);
+   for (const [key, value] of Object.entries({ ENABLED: 'true', ORIGIN: 'https://slowth.example.test', ALLOWED_UID: 'fixture-user',
+     CLIENT_ID: 'https://chatgpt.com/oauth/client.json', REDIRECT_URI: 'https://chatgpt.com/connector_platform_oauth_redirect',
+     JWKS: '{"keys":[{"d":"fixture"}]}', COOKIE_KEYS: JSON.stringify(['fixture-cookie-key-not-a-secret'.repeat(2)]), STORAGE_KEY: Buffer.alloc(32, 3).toString('base64'),
+@@ -109,3 +110,22 @@ it('requires fresh task scopes in token and grant; legacy event tokens never acq
+   fake.find.mockResolvedValue({ ...original, scope: 'events:read tasks:read tasks:write' }); vi.stubEnv('SLOWTH_MCP_TASK_ACCESS', 'false');
+   await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+ });
++
++it('authenticates only registered Claude clients and rejects disabled, removed and cross-client bindings', async () => {
++  vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE_ENABLED', 'true');
++  const id = 'slowth-claude-00000000-0000-0000-0000-000000000001';
++  const metadata = { client_id: id, application_type: 'web', token_endpoint_auth_method: 'none', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'], grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] };
++  fake.client.mockResolvedValue(metadata);
++  fake.find.mockResolvedValue({ ...(await fake.find()), clientId: id });
++  fake.binding.clientId = id;
++  expect(await authenticateMcp('Bearer fixture-only')).toMatchObject({ userId: 'fixture-user', projectIds: ['fixture-project'] });
++  fake.binding.clientId = 'https://chatgpt.com/oauth/client.json';
++  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
++  fake.binding.clientId = id;
++  fake.client.mockResolvedValueOnce(undefined);
++  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
++  fake.client.mockResolvedValueOnce({ ...metadata, redirect_uris: ['https://attacker.example/callback'] });
++  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
++  vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE_ENABLED', 'false');
++  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
++});
+diff --git a/src/lib/mcp/production.test.js b/src/lib/mcp/production.test.js
+index 6b8a53b..b73eb70 100644
+--- a/src/lib/mcp/production.test.js
++++ b/src/lib/mcp/production.test.js
+@@ -5,6 +5,7 @@ import { taskEvent, deliveryOutcome, connectionAuthorized, createProductionPipel
+ import { subscriptionStore } from '../../../scripts/mcp-events/subscription-store.mjs';
+ import { signature } from '../../../scripts/mcp-events/core.mjs';
+ import { PILOT_PROJECT, RETENTION_MS, authorizationMode } from '../../../scripts/mcp-events/policy.mjs';
++import { firestoreAdapter } from '../../../scripts/mcp-events/oidc-store.mjs';
+ 
+ let db, auth, config, connection, clock, pipeline, post, store;
+ const key = Buffer.alloc(32, 4), secret = 'whsec_' + Buffer.alloc(32, 7).toString('base64');
+@@ -69,6 +70,28 @@ it('persists journal and delivery before webhook, then survives new worker insta
+   expect(post).toHaveBeenCalledOnce(); expect(jobs()[0][1].state).toBe('delivered');
+   expect((await listTaskUpdates(principal(), PILOT_PROJECT, 20, () => clock)).events).toHaveLength(1);
+ });
++
++it('retains a Claude polling feed only while its own client registration and binding are valid', async () => {
++  const id = 'slowth-claude-00000000-0000-0000-0000-000000000001';
++  config.claudeEnabled = true;
++  const Adapter = firestoreAdapter(db, key), clients = new Adapter('Client');
++  await clients.upsert(id, { client_id: id, application_type: 'web', token_endpoint_auth_method: 'none', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'], grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] });
++  connection.clientId = id;
++  await db.collection('mcpEventConnections').doc('fixture-owner').set(connection);
++  await db.collection('mcpOAuthGrants').doc('fixture-binding').update({ clientId: id });
++  await principal().collection('subscriptions').doc('fixture-sub').delete();
++  expect(await pipeline.capture(change())).toEqual({ captured: 1 });
++  expect((await listTaskUpdates(principal(), PILOT_PROJECT, 20, () => clock)).events).toHaveLength(1);
++  expect(jobs()).toHaveLength(0); expect(post).not.toHaveBeenCalled();
++  config.claudeEnabled = false;
++  expect(await pipeline.capture(change({ id: 'disabled-client' }))).toEqual({ captured: 0 });
++  config.claudeEnabled = true;
++  await db.collection('mcpOAuthGrants').doc('fixture-binding').update({ clientId: config.clientId });
++  expect(await pipeline.capture(change({ id: 'wrong-client-binding' }))).toEqual({ captured: 0 });
++  await db.collection('mcpOAuthGrants').doc('fixture-binding').update({ clientId: id });
++  await clients.destroy(id);
++  expect(await pipeline.capture(change({ id: 'removed-client' }))).toEqual({ captured: 0 });
++});
+ it('retains bursts and removes only acknowledged events, idempotently', async () => {
+   for (let n = 0; n < 3; n++) await pipeline.capture(change({ id: 'fixture-' + n }));
+   const page = await listTaskUpdates(principal(), PILOT_PROJECT, 2, () => clock);
+diff --git a/src/lib/mcp/provider.production.test.js b/src/lib/mcp/provider.production.test.js
+index 712763a..f8fb2b1 100644
+--- a/src/lib/mcp/provider.production.test.js
++++ b/src/lib/mcp/provider.production.test.js
+@@ -12,7 +12,7 @@ const records = new Map();
+ class Adapter {
+   constructor(name) { this.name = name; }
+   ref(id) { return this.name + ':' + id; }
+-  async upsert(id, payload, seconds) { records.set(this.ref(id), { ...payload, fixtureExpiry: Date.now() + seconds * 1000 }); }
++  async upsert(id, payload, seconds = 365 * 86400) { records.set(this.ref(id), { ...payload, fixtureExpiry: Date.now() + seconds * 1000 }); }
+   async find(id) { const record = records.get(this.ref(id)); return record?.fixtureExpiry > Date.now() ? { ...record } : undefined; }
+   async findByUid(uid) { return [...records].find(([key, value]) => key.startsWith(this.name + ':') && value.uid === uid)?.[1]; }
+   async consume(id) { records.get(this.ref(id)).consumed = Math.floor(Date.now() / 1000); }
+@@ -21,7 +21,7 @@ class Adapter {
+ }
+ beforeAll(async () => {
+   const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+-  provider = makeProvider({ issuer: origin + '/api/oidc', resource, clientId, redirectUri, productionEnabled: true, taskAccessEnabled: true,
++  provider = makeProvider({ issuer: origin + '/api/oidc', resource, clientId, redirectUri, productionEnabled: true, taskAccessEnabled: true, claudeEnabled: true,
+     jwks: { keys: [{ ...privateKey.export({ format: 'jwk' }), kid: 'fixture', use: 'sig', alg: 'RS256' }] },
+     cookieKeys: [randomBytes(32).toString('hex')], adapter: Adapter,
+     clients: [{ client_id: clientId, redirect_uris: [redirectUri], token_endpoint_auth_method: 'none',
+@@ -34,10 +34,10 @@ beforeAll(async () => {
+   const callback = mountedCallback(provider, '/api/oidc');
+   server = createServer(async (req, res) => {
+     req.headers.host = new URL(origin).host; req.headers['x-forwarded-host'] = new URL(origin).host; req.headers['x-forwarded-proto'] = 'https';
+-    if (req.url.startsWith('/api/oidc/')) return callback(req, res);
++    if (req.url.startsWith('/api/oidc/') || req.url.startsWith('/.well-known/')) return callback(req, res);
+     try {
+       const details = await provider.interactionDetails(req, res);
+-      const grant = new provider.Grant({ accountId: 'fixture-user', clientId });
++      const grant = new provider.Grant({ accountId: 'fixture-user', clientId: details.params.client_id });
+       grant.addOIDCScope(details.params.scope);
+       grant.addResourceScope(resource, details.params.scope.split(' ').filter(s => s.startsWith('events:') || s.startsWith('tasks:')).join(' '));
+       const grantId = await grant.save();
+@@ -48,10 +48,10 @@ beforeAll(async () => {
+   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); }); port = server.address().port;
+ });
+ afterAll(async () => { await new Promise(resolve => server.close(resolve)); });
+-async function issue(scope) {
++async function authorize(scope, client = { client_id: clientId, redirect_uri: redirectUri }) {
+   const jar = new CookieJar();
+   const verifier = randomBytes(32).toString('base64url');
+-  const params = new URLSearchParams({ client_id: clientId, redirect_uri: redirectUri, resource, scope,
++  const params = new URLSearchParams({ client_id: client.client_id, redirect_uri: client.redirect_uri, resource, ...(scope === undefined ? {} : { scope }),
+     response_type: 'code', state: 'fixture-state', code_challenge_method: 'S256',
+     code_challenge: createHash('sha256').update(verifier).digest('base64url') });
+   let next = new URL('/api/oidc/auth?' + params, origin);
+@@ -62,9 +62,12 @@ async function issue(scope) {
+     if (![302, 303].includes(response.status)) throw new Error(await response.text());
+     next = new URL(response.headers.get('location'), next);
+   }
+-  expect(next.origin).toBe('https://chatgpt.com');
++  expect(next.origin).toBe(new URL(client.redirect_uri).origin);
+   expect(next.searchParams.get('error')).toBeNull();
+-  const response = await token({ grant_type: 'authorization_code', code: next.searchParams.get('code'), code_verifier: verifier, redirect_uri: redirectUri });
++  return { grant_type: 'authorization_code', code: next.searchParams.get('code'), code_verifier: verifier, client_id: client.client_id, redirect_uri: client.redirect_uri };
++}
++async function issue(scope, client) {
++  const response = await token(await authorize(scope, client));
+   expect(response.status).toBe(200);
+   return response.body;
+ }
+@@ -104,3 +107,74 @@ it('issues and refreshes the exact newly consented task scopes without widening
+   const oldRefresh = await token({ grant_type: 'refresh_token', refresh_token: original.refresh_token });
+   expect(oldRefresh.body.scope).toBe('events:read');
+ });
++
++const claudeRedirect = 'https://claude.ai/api/mcp/auth_callback';
++async function register(patch = {}) {
++  const response = await fetch(`http://127.0.0.1:${port}/api/oidc/reg`, {
++    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
++      client_name: 'Claude', redirect_uris: [claudeRedirect], token_endpoint_auth_method: 'none',
++      grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'], ...patch,
++    }),
++  });
++  return { status: response.status, body: await response.json() };
++}
++it('advertises Claude registration and one consistent production scope set', async () => {
++  for (const path of ['/api/oidc/.well-known/oauth-authorization-server', '/.well-known/oauth-authorization-server/api/oidc', '/.well-known/openid-configuration/api/oidc']) {
++    const response = await fetch(`http://127.0.0.1:${port}${path}`);
++    const metadata = await response.json();
++    expect(response.status).toBe(200);
++    expect(metadata).toMatchObject({ authorization_endpoint: origin + '/api/oidc/auth', registration_endpoint: origin + '/api/oidc/reg', code_challenge_methods_supported: ['S256'] });
++    expect(metadata.scopes_supported).toEqual(['events:read', 'openid', 'offline_access', 'tasks:read', 'tasks:write']);
++  }
++});
++it.each(['https://claude.ai/api/mcp/auth_callback', 'https://claude.com/api/mcp/auth_callback'])('registers Claude and completes authorization and refresh for %s', async redirect_uri => {
++  const registered = await register({ redirect_uris: [redirect_uri] });
++  expect(registered.status).toBe(201);
++  expect(registered.body.client_id).toMatch(/^slowth-claude-/);
++  expect(registered.body.client_secret).toBeUndefined();
++  expect(registered.body.registration_access_token).toBeUndefined();
++  const client = { client_id: registered.body.client_id, redirect_uri };
++  const first = await issue('events:read tasks:read tasks:write', client);
++  expect(first.scope.split(' ').sort()).toEqual(['events:read', 'tasks:read', 'tasks:write']);
++  const refresh = await token({ grant_type: 'refresh_token', refresh_token: first.refresh_token, client_id: client.client_id });
++  expect(refresh.status).toBe(200); expect(refresh.body.scope).toBe(first.scope);
++});
++it('handles a Claude authorization request without a scope using the consented production defaults', async () => {
++  const registered = await register();
++  const first = await issue(undefined, { client_id: registered.body.client_id, redirect_uri: claudeRedirect });
++  expect(first.scope.split(' ').sort()).toEqual(['events:read', 'tasks:read', 'tasks:write']);
++});
++it('keeps a Claude read-only request read-only and binds codes and refresh tokens to that client', async () => {
++  const a = await register(), b = await register();
++  const client = { client_id: a.body.client_id, redirect_uri: claudeRedirect };
++  const code = await authorize('events:read tasks:read', client);
++  expect((await token({ ...code, client_id: b.body.client_id })).status).toBe(400);
++  const first = await issue('events:read tasks:read', client);
++  expect(first.scope).not.toContain('tasks:write');
++  expect((await token({ grant_type: 'refresh_token', refresh_token: first.refresh_token, client_id: b.body.client_id })).status).toBe(400);
++});
++it.each([
++  { redirect_uris: ['https://attacker.example/api/mcp/auth_callback'] },
++  { redirect_uris: ['https://claude.ai.attacker.example/api/mcp/auth_callback'] },
++  { redirect_uris: [claudeRedirect + '?next=https://attacker.example'] },
++  { redirect_uris: [claudeRedirect, 'http://localhost:3000/callback'] },
++  { token_endpoint_auth_method: 'client_secret_post' },
++  { grant_types: ['authorization_code', 'client_credentials'] },
++  { sector_identifier_uri: 'https://attacker.example/sector.json' },
++  { jwks_uri: 'https://attacker.example/keys.json' },
++])('rejects unsupported registration metadata before storing it: %j', async patch => {
++  const count = [...records.keys()].filter(key => key.startsWith('Client:')).length;
++  expect((await register(patch)).status).toBe(400);
++  expect([...records.keys()].filter(key => key.startsWith('Client:'))).toHaveLength(count);
++});
++it('rejects a changed Claude callback and missing PKCE before redirecting', async () => {
++  const registered = await register();
++  const params = new URLSearchParams({ client_id: registered.body.client_id, redirect_uri: claudeRedirect, resource,
++    scope: 'events:read tasks:read', response_type: 'code', state: 'fixture-state', code_challenge_method: 'S256', code_challenge: 'fixture' });
++  for (const patch of [{ redirect_uri: claudeRedirect + '/extra' }, { code_challenge_method: 'plain' }]) {
++    const changed = new URLSearchParams(params);
++    for (const [key, value] of Object.entries(patch)) changed.set(key, value);
++    const response = await fetch(`http://127.0.0.1:${port}/api/oidc/auth?${changed}`, { redirect: 'manual' });
++    expect(response.status).toBe(400); expect(response.headers.get('location')).toBeNull();
++  }
++});
+diff --git a/src/lib/ui-guide/release.generated.json b/src/lib/ui-guide/release.generated.json
+index bb1e043..98395c5 100644
+--- a/src/lib/ui-guide/release.generated.json
++++ b/src/lib/ui-guide/release.generated.json
+@@ -11,7 +11,7 @@
+     },
+     {
+       "path": "next.config.ts",
+-      "sha256": "1f3c4264ace313298722271db025da64f13bd529e8fcd1ebb19e438ec209a6eb"
++      "sha256": "5bff652883f4c8b15fabcc735a2a1379f3462dae5d71a51939071af248d68130"
+     },
+     {
+       "path": "package.json",
+@@ -71,7 +71,7 @@
+     },
+     {
+       "path": "src/app/(dashboard)/settings/api-keys/page.tsx",
+-      "sha256": "1c1e00e538dccc66f1c0cacf5520888dd3b327e35ad08d05505f1e9ce66ae500"
++      "sha256": "5f8c268fadf4a3d80a5d177e107d0708662edd94742e3adc5992196e9c58420e"
+     },
+     {
+       "path": "src/app/(dashboard)/settings/browser-backup/page.tsx",
+@@ -95,7 +95,7 @@
+     },
+     {
+       "path": "src/app/mcp-connect/consent.tsx",
+-      "sha256": "28d88e3f985277350a5a1ee4f98150db924e223b4425d3cb439b654c2a109209"
++      "sha256": "8f311995e36ec9331fdd3d60accb782b3804ec67220dc3ce9c27ab0b1f855c23"
+     },
+     {
+       "path": "src/app/neo-appearance.css",
+@@ -1795,7 +1795,7 @@
+     },
+     {
+       "path": "src/lib/ui-guide/usage.generated.json",
+-      "sha256": "760f4b3f871446517ed468c5b3666808b6b7b5a553d7c25bc9cdf51e1c90291f"
++      "sha256": "8467544542422fa8e7ca3775fabafa04ce7f82e92733d00b1487bec7e0b1811e"
+     },
+     {
+       "path": "src/lib/ui-guide/verification.json",
+diff --git a/src/lib/ui-guide/usage.generated.json b/src/lib/ui-guide/usage.generated.json
+index 8a4bc57..f8654da 100644
+--- a/src/lib/ui-guide/usage.generated.json
++++ b/src/lib/ui-guide/usage.generated.json
+@@ -1,13 +1,14 @@
+ {
+   "revision": "ui-guide-2026-09-18.17",
+-  "graphHash": "2361077dcf3e4ad43d5b41bc32aff3424f92dfe034c4f674ae653a206a85469d",
++  "graphHash": "c448f48bdc9a7a2126095ea7d29bbbe56af8c02a548c628dd9ecda0a147525c8",
+   "entries": {
+     "text": {
+-      "sourceHash": "3946de2e00d26cab440827e93861d1da5e4d44926ba2dbb36c213d7f5fcea2cc",
++      "sourceHash": "6ebbb7cafabb3f634e5518cf794ddbd2fe1d6045d5a68f109a9be49d5b53f082",
+       "direct": [
+         "src/app/(dashboard)/help/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+         "src/app/(dashboard)/settings/ai/page.tsx",
++        "src/app/(dashboard)/settings/api-keys/page.tsx",
+         "src/app/(dashboard)/settings/page.tsx",
+         "src/app/layout.tsx",
+         "src/app/mcp-connect/consent.tsx",
+@@ -60,7 +61,7 @@
+       ]
+     },
+     "button": {
+-      "sourceHash": "f223a5fdd1eeda0acd6d2760997542d543658a3961b1cdb1badcfa2a840a89a9",
++      "sourceHash": "e437ec9f676f406f4cfa40c213ae6aee887aaa934888d9e51a739e4b6746e52c",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -249,7 +250,7 @@
+       ]
+     },
+     "input": {
+-      "sourceHash": "6b2b8f26f13f3e35e09dbaaefe19568933483a99b5dcc67351d30bd9bdc8788e",
++      "sourceHash": "d77e329310b8f5dda5855271aa018fe5de3a1e7e0c136ca20d80b6f161c183b1",
+       "direct": [
+         "src/app/(dashboard)/profile/page.tsx",
+         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
+@@ -399,7 +400,7 @@
+       ]
+     },
+     "card": {
+-      "sourceHash": "f9f260c054264c0c3b0009ee3951d5f847620c04dce5545033035af7dbb1dafc",
++      "sourceHash": "401f16e00cce5b8b42c6390c1e6981d3fdb4548bb2d14fdf3a8ec903468ff4c1",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -707,7 +708,7 @@
+       ]
+     },
+     "setting": {
+-      "sourceHash": "6cc5e9133e96e75cc8d3d020589333eff831d220e2fad5a8a12e5f8b74d58d93",
++      "sourceHash": "f9d3041890fa41c1c8fe816dcc6c3daafe93188ea588fe8bad102697bfa27e12",
+       "direct": [
+         "src/app/mcp-connect/consent.tsx",
+         "src/components/help/HelpVideos.tsx",
+@@ -756,7 +757,7 @@
+       ]
+     },
+     "detail-layout": {
+-      "sourceHash": "b5795c1fd4850ba7c22195b0a7d9fa8eafd17dffc72c49ad2dd3880568dca48b",
++      "sourceHash": "2e866b250801c8f5df296c1401dbccdb211ac0b5db7987a7c711c4a8bdc17889",
+       "direct": [
+         "src/app/(dashboard)/help/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -786,7 +787,7 @@
+       ]
+     },
+     "settings-layout": {
+-      "sourceHash": "ded2b04f9518d9a203e2c16d1e4c4145cee823eb69b734005e9ecfe7c706497e",
++      "sourceHash": "1f13c9e10bfa19e37318a12a868105f9d828c8ab842a81ececba350c326618b1",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/help/page.tsx",
+@@ -873,7 +874,7 @@
+       "routes": []
+     },
+     "search": {
+-      "sourceHash": "e610a880514079e6ef60216080397547255afcfd282311db7313e5ebc49717a3",
++      "sourceHash": "8661bd31a4a15810d32b2817e3e9277a5cf6c6b8064e19efa63e8b1f3042d479",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -1056,7 +1057,7 @@
+       ]
+     },
+     "notifications": {
+-      "sourceHash": "8196ac73696b45194937b5be4c1f23d2fc6f492339b5db99d9a3133a01eefb75",
++      "sourceHash": "9337b4df69301d847340deb8b1e44d05e2222e29bfe60c7b79d38dee2fc9ed80",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -1237,7 +1238,7 @@
+       ]
+     },
+     "calendar": {
+-      "sourceHash": "8196ac73696b45194937b5be4c1f23d2fc6f492339b5db99d9a3133a01eefb75",
++      "sourceHash": "9337b4df69301d847340deb8b1e44d05e2222e29bfe60c7b79d38dee2fc9ed80",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -1418,7 +1419,7 @@
+       ]
+     },
+     "gantt": {
+-      "sourceHash": "8196ac73696b45194937b5be4c1f23d2fc6f492339b5db99d9a3133a01eefb75",
++      "sourceHash": "9337b4df69301d847340deb8b1e44d05e2222e29bfe60c7b79d38dee2fc9ed80",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -1599,7 +1600,7 @@
+       ]
+     },
+     "progress": {
+-      "sourceHash": "9942d787c6df36f7b931ed279a85cbd0e88a4e931efe7a240ac1773a3d399c65",
++      "sourceHash": "84b75d8e5f7b8a6a615ef5c524619e1b8df8772a069106ca5ebbace578eb15b5",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -1924,7 +1925,7 @@
+       ]
+     },
+     "frame-trial": {
+-      "sourceHash": "8196ac73696b45194937b5be4c1f23d2fc6f492339b5db99d9a3133a01eefb75",
++      "sourceHash": "9337b4df69301d847340deb8b1e44d05e2222e29bfe60c7b79d38dee2fc9ed80",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -2105,7 +2106,7 @@
+       ]
+     },
+     "table-trial": {
+-      "sourceHash": "e80dcbc4aae707dcfa74123effd36039f768ebe1fa8b490ffbd2b0e994f83f40",
++      "sourceHash": "c046e715dc42eaf74f5cb621576bb9a3e07971e8986969dd14553031fb53f636",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -2297,7 +2298,7 @@
+       ]
+     },
+     "history-trial": {
+-      "sourceHash": "e80dcbc4aae707dcfa74123effd36039f768ebe1fa8b490ffbd2b0e994f83f40",
++      "sourceHash": "c046e715dc42eaf74f5cb621576bb9a3e07971e8986969dd14553031fb53f636",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -2529,7 +2530,7 @@
+       ]
+     },
+     "neo-brief-assignee-filter-trial": {
+-      "sourceHash": "78ad9c30c90217084a382a9d2de0a46561830930839e83ead04b8bd8e57f9beb",
++      "sourceHash": "e595ddb572d28611a0ee4765dd3ee31012309048edc205e69d538d185573d759",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -2792,7 +2793,7 @@
+       ]
+     },
+     "neo-home-layout-trial": {
+-      "sourceHash": "257dfd33ea902be8d0dd9f3b9498b6d4bad2eb95467f628fe4cd75cd12a3bbf5",
++      "sourceHash": "15265a8112966be375a17b0587e61d6cc506e21fccd030a0c5b490375de4faa3",
+       "direct": [
+         "src/app/(auth)/login/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+@@ -2863,7 +2864,7 @@
+       ]
+     },
+     "detail-header-spacing-trial": {
+-      "sourceHash": "bd2a7d9d765f62f462b50a0ec91f4573dab9e8ec34084fb0d30dba0a63e1e965",
++      "sourceHash": "fbdc404508ad626dc8cdfb13efa77cac85b855fea34143db0942320e2184faaa",
+       "direct": [
+         "src/app/(dashboard)/help/page.tsx",
+         "src/app/(dashboard)/profile/page.tsx",
+diff --git a/src/pages/api/mcp-consent.js b/src/pages/api/mcp-consent.js
+index 1b573fc..7736fbb 100644
+--- a/src/pages/api/mcp-consent.js
++++ b/src/pages/api/mcp-consent.js
+@@ -1,4 +1,4 @@
+-import { oidcProvider, oidcConfig, firebaseConsentUser, assertProject, digest } from '@/lib/mcp/oidc';
++import { oidcProvider, oidcConfig, oauthClient, firebaseConsentUser, assertProject, digest } from '@/lib/mcp/oidc';
+ import { getAdminDb } from '@/lib/firebase/admin';
+ import { listUserProjects } from '@/lib/firebase/admin-projects';
+ import { authorizationMode, TEST_SCOPE, READ_SCOPE, TASK_READ_SCOPE, TASK_WRITE_SCOPE, CONSENT_MS, PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
+@@ -20,8 +20,8 @@ export default async function handler(req, res) {
+     const taskScopes = details.params.scope.split(' ').filter(s => [TASK_READ_SCOPE, TASK_WRITE_SCOPE].includes(s));
+     const resourceScope = mode === 'production' ? [READ_SCOPE, ...taskScopes].join(' ') : TEST_SCOPE;
+     const requested = req.method === 'GET' ? req.query.interaction : req.body?.interaction;
+-    if (details.uid !== requested || details.params.client_id !== settings.clientId ||
+-        details.params.redirect_uri !== settings.redirectUri || details.params.resource !== settings.resource ||
++    const client = await oauthClient(details.params.client_id, settings, details.params.redirect_uri);
++    if (details.uid !== requested || !client || details.params.resource !== settings.resource ||
+         !mode) {
+       console.warn('Slowth MCP consent rejected', { stage: 'interaction_binding' });
+       res.status(403).end(); return;
+@@ -30,7 +30,7 @@ export default async function handler(req, res) {
+       stage = 'project_selector';
+       const projects = (await listUserProjects(user.uid)).filter(p => mode !== 'production' || p.id === PILOT_PROJECT)
+         .map(p => ({ id: p.id, name: p.name }));
+-      res.json({ projects, scope: resourceScope, mode, taskScopes,
++      res.json({ projects, scope: resourceScope, mode, taskScopes, clientName: client.name,
+         maxDays: mode === 'production' ? 30 : null }); return;
+     }
+     if (typeof req.body.approve !== 'boolean') { res.status(400).end(); return; }
+@@ -45,13 +45,13 @@ export default async function handler(req, res) {
+     // One explicit consent per interaction, even for concurrent double-clicks.
+     await getAdminDb().collection('mcpOAuthConsents').doc(digest(details.uid)).create({ expiresAt: new Date(Date.now() + 300000) });
+     stage = 'grant_storage';
+-    const grant = new provider.Grant({ accountId: user.uid, clientId: settings.clientId });
++    const grant = new provider.Grant({ accountId: user.uid, clientId: client.id });
+     grant.addOIDCScope(details.params.scope); grant.addResourceScope(settings.resource, resourceScope);
+     const grantId = await grant.save();
+     const expiresAt = new Date(Date.now() + (mode === 'production' ? CONSENT_MS : 900000));
+     const binding = {
+       userId: user.uid, authTime: user.auth_time, projectId: req.body.projectId,
+-      clientId: settings.clientId, resource: settings.resource, mode, expiresAt, ...(taskScopes.length ? { taskScopes } : {}),
++      clientId: client.id, resource: settings.resource, mode, expiresAt, ...(taskScopes.length ? { taskScopes } : {}),
+     };
+     await getAdminDb().collection('mcpOAuthGrants').doc(digest(grantId)).set(binding);
+     if (mode === 'production') {
+@@ -67,6 +67,6 @@ export default async function handler(req, res) {
+   } catch {
+     // Fixed stage names only: never include exception text, tokens, cookies or account IDs.
+     console.warn('Slowth MCP consent rejected', { stage });
+-    if (!res.headersSent) res.status(403).json({ error: 'Connection could not be authorized. Start again from ChatGPT.' });
++    if (!res.headersSent) res.status(403).json({ error: 'Connection could not be authorized. Start again from your MCP client.' });
+   }
+ }
+diff --git a/mcp-events-functions/lib/oauth-clients.mjs b/mcp-events-functions/lib/oauth-clients.mjs
+new file mode 100644
+index 0000000..79889ae
+--- /dev/null
++++ b/mcp-events-functions/lib/oauth-clients.mjs
+@@ -0,0 +1,36 @@
++import { firestoreAdapter } from './oidc-store.mjs';
++
++export const CLAUDE_REDIRECT_URIS = [
++  'https://claude.ai/api/mcp/auth_callback',
++  'https://claude.com/api/mcp/auth_callback',
++];
++export const isClaudeClientId = id => typeof id === 'string' && /^slowth-claude-[0-9a-f-]{36}$/.test(id);
++
++// Dynamic registration is limited to public Claude Web/Desktop clients. Never
++// fetch caller-supplied client metadata, keys, or sector identifier documents.
++export function claudeClientMetadata(metadata) {
++  return metadata?.application_type === 'web' && metadata.token_endpoint_auth_method === 'none' &&
++    Array.isArray(metadata.redirect_uris) && metadata.redirect_uris.length > 0 &&
++    metadata.redirect_uris.length <= CLAUDE_REDIRECT_URIS.length &&
++    new Set(metadata.redirect_uris).size === metadata.redirect_uris.length &&
++    metadata.redirect_uris.every(uri => CLAUDE_REDIRECT_URIS.includes(uri)) &&
++    Array.isArray(metadata.grant_types) && metadata.grant_types.includes('authorization_code') &&
++    metadata.grant_types.every(type => ['authorization_code', 'refresh_token'].includes(type)) &&
++    Array.isArray(metadata.response_types) && metadata.response_types.length === 1 && metadata.response_types[0] === 'code' &&
++    ['sector_identifier_uri', 'jwks_uri', 'jwks', 'request_uris', 'initiate_login_uri'].every(key => metadata[key] === undefined);
++}
++
++export function allowedOAuthClient(config, id, metadata, redirectUri) {
++  if (id === config.clientId && (redirectUri === undefined || redirectUri === config.redirectUri)) return { id, name: 'ChatGPT' };
++  if (!config.claudeEnabled || !isClaudeClientId(id) || metadata?.client_id !== id || !claudeClientMetadata(metadata) ||
++      redirectUri !== undefined && !metadata.redirect_uris.includes(redirectUri)) return null;
++  return { id, name: 'Claude' };
++}
++
++export async function resolveOAuthClient(db, key, config, id, redirectUri) {
++  if (id === config.clientId) return allowedOAuthClient(config, id, undefined, redirectUri);
++  if (!config.claudeEnabled || !isClaudeClientId(id)) return null;
++  const Adapter = firestoreAdapter(db, key);
++  const metadata = await new Adapter('Client').find(id);
++  return allowedOAuthClient(config, id, metadata, redirectUri);
++}
+diff --git a/mcp-events-functions/lib/oidc-store.mjs b/mcp-events-functions/lib/oidc-store.mjs
+new file mode 100644
+index 0000000..2341ad4
+--- /dev/null
++++ b/mcp-events-functions/lib/oidc-store.mjs
+@@ -0,0 +1,65 @@
++import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
++const hash = text => createHash('sha256').update(text).digest('hex');
++
++// All OAuth payloads encrypted; indexes contain only hashes. Client SDK has no access.
++export function firestoreAdapter(db, key) {
++  if (!Buffer.isBuffer(key) || key.length !== 32) throw new Error('OAuth storage key required');
++  const collection = db.collection('mcpOAuthState');
++  function seal(value) {
++    const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', key, iv);
++    const body = Buffer.concat([cipher.update(JSON.stringify(value)), cipher.final()]);
++    return { iv: iv.toString('base64'), tag: cipher.getAuthTag().toString('base64'), body: body.toString('base64') };
++  }
++  function open(record) {
++    const expiresAt = record?.expiresAt?.toMillis?.() ?? record?.expiresAt?.getTime?.();
++    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return undefined;
++    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(record.iv, 'base64'));
++    decipher.setAuthTag(Buffer.from(record.tag, 'base64'));
++    const payload = JSON.parse(Buffer.concat([decipher.update(Buffer.from(record.body, 'base64')), decipher.final()]).toString());
++    return record.consumed ? { ...payload, consumed: record.consumed } : payload;
++  }
++  return class Adapter {
++    constructor(name) { this.name = name; }
++    ref(id) { return collection.doc(hash(`${this.name}:${id}`)); }
++    async upsert(id, payload, expiresIn) {
++      // oidc-provider stores registered clients without a TTL. Keep their
++      // metadata for a bounded year; access and consent still expire separately.
++      if (this.name === 'Client' && expiresIn === undefined) expiresIn = 365 * 86400;
++      if (!Number.isFinite(expiresIn) || expiresIn <= 0) throw new Error('Finite OAuth lifetime required');
++      const reference = this.ref(id);
++      await db.runTransaction(async tx => {
++        const before = (await tx.get(reference)).data();
++        tx.set(reference, { ...seal(payload), consumed: before?.consumed ?? payload.consumed ?? null,
++          expiresAt: new Date(Date.now() + expiresIn * 1000),
++          uidHash: payload.uid ? hash(`${this.name}:${payload.uid}`) : null,
++          userCodeHash: payload.userCode ? hash(`${this.name}:${payload.userCode}`) : null,
++          grantHash: payload.grantId ? hash(payload.grantId) : null,
++        });
++      });
++    }
++    async find(id) { return open((await this.ref(id).get()).data()); }
++    async findByUid(uid) { return this.lookup('uidHash', uid); }
++    async findByUserCode(code) { return this.lookup('userCodeHash', code); }
++    async lookup(field, value) {
++      const records = await collection.where(field, '==', hash(`${this.name}:${value}`)).limit(1).get();
++      return records.empty ? undefined : open(records.docs[0].data());
++    }
++    async consume(id) {
++      const reference = this.ref(id);
++      await db.runTransaction(async tx => {
++        const record = (await tx.get(reference)).data();
++        if (!record || record.consumed || !open(record)) throw new Error('OAuth artifact already consumed or expired');
++        tx.update(reference, { consumed: Math.floor(Date.now() / 1000) });
++      });
++    }
++    async destroy(id) { await this.ref(id).delete(); }
++    async revokeByGrantId(grantId) {
++      // Small bounded grants in this synthetic-only pilot; paginate for complete deletion.
++      for (;;) {
++        const records = await collection.where('grantHash', '==', hash(grantId)).limit(200).get();
++        if (records.empty) return;
++        const batch = db.batch(); records.docs.forEach(doc => batch.delete(doc.ref)); await batch.commit();
++      }
++    }
++  };
++}
+diff --git a/scripts/mcp-events/oauth-clients.mjs b/scripts/mcp-events/oauth-clients.mjs
+new file mode 100644
+index 0000000..79889ae
+--- /dev/null
++++ b/scripts/mcp-events/oauth-clients.mjs
+@@ -0,0 +1,36 @@
++import { firestoreAdapter } from './oidc-store.mjs';
++
++export const CLAUDE_REDIRECT_URIS = [
++  'https://claude.ai/api/mcp/auth_callback',
++  'https://claude.com/api/mcp/auth_callback',
++];
++export const isClaudeClientId = id => typeof id === 'string' && /^slowth-claude-[0-9a-f-]{36}$/.test(id);
++
++// Dynamic registration is limited to public Claude Web/Desktop clients. Never
++// fetch caller-supplied client metadata, keys, or sector identifier documents.
++export function claudeClientMetadata(metadata) {
++  return metadata?.application_type === 'web' && metadata.token_endpoint_auth_method === 'none' &&
++    Array.isArray(metadata.redirect_uris) && metadata.redirect_uris.length > 0 &&
++    metadata.redirect_uris.length <= CLAUDE_REDIRECT_URIS.length &&
++    new Set(metadata.redirect_uris).size === metadata.redirect_uris.length &&
++    metadata.redirect_uris.every(uri => CLAUDE_REDIRECT_URIS.includes(uri)) &&
++    Array.isArray(metadata.grant_types) && metadata.grant_types.includes('authorization_code') &&
++    metadata.grant_types.every(type => ['authorization_code', 'refresh_token'].includes(type)) &&
++    Array.isArray(metadata.response_types) && metadata.response_types.length === 1 && metadata.response_types[0] === 'code' &&
++    ['sector_identifier_uri', 'jwks_uri', 'jwks', 'request_uris', 'initiate_login_uri'].every(key => metadata[key] === undefined);
++}
++
++export function allowedOAuthClient(config, id, metadata, redirectUri) {
++  if (id === config.clientId && (redirectUri === undefined || redirectUri === config.redirectUri)) return { id, name: 'ChatGPT' };
++  if (!config.claudeEnabled || !isClaudeClientId(id) || metadata?.client_id !== id || !claudeClientMetadata(metadata) ||
++      redirectUri !== undefined && !metadata.redirect_uris.includes(redirectUri)) return null;
++  return { id, name: 'Claude' };
++}
++
++export async function resolveOAuthClient(db, key, config, id, redirectUri) {
++  if (id === config.clientId) return allowedOAuthClient(config, id, undefined, redirectUri);
++  if (!config.claudeEnabled || !isClaudeClientId(id)) return null;
++  const Adapter = firestoreAdapter(db, key);
++  const metadata = await new Adapter('Client').find(id);
++  return allowedOAuthClient(config, id, metadata, redirectUri);
++}
+diff --git a/src/lib/mcp/oauth-clients.test.js b/src/lib/mcp/oauth-clients.test.js
+new file mode 100644
+index 0000000..cb88831
+--- /dev/null
++++ b/src/lib/mcp/oauth-clients.test.js
+@@ -0,0 +1,27 @@
++// @vitest-environment node
++import { expect, it, vi, afterEach } from 'vitest';
++import { firestoreAdapter } from '../../../scripts/mcp-events/oidc-store.mjs';
++import { resolveOAuthClient } from '../../../scripts/mcp-events/oauth-clients.mjs';
++import { memoryFirestore } from './firestore.fixture.mjs';
++
++afterEach(() => vi.useRealTimers());
++it('encrypts registered clients, retains them across instances, and enforces removal and expiry', async () => {
++  const db = memoryFirestore(), key = Buffer.alloc(32, 8), Adapter = firestoreAdapter(db, key);
++  const id = 'slowth-claude-00000000-0000-0000-0000-000000000001';
++  const metadata = { client_id: id, application_type: 'web', token_endpoint_auth_method: 'none', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'], grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] };
++  const config = { clientId: 'chatgpt-fixture', claudeEnabled: true };
++  const clients = new Adapter('Client');
++  await clients.upsert(id, metadata);
++  expect(JSON.stringify([...db.records])).not.toContain(metadata.redirect_uris[0]);
++  expect(await resolveOAuthClient(db, key, config, id)).toEqual({ id, name: 'Claude' });
++  await clients.destroy(id);
++  expect(await resolveOAuthClient(db, key, config, id)).toBeNull();
++  await clients.upsert(id, metadata);
++  const record = [...db.records.values()][0];
++  vi.useFakeTimers(); vi.setSystemTime(record.expiresAt);
++  expect(await resolveOAuthClient(db, key, config, id)).toBeNull();
++});
++it('still requires a finite lifetime for every non-client OAuth artifact', async () => {
++  const Adapter = firestoreAdapter(memoryFirestore(), Buffer.alloc(32, 8));
++  await expect(new Adapter('AccessToken').upsert('fixture', {})).rejects.toThrow('Finite OAuth lifetime required');
++});
