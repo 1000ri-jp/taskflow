@@ -19,6 +19,16 @@ Taskflow のタスク・コメント・確認・サブタスク・チェック�
 
 現在の本番設定は承認済みの1プロジェクトと接続本人に限定しています。対象の拡大はコードの保存・マージとは別の判断です。イベント読取と、タスク読取・書込の追加同意を区別し、接続の期限・失効・現在のメンバー権限を操作ごとに確認します。
 
+### Claude Code からの接続
+
+`SLOWTH_MCP_OAUTH_CLAUDE_CODE=true`（本番モードのみ有効）で、ChatGPT に加えて Claude Code の OAuth クライアント `https://claude.ai/oauth/claude-code-client-metadata` を許可します。Claude Code が公開するメタデータは `application_type` を持たないため、`scripts/mcp-events/oidc-provider.mjs` でネイティブクライアントとして固定し、`http://localhost:<任意のポート>/callback` と `http://127.0.0.1:<任意のポート>/callback` だけを受け付けます。Claude Code は公開スコープをすべて要求するので、合成テスト用の `events:test` を除いて本番接続として扱います。`openid` は要求されなくても構いません。接続本人・対象プロジェクト・同意画面・30日の期限は ChatGPT と同じです。更新通知の配信は ChatGPT 専用のため、Claude Code の接続では通知用の接続記録を作りません。
+
+```sh
+claude mcp add --transport http slowth https://slowth.1000ri.jp/api/mcp
+```
+
+追加後、Claude Code の `/mcp` から認証します。
+
 書込は共有サービスのトランザクション内で行います。古い版を拒否し、同じ操作ID・同じ内容の再送では保存済みの結果を返します。一括操作の途中失敗は、成功済み・失敗・未実行を区別して返します。投稿者・確認回答者・記録時刻・導出値を任意の入力から偽造することはできません。
 
 Dot は `coordination.propose` に理由と仕事の分解を保存し、実際の子タスク・担当・前提を保存した後で有効化します。利用可能な能力で着手し、成果・検証結果を親へ添付して、人間の確認を待ちます。人間の実回答を `sync_human` で同期し、修正時は新しい実行版へ進みます。AI の確認代行は拒否します。計画の完了と通常の親タスクの完了は別です。

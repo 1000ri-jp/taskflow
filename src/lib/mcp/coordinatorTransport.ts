@@ -93,7 +93,7 @@ export async function assertCoordinationDelegation(auth: TaskPrincipal, projectI
   if (!Number.isFinite(sourceExpiry) || sourceExpiry <= Date.now()) denied('DELEGATION_REVOKED', '元のOAuth許可が失効または取消されました。', 403);
   try {
     const config = oidcConfig();
-    if (!config.productionEnabled || !config.taskAccessEnabled || binding.clientId !== config.clientId ||
+    if (!config.productionEnabled || !config.taskAccessEnabled || !config.clientIds.includes(binding.clientId) ||
         binding.resource !== config.resource || !Number.isFinite(binding.authTime)) throw new Error('Invalid source authorization');
     await activeUser(auth.userId, config, binding.authTime);
   } catch { denied('DELEGATION_REVOKED', '元のOAuth許可またはGoogleアカウントが無効になりました。', 403); }

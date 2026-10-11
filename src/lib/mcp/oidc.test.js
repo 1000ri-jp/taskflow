@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
-import { authenticateMcp, activeUser, firebaseConsentUser } from './oidc';
+import { authenticateMcp, activeUser, firebaseConsentUser, allowedClient, oidcConfig } from './oidc';
 import { PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
 const fake = vi.hoisted(() => ({ find: vi.fn(), grant: vi.fn(), user: vi.fn(), verify: vi.fn(), access: vi.fn(), binding: null }));
 vi.mock('@/lib/firebase/admin', () => ({
@@ -8,7 +8,7 @@ vi.mock('@/lib/firebase/admin', () => ({
   getAdminDb: () => ({ collection: name => ({ doc: () => ({ get: async () => name === 'users' ? { exists: true } : { data: () => fake.binding } }) }) }),
 }));
 vi.mock('@/lib/auth/projectAccess', () => ({ getProjectAccess: fake.access }));
-vi.mock('../../../scripts/mcp-events/oidc-provider.mjs', () => ({ TEST_SCOPE: 'events:test', makeProvider: () => ({ AccessToken: { find: fake.find }, Grant: { find: fake.grant } }) }));
+vi.mock('../../../scripts/mcp-events/oidc-provider.mjs', async importOriginal => ({ ...await importOriginal(), makeProvider: () => ({ AccessToken: { find: fake.find }, Grant: { find: fake.grant } }) }));
 vi.mock('../../../scripts/mcp-events/oidc-store.mjs', () => ({ firestoreAdapter: () => class {} }));
 beforeEach(() => {
   vi.clearAllMocks();
@@ -108,4 +108,31 @@ it('requires fresh task scopes in token and grant; legacy event tokens never acq
   await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
   fake.find.mockResolvedValue({ ...original, scope: 'events:read tasks:read tasks:write' }); vi.stubEnv('SLOWTH_MCP_TASK_ACCESS', 'false');
   await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+});
+
+const claudeClient = 'https://claude.ai/oauth/claude-code-client-metadata';
+it('accepts Claude Code task tokens only when enabled and bound to the same client', async () => {
+  vi.stubEnv('SLOWTH_MCP_EVENTS_PRODUCTION', 'true'); vi.stubEnv('SLOWTH_MCP_EVENTS_PROJECT_ID', PILOT_PROJECT); vi.stubEnv('SLOWTH_MCP_TASK_ACCESS', 'true');
+  fake.binding = { ...fake.binding, mode: 'production', projectId: PILOT_PROJECT, clientId: claudeClient, taskScopes: ['tasks:read', 'tasks:write'] };
+  fake.find.mockResolvedValue({ ...(await fake.find()), clientId: claudeClient, scope: 'events:read tasks:read tasks:write' });
+  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+  vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE_CODE', 'true');
+  expect(await authenticateMcp('Bearer fixture-only')).toMatchObject({ mode: 'production', permissions: ['tasks:read', 'tasks:write'] });
+  fake.binding.clientId = 'https://chatgpt.com/oauth/client.json';
+  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+});
+it('pins each client to its own callbacks', () => {
+  vi.stubEnv('SLOWTH_MCP_EVENTS_PRODUCTION', 'true'); vi.stubEnv('SLOWTH_MCP_EVENTS_PROJECT_ID', PILOT_PROJECT);
+  const chatgpt = ['https://chatgpt.com/oauth/client.json', 'https://chatgpt.com/connector_platform_oauth_redirect'];
+  expect(allowedClient(oidcConfig(), ...chatgpt)).toBe('chatgpt');
+  expect(allowedClient(oidcConfig(), claudeClient, 'http://localhost:55050/callback')).toBeNull();
+  vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE_CODE', 'true');
+  expect(allowedClient(oidcConfig(), claudeClient, 'http://localhost:55050/callback')).toBe('claude-code');
+  expect(allowedClient(oidcConfig(), claudeClient, 'http://127.0.0.1:1/callback')).toBe('claude-code');
+  for (const uri of ['http://localhost/callback', 'http://localhost:0/callback', 'http://evil.example:80/callback', 'https://localhost:55050/callback', 'http://localhost:55050/callback?x=1', chatgpt[1]]) {
+    expect(allowedClient(oidcConfig(), claudeClient, uri)).toBeNull();
+  }
+  expect(allowedClient(oidcConfig(), chatgpt[0], 'http://localhost:55050/callback')).toBeNull();
+  vi.stubEnv('SLOWTH_MCP_EVENTS_PRODUCTION', 'false');
+  expect(allowedClient(oidcConfig(), claudeClient, 'http://localhost:55050/callback')).toBeNull();
 });

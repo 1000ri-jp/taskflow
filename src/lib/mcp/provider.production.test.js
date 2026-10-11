@@ -3,7 +3,7 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import { createServer } from 'node:http';
 import { createHash, generateKeyPairSync, randomBytes } from 'node:crypto';
 import { CookieJar } from 'tough-cookie';
-import { makeProvider, mountedCallback } from '../../../scripts/mcp-events/oidc-provider.mjs';
+import { makeProvider, mountedCallback, CLAUDE_CODE_CLIENT } from '../../../scripts/mcp-events/oidc-provider.mjs';
 
 let server, port, provider, active = true;
 const origin = 'https://slowth.example.test', clientId = 'https://chatgpt.com/oauth/client.json';
@@ -21,7 +21,7 @@ class Adapter {
 }
 beforeAll(async () => {
   const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
-  provider = makeProvider({ issuer: origin + '/api/oidc', resource, clientId, redirectUri, productionEnabled: true, taskAccessEnabled: true,
+  provider = makeProvider({ issuer: origin + '/api/oidc', resource, clientId, redirectUri, productionEnabled: true, taskAccessEnabled: true, claudeCodeEnabled: true,
     jwks: { keys: [{ ...privateKey.export({ format: 'jwk' }), kid: 'fixture', use: 'sig', alg: 'RS256' }] },
     cookieKeys: [randomBytes(32).toString('hex')], adapter: Adapter,
     clients: [{ client_id: clientId, redirect_uris: [redirectUri], token_endpoint_auth_method: 'none',
@@ -37,7 +37,7 @@ beforeAll(async () => {
     if (req.url.startsWith('/api/oidc/')) return callback(req, res);
     try {
       const details = await provider.interactionDetails(req, res);
-      const grant = new provider.Grant({ accountId: 'fixture-user', clientId });
+      const grant = new provider.Grant({ accountId: 'fixture-user', clientId: details.params.client_id });
       grant.addOIDCScope(details.params.scope);
       grant.addResourceScope(resource, details.params.scope.split(' ').filter(s => s.startsWith('events:') || s.startsWith('tasks:')).join(' '));
       const grantId = await grant.save();
@@ -48,13 +48,15 @@ beforeAll(async () => {
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); }); port = server.address().port;
 });
 afterAll(async () => { await new Promise(resolve => server.close(resolve)); });
-async function issue(scope) {
+function authorizeUrl(scope, client = clientId, redirect = redirectUri, verifier = 'fixture-verifier') {
+  return new URL('/api/oidc/auth?' + new URLSearchParams({ client_id: client, redirect_uri: redirect, resource, scope,
+    response_type: 'code', state: 'fixture-state', code_challenge_method: 'S256',
+    code_challenge: createHash('sha256').update(verifier).digest('base64url') }), origin);
+}
+async function issue(scope, client = clientId, redirect = redirectUri) {
   const jar = new CookieJar();
   const verifier = randomBytes(32).toString('base64url');
-  const params = new URLSearchParams({ client_id: clientId, redirect_uri: redirectUri, resource, scope,
-    response_type: 'code', state: 'fixture-state', code_challenge_method: 'S256',
-    code_challenge: createHash('sha256').update(verifier).digest('base64url') });
-  let next = new URL('/api/oidc/auth?' + params, origin);
+  let next = authorizeUrl(scope, client, redirect, verifier);
   for (let n = 0; n < 10 && next.origin === origin; n++) {
     const response = await fetch(`http://127.0.0.1:${port}${next.pathname}${next.search}`, {
       redirect: 'manual', headers: { Cookie: await jar.getCookieString(next.href) } });
@@ -62,16 +64,16 @@ async function issue(scope) {
     if (![302, 303].includes(response.status)) throw new Error(await response.text());
     next = new URL(response.headers.get('location'), next);
   }
-  expect(next.origin).toBe('https://chatgpt.com');
+  expect(next.origin).toBe(new URL(redirect).origin);
   expect(next.searchParams.get('error')).toBeNull();
-  const response = await token({ grant_type: 'authorization_code', code: next.searchParams.get('code'), code_verifier: verifier, redirect_uri: redirectUri });
+  const response = await token({ grant_type: 'authorization_code', code: next.searchParams.get('code'), code_verifier: verifier, redirect_uri: redirect }, client);
   expect(response.status).toBe(200);
   return response.body;
 }
-async function token(values) {
+async function token(values, client = clientId) {
   const response = await fetch(`http://127.0.0.1:${port}/api/oidc/token`, {
     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ client_id: clientId, resource, ...values }) });
+    body: new URLSearchParams({ client_id: client, resource, ...values }) });
   return { status: response.status, body: await response.json() };
 }
 it('issues production access plus rotating refresh, and detects refresh token replay', async () => {
@@ -103,4 +105,33 @@ it('issues and refreshes the exact newly consented task scopes without widening 
   const original = await issue('events:read openid offline_access');
   const oldRefresh = await token({ grant_type: 'refresh_token', refresh_token: original.refresh_token });
   expect(oldRefresh.body.scope).toBe('events:read');
+});
+
+// Exactly what Claude Code 2.1 sent: every advertised scope, no openid, a random loopback port.
+const claudeScope = 'events:test events:read tasks:read tasks:write offline_access';
+it('connects Claude Code through any loopback port and refreshes its task scopes', async () => {
+  const first = await issue(claudeScope, CLAUDE_CODE_CLIENT.client_id, 'http://localhost:55050/callback');
+  expect(first.scope.split(' ').sort()).toEqual(['events:read', 'tasks:read', 'tasks:write']);
+  expect(first.refresh_token).toBeTypeOf('string'); expect(first.id_token).toBeUndefined();
+  const refreshed = await token({ grant_type: 'refresh_token', refresh_token: first.refresh_token }, CLAUDE_CODE_CLIENT.client_id);
+  expect(refreshed.status).toBe(200); expect(refreshed.body.scope).toBe(first.scope);
+  expect((await issue(claudeScope, CLAUDE_CODE_CLIENT.client_id, 'http://127.0.0.1:61234/callback')).refresh_token).toBeTypeOf('string');
+});
+it.each([
+  [CLAUDE_CODE_CLIENT.client_id, 'https://evil.example/callback', claudeScope],
+  [CLAUDE_CODE_CLIENT.client_id, 'http://localhost:55050/other', claudeScope],
+  [CLAUDE_CODE_CLIENT.client_id, 'http://localhost/callback', claudeScope],
+  [CLAUDE_CODE_CLIENT.client_id, 'http://localhost:55050/callback', 'events:test openid'],
+  [clientId, 'http://localhost:55050/callback', 'events:read openid offline_access'],
+])('rejects %s with callback %s and scope %s before any redirect', async (client, redirect, scope) => {
+  const url = authorizeUrl(scope, client, redirect);
+  const response = await fetch(`http://127.0.0.1:${port}${url.pathname}${url.search}`, { redirect: 'manual' });
+  expect(response.status).toBe(400); expect(await response.json()).toEqual({ error: 'invalid_request' });
+});
+it('keeps Claude Code unknown unless enabled', async () => {
+  const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const disabled = makeProvider({ issuer: origin + '/api/oidc', resource, clientId, redirectUri, productionEnabled: true, taskAccessEnabled: true,
+    jwks: { keys: [{ ...privateKey.export({ format: 'jwk' }), kid: 'fixture', use: 'sig', alg: 'RS256' }] },
+    cookieKeys: [randomBytes(32).toString('hex')], adapter: Adapter, findAccount: async () => undefined });
+  await expect(disabled.Client.find(CLAUDE_CODE_CLIENT.client_id)).rejects.toThrow('invalid_client');
 });

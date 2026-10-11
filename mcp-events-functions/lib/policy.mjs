@@ -11,7 +11,8 @@ export function authorizationMode(scope, productionEnabled = false, taskAccessEn
   const scopes = scope.split(' ');
   if (new Set(scopes).size !== scopes.length) return null;
   if (scopes.includes(TEST_SCOPE) && scopes.every(s => [TEST_SCOPE, 'openid'].includes(s))) return 'test';
-  if (productionEnabled && [READ_SCOPE, 'openid', 'offline_access'].every(s => scopes.includes(s)) &&
+  // openid only adds an ID token; ChatGPT sends it and Claude Code does not.
+  if (productionEnabled && [READ_SCOPE, 'offline_access'].every(s => scopes.includes(s)) &&
       scopes.every(s => [READ_SCOPE, 'openid', 'offline_access', ...(taskAccessEnabled ? [TASK_READ_SCOPE, TASK_WRITE_SCOPE] : [])].includes(s)) &&
       (!scopes.includes(TASK_WRITE_SCOPE) || scopes.includes(TASK_READ_SCOPE))) return 'production';
   return null;

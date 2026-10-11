@@ -58,3 +58,12 @@ it('shows production data destination, thirty-day consent, and the selected proj
   expect(approve).toBeDisabled(); fireEvent.change(screen.getByRole('combobox'), { target: { value: 'fixture-project' } });
   expect(approve).toBeEnabled(); expect(screen.queryByRole('button', { name: '架空通知のテストを許可' })).not.toBeInTheDocument();
 });
+
+it('names Claude Code and omits ChatGPT-only notification wording', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ mode: 'production', client: 'claude-code', taskScopes: ['tasks:read', 'tasks:write'], projects: [{ id: 'fixture-project', name: 'タスク管理ツール' }] }))));
+  render(<Consent interaction="fixture-interaction" />);
+  expect(await screen.findByRole('heading', { name: 'Claude Codeとの接続確認' })).toBeInTheDocument();
+  const prose = screen.getByText(/Claude Codeが読み取ります/);
+  expect(prose).toHaveTextContent('最大30日間'); expect(prose).not.toHaveTextContent(/ChatGPT|更新通知/);
+  expect(screen.getByRole('button', { name: '30日間のタスク読み書きを許可' })).toBeDisabled();
+});
