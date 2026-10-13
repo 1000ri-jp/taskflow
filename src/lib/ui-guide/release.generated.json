@@ -11,7 +11,7 @@
     },
     {
       "path": "next.config.ts",
-      "sha256": "1f3c4264ace313298722271db025da64f13bd529e8fcd1ebb19e438ec209a6eb"
+      "sha256": "ac57a82d48b77371e3815f00f913ce3c4483ce485e21ec7e0d72a00ba5a44b87"
     },
     {
       "path": "package.json",
@@ -651,7 +651,7 @@
     },
     {
       "path": "src/components/task/AttachmentPreview.tsx",
-      "sha256": "db7cdf2e65d0cf3324f311d545e487e823f15896b754c60470b5a0b7704a2d1a"
+      "sha256": "7b8ec8c153d6b7d4758f4efd672a1c20698650406893124e7c5544d7043ecd47"
     },
     {
       "path": "src/components/task/AttachmentSection.tsx",
@@ -700,6 +700,10 @@
     {
       "path": "src/components/task/OrganizedWorkFollowUp.tsx",
       "sha256": "28c0a438d551bd61b997e038c0d6903eaf42374115767af6280834d6326e011d"
+    },
+    {
+      "path": "src/components/task/PdfAttachmentPreview.tsx",
+      "sha256": "71b83a9c1398f4bf7770288fe5773263585d30a9a7130a84b8dd4fd5aa2e3f7f"
     },
     {
       "path": "src/components/task/PreviewChanges.tsx",
@@ -1795,7 +1799,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "760f4b3f871446517ed468c5b3666808b6b7b5a553d7c25bc9cdf51e1c90291f"
+      "sha256": "1178346e1d98ef60244a66a2752ff580d1776ec8d0aab614ba8413800771e5c9"
     },
     {
       "path": "src/lib/ui-guide/verification.json",

@@ -31,6 +31,16 @@ Behavior:
 
 This is intentionally narrow. It exists to prove authenticated layout and routing behavior, not to simulate full Firebase functionality.
 
+## Isolated PDF preview regression
+
+`npx playwright test --config playwright.pdf.config.ts`
+
+This suite starts its own mock-only server on `127.0.0.1:3020` with dummy Firebase values and fictitious task/comment attachments. It intercepts the exact Firebase Storage fixture URL and blocks all other external requests and API calls. It covers loading, native PDF rendering, download-only responses, HTTP/network failures, timeout/retry, close/reopen and Blob URL cleanup on desktop and narrow screens. The general Firebase-backed suite excludes this spec; use its dedicated config.
+
+Use Node 22, matching CI, and a full Chromium browser (`channel: chromium`) because the older headless shell may lack the native PDF viewer. To use an already installed binary, set `PDF_PREVIEW_CHROMIUM_PATH` to its executable path.
+
+The fixture confirms rendering with the application's actual CSP. It does not verify a production Storage object's CORS, access, or PDF structure; files with a PDF signature but damaged internals remain the native viewer's responsibility.
+
 ## Firebase-backed local suite
 
 `npm run test:e2e`

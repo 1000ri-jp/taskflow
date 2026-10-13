@@ -53,7 +53,9 @@ const nextConfig: NextConfig = {
               "font-src 'self'",
               "media-src 'self' blob:",
               "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net wss://*.firebaseio.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://firebasestorage.googleapis.com",
-              "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com",
+              // PDF previews use validated PDF blobs, with the existing Storage
+              // download URL as a native-viewer fallback when CORS is unavailable.
+              "frame-src 'self' blob: https://*.firebaseapp.com https://accounts.google.com https://firebasestorage.googleapis.com",
               "object-src 'none'",
               "base-uri 'self'",
             ].join("; "),

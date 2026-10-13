@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { formatFileSize } from '@/lib/firebase/storage';
 import { cn } from '@/lib/utils';
+import { PdfAttachmentPreview } from './PdfAttachmentPreview';
 
 interface AttachmentPreviewProps {
   id: string;
@@ -198,10 +199,10 @@ export function AttachmentPreview({ name, url, type, size, compact = false }: At
                 </div>
               )}
               {previewType === 'pdf' && (
-                <iframe
-                  src={url}
-                  className="w-full h-[70vh] rounded border"
-                  title={name}
+                <PdfAttachmentPreview
+                  url={url}
+                  className="min-h-0 flex-1 w-full rounded border"
+                  name={name}
                 />
               )}
             </div>
@@ -356,10 +357,10 @@ export function AttachmentPreviewCompact({ name, url, type, size, imageFit = 'co
                 </div>
               )}
               {previewType === 'pdf' && (
-                <iframe
-                  src={url}
-                  className="w-full h-[70vh] rounded border"
-                  title={name}
+                <PdfAttachmentPreview
+                  url={url}
+                  className="min-h-0 flex-1 w-full rounded border"
+                  name={name}
                 />
               )}
             </div>
