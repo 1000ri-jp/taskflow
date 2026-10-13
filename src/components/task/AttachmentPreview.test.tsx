@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AttachmentPreview, AttachmentPreviewCompact } from './AttachmentPreview';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 
@@ -9,7 +9,18 @@ vi.mock('next/image', () => ({
 }));
 vi.mock('@/lib/firebase/storage', () => ({ formatFileSize: () => '1 KB' }));
 
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+const fetchPdf = vi.fn<typeof fetch>();
+const revokeObjectURL = vi.fn();
+beforeEach(() => {
+  fetchPdf.mockReset().mockImplementation(async () => new Response('%PDF-1.7\nfixture'));
+  revokeObjectURL.mockReset();
+  vi.stubGlobal('fetch', fetchPdf);
+  vi.stubGlobal('URL', class extends URL {
+    static createObjectURL = vi.fn(() => 'blob:attachment-pdf');
+    static revokeObjectURL = revokeObjectURL;
+  });
+});
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 it.each([
   ['task image', AttachmentPreview, 'image/png', 'sample.png'],
@@ -43,4 +54,23 @@ it.each([
     fireEvent.click(within(preview).getByRole('button', { name: 'Close' }));
     expect(screen.queryByRole('dialog', { name })).not.toBeInTheDocument();
   }
+});
+
+it.each([AttachmentPreview, AttachmentPreviewCompact])('loads PDF only while open, reports failure, retries and releases it before reopening', async Preview => {
+  fetchPdf.mockResolvedValueOnce(new Response('missing', { status: 404 }));
+  render(<Preview id="pdf" name="資料.PDF" url="/sample.pdf" type="application/octet-stream" size={1024} />);
+  expect(fetchPdf).not.toHaveBeenCalled();
+  const trigger = screen.getByRole('link', { name: /資料.PDF/ });
+  fireEvent.click(trigger);
+  expect(await screen.findByRole('alert')).toHaveTextContent('PDFを読み込めませんでした');
+  const preview = screen.getByRole('dialog', { name: '資料.PDF' });
+  expect(within(preview).getByRole('link', { name: '新しいタブで開く' })).toHaveAttribute('href', '/sample.pdf');
+  fireEvent.click(within(preview).getByRole('button', { name: '再取得' }));
+  expect(await screen.findByTitle('資料.PDF')).toHaveAttribute('src', 'blob:attachment-pdf');
+  fireEvent.click(within(preview).getByRole('button', { name: 'Close' }));
+  expect(revokeObjectURL).toHaveBeenCalledWith('blob:attachment-pdf');
+  expect(fetchPdf.mock.calls.at(-1)![1]!.signal!.aborted).toBe(true);
+  fireEvent.click(trigger);
+  expect(await screen.findByTitle('資料.PDF')).toHaveAttribute('src', 'blob:attachment-pdf');
+  expect(fetchPdf).toHaveBeenCalledTimes(3);
 });
