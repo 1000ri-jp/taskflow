@@ -2,13 +2,13 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { authenticateMcp, activeUser, firebaseConsentUser } from './oidc';
 import { PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
-const fake = vi.hoisted(() => ({ find: vi.fn(), grant: vi.fn(), user: vi.fn(), verify: vi.fn(), access: vi.fn(), binding: null }));
+const fake = vi.hoisted(() => ({ find: vi.fn(), grant: vi.fn(), user: vi.fn(), verify: vi.fn(), access: vi.fn(), binding: null, providerConfig: null }));
 vi.mock('@/lib/firebase/admin', () => ({
   getAdminAuth: () => ({ getUser: fake.user, verifyIdToken: fake.verify }),
   getAdminDb: () => ({ collection: name => ({ doc: () => ({ get: async () => name === 'users' ? { exists: true } : { data: () => fake.binding } }) }) }),
 }));
 vi.mock('@/lib/auth/projectAccess', () => ({ getProjectAccess: fake.access }));
-vi.mock('../../../scripts/mcp-events/oidc-provider.mjs', () => ({ TEST_SCOPE: 'events:test', makeProvider: () => ({ AccessToken: { find: fake.find }, Grant: { find: fake.grant } }) }));
+vi.mock('../../../scripts/mcp-events/oidc-provider.mjs', () => ({ TEST_SCOPE: 'events:test', makeProvider: config => { fake.providerConfig = config; return { AccessToken: { find: fake.find }, Grant: { find: fake.grant } }; } }));
 vi.mock('../../../scripts/mcp-events/oidc-store.mjs', () => ({ firestoreAdapter: () => class {} }));
 beforeEach(() => {
   vi.clearAllMocks();
@@ -108,4 +108,65 @@ it('requires fresh task scopes in token and grant; legacy event tokens never acq
   await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
   fake.find.mockResolvedValue({ ...original, scope: 'events:read tasks:read tasks:write' }); vi.stubEnv('SLOWTH_MCP_TASK_ACCESS', 'false');
   await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+});
+
+async function multipleBinding() {
+  vi.stubEnv('SLOWTH_MCP_EVENTS_PRODUCTION', 'true'); vi.stubEnv('SLOWTH_MCP_EVENTS_PROJECT_ID', PILOT_PROJECT);
+  vi.stubEnv('SLOWTH_MCP_TASK_ACCESS', 'true'); vi.stubEnv('SLOWTH_MCP_MULTI_PROJECT_READ', 'true');
+  fake.find.mockResolvedValue({ ...(await fake.find()), scope: 'events:read tasks:read tasks:write' });
+  const binding = { ...fake.binding }; delete binding.projectId;
+  fake.binding = { ...binding, mode: 'production', consentVersion: 2, includeFutureProjects: false,
+    projectIds: [PILOT_PROJECT, 'viewer'], writeProjectIds: [PILOT_PROJECT], aiProjectIds: [], eventProjectIds: [], taskScopes: ['tasks:read', 'tasks:write'] };
+}
+it('authenticates only the explicitly consented read/write/AI/event snapshot', async () => {
+  await multipleBinding();
+  const auth = await authenticateMcp('Bearer fixture-only');
+  expect(auth).toMatchObject({ consentVersion: 2, projectIds: [PILOT_PROJECT, 'viewer'], writeProjectIds: [PILOT_PROJECT], aiProjectIds: [], eventProjectIds: [], includeFutureProjects: false });
+  expect(fake.access).not.toHaveBeenCalled();
+});
+it('disables multi-project grants unless explicitly configured and never expands an older pilot grant', async () => {
+  await multipleBinding(); vi.stubEnv('SLOWTH_MCP_MULTI_PROJECT_READ', 'false');
+  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+  vi.stubEnv('SLOWTH_MCP_MULTI_PROJECT_READ', 'true');
+  const binding = { ...fake.binding };
+  for (const key of ['consentVersion', 'includeFutureProjects', 'projectIds', 'writeProjectIds', 'aiProjectIds', 'eventProjectIds']) delete binding[key];
+  fake.binding = { ...binding, projectId: PILOT_PROJECT };
+  expect(await authenticateMcp('Bearer fixture-only')).toMatchObject({ projectIds: [PILOT_PROJECT] });
+  expect(await authenticateMcp('Bearer fixture-only')).not.toHaveProperty('consentVersion');
+});
+it('keeps a fixed consent snapshot and leaves current membership checks to each requested resource', async () => {
+  await multipleBinding();
+  fake.access.mockImplementation(async (_uid, project) => { if (project === PILOT_PROJECT) throw new Error('FORBIDDEN'); return { role: 'viewer' }; });
+  expect(await authenticateMcp('Bearer fixture-only')).toMatchObject({ projectIds: [PILOT_PROJECT, 'viewer'], writeProjectIds: [PILOT_PROJECT], aiProjectIds: [], eventProjectIds: [] });
+  expect(fake.binding.projectIds).toEqual([PILOT_PROJECT, 'viewer']);
+  expect(fake.access).not.toHaveBeenCalled();
+});
+it('rejects malformed snapshots and arrays silently added to an existing single-project grant', async () => {
+  await multipleBinding(); fake.binding.includeFutureProjects = true;
+  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+  delete fake.binding.consentVersion; fake.binding.projectId = PILOT_PROJECT;
+  await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+});
+
+async function refreshAccount() {
+  vi.resetModules(); const { oidcProvider } = await import('./oidc'); oidcProvider();
+  return fake.providerConfig.findAccount({ oidc: { entities: { RefreshToken: { grantId: 'fixture-grant' } } } }, 'fixture-user');
+}
+it('refreshes only the stored snapshot, skipping a removed membership without adding newly visible projects', async () => {
+  await multipleBinding();
+  fake.access.mockImplementation(async (_uid, project) => { if (project === PILOT_PROJECT) throw new Error('FORBIDDEN'); return { role: 'viewer' }; });
+  const before = { ...fake.binding, projectIds: [...fake.binding.projectIds] };
+  expect((await refreshAccount()).accountId).toBe('fixture-user');
+  expect(fake.access.mock.calls.map(call => call[1])).toEqual([PILOT_PROJECT, 'viewer']);
+  expect(fake.binding).toEqual(before);
+});
+it.each(['no-memberships', 'read-feature-disabled', 'expired', 'wrong-client', 'storage-error', 'future-projects'])('rejects refresh after %s', async reason => {
+  await multipleBinding();
+  if (reason === 'no-memberships') fake.access.mockRejectedValue(new Error('FORBIDDEN'));
+  if (reason === 'read-feature-disabled') vi.stubEnv('SLOWTH_MCP_MULTI_PROJECT_READ', 'false');
+  if (reason === 'expired') fake.binding.expiresAt = { toMillis: () => 0 };
+  if (reason === 'wrong-client') fake.binding.clientId = 'other';
+  if (reason === 'storage-error') fake.access.mockRejectedValue(new Error('storage unavailable'));
+  if (reason === 'future-projects') fake.binding.includeFutureProjects = true;
+  await expect(refreshAccount()).rejects.toThrow();
 });

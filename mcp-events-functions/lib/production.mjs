@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { signedPost } from './core.mjs';
 import { subscriptionStore } from './subscription-store.mjs';
 import { PILOT_PROJECT, RETENTION_MS } from './policy.mjs';
+import { grantProjectScope, principalProjectIds } from './project-scope.mjs';
 import { TASK_EVENT_FIELDS as fields } from './task-fields.generated.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -38,6 +39,7 @@ export function taskEvent({ id, time, projectId, taskId, before, after, detail }
 // Check the actual grant, binding, Firebase revocation, and both membership representations on every delivery.
 export async function connectionAuthorized(db, auth, connection, config, now = Date.now) {
   if (!config.enabled || config.projectId !== PILOT_PROJECT || connection?.mode !== 'production' ||
+      connection.consentVersion === 2 && config.multiProjectReadEnabled !== true ||
       connection.projectId !== PILOT_PROJECT || connection.userId !== config.allowedUid ||
       connection.clientId !== config.clientId || connection.resource !== config.resource ||
       !Number.isFinite(millis(connection.expiresAt)) || millis(connection.expiresAt) <= now()) return false;
@@ -54,14 +56,18 @@ export async function connectionAuthorized(db, auth, connection, config, now = D
     db.collection('users').doc(connection.userId).get(),
   ]);
   const b = binding.data(), g = grant.data(), p = project.data();
+  let eventScope;
+  try { eventScope = grantProjectScope(b).eventProjectIds; } catch { return false; }
   return operations.data()?.stopped !== true && b?.mode === 'production' && b.userId === connection.userId &&
-    b.projectId === connection.projectId && b.clientId === config.clientId && b.resource === config.resource &&
+    b.consentVersion === connection.consentVersion && eventScope.includes(connection.projectId) &&
+    (b.consentVersion === undefined || connection.eventProjectIds?.includes(connection.projectId)) &&
+    b.clientId === config.clientId && b.resource === config.resource &&
     Number.isFinite(millis(b.expiresAt)) && millis(b.expiresAt) > now() &&
     Number.isFinite(millis(g?.expiresAt)) && millis(g.expiresAt) > now() &&
     profile.exists && Boolean(user) && !user.disabled && user.emailVerified && user.email?.endsWith('@1000ri.jp') &&
     user.providerData?.some(provider => provider.providerId === 'google.com') &&
     Number.isFinite(b.authTime) && b.authTime >= Date.parse(user.tokensValidAfterTime) / 1000 &&
-    p?.memberIds?.includes(connection.userId) && !members.empty &&
+    !p?.isArchived && p?.memberIds?.includes(connection.userId) && !members.empty &&
     ['viewer', 'editor', 'admin'].includes(members.docs[0].data().role);
 }
 
@@ -135,6 +141,7 @@ export function createProductionPipeline({ db, auth, config, key, post, now = Da
         const sub = await store.get(job.subscriptionId);
         const journal = (await principal(job.owner).collection('journal').doc(job.eventId).get()).data();
         if (!sub || sub.expiresAt <= now() || !journal || journal.expiresAt <= now() ||
+            sub.projectId !== connection?.projectId || journal.event?.data?.project_id !== sub.projectId ||
             !await connectionAuthorized(db, auth, connection, config, now) || sub.expiresAt <= now() || journal.expiresAt <= now()) {
           outcome = { state: 'cancelled', reason: 'authorization_or_subscription_ended', completedAt: now() };
         } else if (job.kind === 'recovery_wake' && journal.acknowledged) {
@@ -193,7 +200,7 @@ export async function enqueueCatchup(db, principalRef, owner, sub, now = Date.no
       tx.get(ref), tx.get(journalRef), tx.get(guardRef), tx.get(wakeRef),
     ]);
     const previous = previousDoc.data(), journal = journalDoc.data(), guard = guardDoc.data();
-    if (!journal || journal.acknowledged || journal.expiresAt <= now() || sub.expiresAt <= now()) return;
+    if (!journal || journal.event?.data?.project_id !== sub.projectId || journal.acknowledged || journal.expiresAt <= now() || sub.expiresAt <= now()) return;
     if (previous?.state === 'pending') return;
     const job = { owner, subscriptionId: sub.id, eventId: event.eventId, state: 'pending', attempts: 0,
       dueAt: now(), expiresAt: journal.expiresAt, mcpExpiresAt: new Date(journal.expiresAt) };
@@ -222,10 +229,34 @@ export async function listTaskUpdates(principalRef, projectId, limit, now = Date
     ...(r.resource ? { resource: r.resource, resource_id: r.resourceId, resource_change_type: r.resourceChangeType } : {}) })), has_more: records.length > limit, retention_days: 7 };
 }
 
-export async function acknowledgeTaskUpdates(db, principalRef, projectId, ids, now = Date.now, authorizationExpiresAt = Infinity) {
+// Read authority documents through the same transaction as the ACK, so revocation
+// or membership edits racing the commit force Firestore to retry and deny it.
+export async function assertEventAccessInTransaction(db, tx, auth, projectId, config, now = Date.now) {
+  if (!config.productionEnabled || auth.mode !== 'production' || auth.userId !== config.allowedUid ||
+      !principalProjectIds(auth, 'event').includes(projectId)) throw new Error('Event unavailable');
+  const projectRef = db.collection('projects').doc(projectId);
+  const [binding, grant, project, members, profile] = await Promise.all([
+    tx.get(db.collection('mcpOAuthGrants').doc(hash(auth.grantId))),
+    tx.get(db.collection('mcpOAuthState').doc(hash('Grant:' + auth.grantId))),
+    tx.get(projectRef),
+    tx.get(projectRef.collection('members').where('userId', '==', auth.userId).limit(1)),
+    tx.get(db.collection('users').doc(auth.userId)),
+  ]);
+  const b = binding.data(), p = project.data(), scope = grantProjectScope(b);
+  const deadlines = [auth.expiresAt, auth.authorizationExpiresAt, millis(b.expiresAt), millis(grant.data()?.expiresAt)];
+  if (b.userId !== auth.userId || b.mode !== 'production' || b.consentVersion !== auth.consentVersion ||
+      b.clientId !== config.clientId || b.resource !== config.resource ||
+      b.consentVersion === 2 && !config.multiProjectReadEnabled || !scope.eventProjectIds.includes(projectId) ||
+      !deadlines.every(value => Number.isFinite(value) && value > now()) ||
+      !profile.exists || !project.exists || p.isArchived || !Array.isArray(p.memberIds) || !p.memberIds.includes(auth.userId) ||
+      members.empty || !['viewer', 'editor', 'admin'].includes(members.docs[0].data().role)) throw new Error('Event unavailable');
+}
+
+export async function acknowledgeTaskUpdates(db, principalRef, projectId, ids, now = Date.now, authorizationExpiresAt = Infinity, authorize) {
   return db.runTransaction(async tx => {
     const refs = ids.map(id => principalRef.collection('journal').doc(id));
     const records = await Promise.all(refs.map(ref => tx.get(ref)));
+    if (authorize) await authorize(tx);
     // Validate the complete batch before any writes; missing/cross-grant IDs never succeed.
     if (authorizationExpiresAt <= now() || records.some(doc => !doc.exists || doc.data().expiresAt <= now() || doc.data().event?.data?.project_id !== projectId)) {
       throw new Error('Event unavailable');

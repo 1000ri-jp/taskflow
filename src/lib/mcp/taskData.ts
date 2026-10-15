@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { FieldPath, FieldValue, type DocumentData, type DocumentReference, type Query, type Transaction } from 'firebase-admin/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
 import { getProjectAccess } from '@/lib/auth/projectAccess';
+import { getProjectStatus } from '@/lib/firebase/admin-projects';
+import { grantProjectScope, principalProjectIds } from '../../../scripts/mcp-events/project-scope.mjs';
 import { organizationAccess } from '@/lib/task/organizationRepository';
 import { applyWorkflowInTransaction } from '@/lib/task/workflowRepository';
 import { submitTaskCommentInTransaction } from '@/lib/task/commentSubmissionRepository';
@@ -32,6 +34,7 @@ import type { AllChildrenCompletionPolicy } from '@/lib/task/automationTypes';
 export interface TaskPrincipal {
   userId: string; grantId: string; expiresAt: number; authorizationExpiresAt: number;
   projectIds: string[]; taskScopes: string[]; permissions: ApiKeyPermission[]; coordinationDelegationId?: string; coordinationSourceAccessTokenExpiresAt?: number;
+  consentVersion?: number; includeFutureProjects?: boolean; writeProjectIds?: string[]; aiProjectIds?: string[]; eventProjectIds?: string[];
 }
 export interface TaskOperation {
   id: string; resource: keyof typeof OPERATIONS; action: string; task_id?: string; resource_id?: string;
@@ -60,22 +63,41 @@ export function requireTaskScope(auth: TaskPrincipal, write: boolean) {
 async function access(auth: TaskPrincipal, projectId: string, write: boolean) {
   requireTaskScope(auth, write); assertId(projectId);
   await assertCoordinationDelegation(auth, projectId);
-  if (!auth.projectIds.includes(projectId)) fail('FORBIDDEN', '許可されたプロジェクトを指定してください。', 403);
-  try { await getProjectAccess(auth.userId, projectId, auth.permissions, auth.projectIds, write ? 'tasks:write' : 'tasks:read'); }
+  if (!principalProjectIds(auth, write ? 'write' : 'read').includes(projectId)) fail('FORBIDDEN', '許可されたプロジェクトを指定してください。', 403);
+  if (auth.consentVersion !== undefined) {
+    const binding = (await getAdminDb().doc('mcpOAuthGrants/' + fingerprintString(auth.grantId)).get()).data();
+    assertGrant(auth, binding, projectId, write);
+  }
+  let role;
+  try { role = (await getProjectAccess(auth.userId, projectId, auth.permissions, auth.projectIds, write ? 'tasks:write' : 'tasks:read')).role; }
   catch { fail('FORBIDDEN', '現在のプロジェクト権限を確認してください。', 403); }
   const project = await getAdminDb().doc(`projects/${projectId}`).get();
-  const settings = (await getAdminDb().doc(`users/${auth.userId}/settings/aiSettings`).get()).data()?.allowedProjectIds;
-  if (settings != null && (!Array.isArray(settings) || !settings.includes(projectId))) fail('FORBIDDEN', '現在のAI利用範囲を確認してください。', 403);
+  if (write || auth.consentVersion === undefined) {
+    const settings = (await getAdminDb().doc(`users/${auth.userId}/settings/aiSettings`).get()).data()?.allowedProjectIds;
+    if (settings != null && (!Array.isArray(settings) || !settings.includes(projectId))) fail('FORBIDDEN', '現在のAI利用範囲を確認してください。', 403);
+  }
   if (project.data()?.isArchived) fail('FORBIDDEN', 'アーカイブされたプロジェクトにはアクセスできません。', 403);
+  return { project: project.data()!, role };
 }
-async function transactionAccess(tx: Transaction, auth: TaskPrincipal, projectId: string) {
+function assertGrant(auth: TaskPrincipal, value: DocumentData | undefined, projectId: string, write: boolean, ai = false) {
+  const expiry = value?.expiresAt;
+  const milliseconds = expiry instanceof Date ? expiry.getTime() : expiry?.toMillis?.();
+  try {
+    const scope = grantProjectScope(value);
+    if (value?.userId !== auth.userId || value?.mode !== 'production' || value?.consentVersion !== auth.consentVersion ||
+        !value?.taskScopes?.includes('tasks:read') || write && !value.taskScopes.includes('tasks:write') ||
+        !scope[write ? 'writeProjectIds' : 'projectIds'].includes(projectId) || ai && !scope.aiProjectIds.includes(projectId) ||
+        !Number.isFinite(milliseconds) || milliseconds <= Date.now()) throw new Error();
+  } catch { fail('FORBIDDEN', '現在のOAuth許可を確認してください。', 403); }
+}
+function requireAiWork(auth: TaskPrincipal, projectId: string) {
+  if (!principalProjectIds(auth, 'ai').includes(projectId)) fail('FORBIDDEN', 'このプロジェクトのAI作業には明示的な同意が必要です。', 403);
+}
+async function transactionAccess(tx: Transaction, auth: TaskPrincipal, projectId: string, ai = false) {
   requireTaskScope(auth, true);
   await assertCoordinationDelegation(auth, projectId, tx);
   const binding = await tx.get(getAdminDb().doc(`mcpOAuthGrants/${fingerprintString(auth.grantId)}`));
-  const value = binding.data(), expiry = value?.expiresAt;
-  const milliseconds = expiry instanceof Date ? expiry.getTime() : expiry?.toMillis?.();
-  if (value?.userId !== auth.userId || value?.projectId !== projectId || value?.mode !== 'production' ||
-      !value?.taskScopes?.includes('tasks:write') || !value.taskScopes.includes('tasks:read') || !Number.isFinite(milliseconds) || milliseconds <= Date.now()) fail('FORBIDDEN', '現在のOAuth許可を確認してください。', 403);
+  assertGrant(auth, binding.data(), projectId, true, ai);
   return organizationAccess(tx, auth.userId, projectId, true);
 }
 const fingerprintString = (v: string) => createHash('sha256').update(v).digest('hex');
@@ -164,13 +186,61 @@ async function page(query: Query, scope: unknown, cursor: unknown, limit: number
   return { items, next_cursor: more ? cursorFor(scope, items.at(-1)!.id) : null };
 }
 export async function readTaskData(auth: TaskPrincipal, args: Record<string, unknown>) {
-  const projectId = args.project_id === undefined ? auth.projectIds[0] : args.project_id;
-  assertId(projectId); await access(auth, projectId, false);
+  const result = await readTaskDataInternal(auth, args);
+  // Recheck before returning task/child/attachment bytes if access changed during retrieval.
+  if (args.resource !== 'projects') {
+    const id = args.project_id ?? (auth.projectIds.length === 1 ? auth.projectIds[0] : undefined);
+    assertId(id); await access(auth, id, false);
+  }
+  requireTaskScope(auth, false);
+  return result;
+}
+async function readTaskDataInternal(auth: TaskPrincipal, args: Record<string, unknown>) {
+  requireTaskScope(auth, false);
   if (Object.keys(args).some(k => !['project_id', 'resource', 'task_id', 'resource_id', 'comment_id', 'cursor', 'limit', 'offset', 'length'].includes(k)) || !READ_RESOURCES.includes(String(args.resource))) fail('INVALID_INPUT', '読み取り対象を確認してください。');
   const limit = args.limit ?? 20;
   if (!Number.isInteger(limit) || Number(limit) < 1 || Number(limit) > 50) fail('INVALID_INPUT', '取得件数は1〜50件です。');
+  if (args.resource === 'projects') {
+    if (Object.keys(args).some(k => !['resource', 'limit', 'cursor'].includes(k))) fail('INVALID_INPUT', 'プロジェクト一覧の引数を確認してください。');
+    const ids = [...principalProjectIds(auth)].sort();
+    const scope = [auth.grantId, 'projects', ids];
+    let after = '';
+    if (args.cursor !== undefined) {
+      try {
+        if (typeof args.cursor !== 'string' || args.cursor.length > 2000) throw new Error();
+        const cursor = JSON.parse(Buffer.from(args.cursor, 'base64url').toString());
+        if (cursor.scope !== fingerprint(scope) || !ids.includes(cursor.id)) throw new Error();
+        after = cursor.id;
+      } catch { fail('INVALID_CURSOR', 'この接続のプロジェクト一覧から読み直してください。'); }
+    }
+    const remaining = ids.filter(id => id > after), items = []; let scanned = '';
+    for (const id of remaining) {
+      scanned = id;
+      try {
+        const { project, role } = await access(auth, id, false);
+        const allowed = (await getAdminDb().doc('users/' + auth.userId + '/settings/aiSettings').get()).data()?.allowedProjectIds;
+        const writable = ['admin', 'editor'].includes(role) && auth.taskScopes.includes('tasks:write') &&
+          principalProjectIds(auth, 'write').includes(id) && (allowed == null || Array.isArray(allowed) && allowed.includes(id));
+        items.push({ id, name: typeof project.name === 'string' ? project.name : '', role,
+          permissions: { read: true, write: writable, ai_work: writable && principalProjectIds(auth, 'ai').includes(id), events: principalProjectIds(auth, 'event').includes(id) } });
+      } catch (error) { if (!(error instanceof TaskDataError) || error.code !== 'FORBIDDEN') throw error; }
+      if (items.length >= Number(limit)) break;
+    }
+    requireTaskScope(auth, false);
+    return { items, next_cursor: remaining.some(id => id > scanned) ? cursorFor(scope, scanned) : null,
+      include_future_projects: false, consent_version: auth.consentVersion ?? 1 };
+  }
+  const projectId = args.project_id === undefined && auth.projectIds.length === 1 ? auth.projectIds[0] : args.project_id;
+  if (projectId === undefined) fail('PROJECT_REQUIRED', 'projectsで同意済み対象を確認し、project_idを指定してください。');
+  assertId(projectId); await access(auth, projectId, false);
   const projectRef = getAdminDb().doc(`projects/${projectId}`);
-  const scopedPage = (query: Query, resource: string, task = false) => page(query, [projectId, resource, args.task_id ?? null, args.comment_id ?? null], args.cursor, Number(limit), task);
+  if (args.resource === 'project_status') {
+    if (Object.keys(args).some(k => !['project_id', 'resource'].includes(k))) fail('INVALID_INPUT', '進捗取得の引数を確認してください。');
+    const status = await getProjectStatus(projectId, auth.userId);
+    if (!status) fail('NOT_FOUND', 'プロジェクトが見つかりません。', 404);
+    return status;
+  }
+  const scopedPage = (query: Query, resource: string, task = false) => page(query, [auth.grantId, projectId, resource, args.task_id ?? null, args.comment_id ?? null], args.cursor, Number(limit), task);
   if (args.resource === 'context') {
     if (args.cursor !== undefined) fail('INVALID_INPUT', 'contextにはページ指定を使用できません。');
     const project = (await projectRef.get()).data()!;
@@ -213,9 +283,11 @@ export async function readTaskData(auth: TaskPrincipal, args: Record<string, unk
 
 async function mutate(auth: TaskPrincipal, projectId: string, op: TaskOperation) {
   await access(auth, projectId, true);
+  const ai = op.resource === 'coordination' || op.resource === 'coordination_policy';
+  if (ai) requireAiWork(auth, projectId);
   // Replay before uploading: retries remain safe after later archive/deletion.
   const previous = await getAdminDb().runTransaction(async tx => {
-    const { ref } = await transactionAccess(tx, auth, projectId);
+    const { ref } = await transactionAccess(tx, auth, projectId, ai);
     const saved = (await tx.get(ref.collection('mcpTaskOperations').doc(fingerprint([auth.userId, op.id])))).data();
     if (!saved) return null;
     if (saved.requestHash !== fingerprint(op) || saved.userId !== auth.userId) fail('IDEMPOTENCY_CONFLICT', 'この操作IDには別の内容が記録されています。', 409);
@@ -225,7 +297,7 @@ async function mutate(auth: TaskPrincipal, projectId: string, op: TaskOperation)
   const uploaded = op.resource === 'attachment' && op.action === 'upload' ? await uploadTaskFile(auth, projectId, op) : null;
   const result = await getAdminDb().runTransaction(async transaction => {
     const tracked = trackMcpWrites(transaction), tx = tracked.tx;
-    const { ref: projectRef, memberIds, defaultAssigneeId } = await transactionAccess(tx, auth, projectId);
+    const { ref: projectRef, memberIds, defaultAssigneeId } = await transactionAccess(tx, auth, projectId, ai);
     const receiptRef = projectRef.collection('mcpTaskOperations').doc(fingerprint([auth.userId, op.id]));
     const receipt = (await tx.get(receiptRef)).data(), signature = fingerprint(op);
     if (receipt) {
@@ -401,7 +473,8 @@ async function mutate(auth: TaskPrincipal, projectId: string, op: TaskOperation)
   return result;
 }
 export async function writeTaskData(auth: TaskPrincipal, args: Record<string, unknown>) {
-  const projectId = args.project_id === undefined ? auth.projectIds[0] : args.project_id;
+  const projectId = args.project_id === undefined && auth.projectIds.length === 1 ? auth.projectIds[0] : args.project_id;
+  if (projectId === undefined) fail('PROJECT_REQUIRED', 'project_idを指定してください。');
   assertId(projectId); await access(auth, projectId, true);
   if (Object.keys(args).some(k => !['project_id', 'operations', 'continue_on_error'].includes(k)) || !Array.isArray(args.operations) || args.operations.length < 1 || args.operations.length > 20 || args.continue_on_error !== undefined && typeof args.continue_on_error !== 'boolean') fail('INVALID_INPUT', '操作は1〜20件で指定してください。');
   const results = []; const ids = new Set();

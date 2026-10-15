@@ -11,6 +11,7 @@ import { PILOT_PROJECT } from './lib/policy.mjs';
 
 initializeApp();
 const enabled = defineBoolean('SLOWTH_MCP_WORKER_ENABLED', { default: false });
+const multiProjectReadEnabled = defineBoolean('SLOWTH_MCP_MULTI_PROJECT_READ', { default: false });
 const projectId = defineString('SLOWTH_MCP_EVENTS_PROJECT_ID', { default: 'SlBpu8BPYgIARk4DoYOV' });
 const allowedUid = defineString('SLOWTH_MCP_OAUTH_ALLOWED_UID');
 const storageKey = defineSecret('SLOWTH_MCP_OAUTH_STORAGE_KEY');
@@ -19,7 +20,7 @@ const options = { region: 'asia-northeast1', memory: '256MiB', maxInstances: 1, 
   serviceAccount: 'firebase-app-hosting-compute@projectmanager-e3308.iam.gserviceaccount.com' };
 function pipeline() {
   return createProductionPipeline({ db: getFirestore(), auth: getAuth(),
-    config: { enabled: enabled.value(), projectId: projectId.value(), allowedUid: allowedUid.value(),
+    config: { enabled: enabled.value(), multiProjectReadEnabled: multiProjectReadEnabled.value(), projectId: projectId.value(), allowedUid: allowedUid.value(),
       clientId: 'https://chatgpt.com/oauth/client.json', resource: 'https://slowth.1000ri.jp/api/mcp' },
     key: Buffer.from(storageKey.value(), 'base64'), post: createSafePost(['connectors.api.openai.com']),
     report: result => result.state === 'dead' ? logger.error('slowth_mcp_delivery', result) : logger.info('slowth_mcp_delivery', result) });

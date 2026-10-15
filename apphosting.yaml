@@ -25,7 +25,7 @@ env:
     secret: GOOGLE_OAUTH_CLIENT_SECRET
   - variable: GOOGLE_TOKEN_ENCRYPTION_KEY
     secret: GOOGLE_TOKEN_ENCRYPTION_KEY
-  # Authorized Slowth pilot: the existing account and one approved project.
+  # The existing account uses explicit project consent; legacy grants stay scoped.
   - variable: SLOWTH_MCP_EVENTS_ENABLED
     value: 'true'
     availability:
@@ -83,6 +83,9 @@ env:
     availability: [RUNTIME]
 
   - variable: SLOWTH_MCP_TASK_ACCESS
+    value: "true"
+    availability: [RUNTIME]
+  - variable: SLOWTH_MCP_MULTI_PROJECT_READ
     value: "true"
     availability: [RUNTIME]
   - variable: SLOWTH_MCP_COORDINATION_PROJECT_IDS
