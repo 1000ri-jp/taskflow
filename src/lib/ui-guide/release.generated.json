@@ -703,7 +703,7 @@
     },
     {
       "path": "src/components/task/PdfAttachmentPreview.tsx",
-      "sha256": "71b83a9c1398f4bf7770288fe5773263585d30a9a7130a84b8dd4fd5aa2e3f7f"
+      "sha256": "d179077b5478bade02398942ebcb340d2303b8a51ea9089a08a02bd11208f3ea"
     },
     {
       "path": "src/components/task/PreviewChanges.tsx",
@@ -1799,7 +1799,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "1178346e1d98ef60244a66a2752ff580d1776ec8d0aab614ba8413800771e5c9"
+      "sha256": "0de7ef6b4d2c1722e017aaa6ccd8b16fa7e038af0bb54cb58ed5ffa596685bf1"
     },
     {
       "path": "src/lib/ui-guide/verification.json",

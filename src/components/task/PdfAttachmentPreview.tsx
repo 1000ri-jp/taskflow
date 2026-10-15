@@ -8,7 +8,7 @@ import { HelpText } from '@/components/ui/typography';
 const LOAD_TIMEOUT_MS = 30_000;
 const OPEN_SEPARATELY = '表示されない場合は「新しいタブで開く」からPDFを確認できます。';
 class PdfPreviewError extends Error {}
-type PreviewState = { src: string; error?: string } | { src?: never; error?: string };
+type PreviewState = { src: string; error?: never } | { src?: never; error?: string };
 
 function PdfLoadAttempt({ url, name, className, onRetry }: {
   url: string; name: string; className: string; onRetry: () => void;
@@ -46,8 +46,9 @@ function PdfLoadAttempt({ url, name, className, onRetry }: {
         if (controller.signal.aborted) return;
         if (!receivedResponse && cause instanceof TypeError) {
           // Existing download URLs can work in native frames even when their
-          // server disallows CORS. Preserve that path without changing bucket access.
-          setState({ src: url, error: `PDFの読み込みを確認できませんでした。${OPEN_SEPARATELY}` });
+          // server disallows CORS. An unverified fetch is not a failed preview;
+          // keep the native viewer and its normal new-tab/retry controls.
+          setState({ src: url });
         } else {
           setState({ error: cause instanceof PdfPreviewError ? cause.message : 'PDFを読み込めませんでした。接続を確認して再取得してください。' });
         }
