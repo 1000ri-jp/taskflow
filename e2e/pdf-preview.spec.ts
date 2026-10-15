@@ -42,6 +42,10 @@ async function prepare(page: Page, servePdf: (route: Route) => Promise<void>) {
     const request = route.request();
     const url = new URL(request.url());
     if (request.url() === pdfUrl) { await servePdf(route); return; }
+    // Native preview coverage remains independent of optional thumbnail generation.
+    if (url.origin === 'http://127.0.0.1:3020' && url.pathname === '/api/pdf-thumbnail/source' && request.method() === 'POST') {
+      await route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"No thumbnail in native preview tests"}' }); return;
+    }
     // Native PDF viewer resources are browser-internal and make no network requests.
     if (url.protocol === 'chrome-extension:' && url.hostname === 'mhjfbmdgcfjbbpaeojofohoefgiehjai'
       || url.protocol === 'chrome:' && url.hostname === 'resources') { await route.continue(); return; }

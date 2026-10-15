@@ -21,6 +21,8 @@ import {
 import { formatFileSize } from '@/lib/firebase/storage';
 import { cn } from '@/lib/utils';
 import { PdfAttachmentPreview } from './PdfAttachmentPreview';
+import { PdfThumbnail } from './PdfThumbnail';
+import type { PdfThumbnailSource } from '@/lib/pdf/attachmentSource';
 
 interface AttachmentPreviewProps {
   id: string;
@@ -30,7 +32,14 @@ interface AttachmentPreviewProps {
   size: number;
   compact?: boolean;
   imageFit?: 'cover' | 'contain';
+  thumbnailSource?: PdfThumbnailSource;
 }
+
+// Both attachment lists use the established card, surface and caption styles.
+const attachmentCardClassName = 'group flex flex-col rounded-lg border overflow-hidden hover:bg-muted/50 transition-colors cursor-pointer';
+const attachmentSurfaceClassName = 'flex w-full items-center justify-center rounded-t bg-muted';
+const attachmentCaptionClassName = 'min-w-0 p-2';
+const attachmentNameClassName = 'truncate text-xs font-medium';
 
 // Get file icon based on MIME type or extension
 function getFileIcon(type: string, name: string) {
@@ -100,7 +109,7 @@ function canPreview(type: string, name: string): 'image' | 'video' | 'audio' | '
   return null;
 }
 
-export function AttachmentPreview({ name, url, type, size, compact = false }: AttachmentPreviewProps) {
+export function AttachmentPreview({ name, url, type, size, compact = false, thumbnailSource }: AttachmentPreviewProps) {
   const [isOpen, setIsOpen] = useState(false);
   const previewType = canPreview(type, name);
   const icon = getFileIcon(type, name);
@@ -120,7 +129,7 @@ export function AttachmentPreview({ name, url, type, size, compact = false }: At
         rel="noopener noreferrer"
         onClick={handleClick}
         className={cn(
-          "group flex flex-col rounded-lg border overflow-hidden hover:bg-muted/50 transition-colors cursor-pointer",
+          attachmentCardClassName,
           compact && "p-1.5"
         )}
       >
@@ -135,12 +144,14 @@ export function AttachmentPreview({ name, url, type, size, compact = false }: At
             />
           </div>
         ) : (
-          <div className="flex h-24 w-full items-center justify-center rounded-t bg-muted">
-            {icon || <FileIcon className="h-8 w-8 text-muted-foreground" />}
+          <div className={cn(attachmentSurfaceClassName, 'h-24')}>
+            {previewType === 'pdf' && thumbnailSource
+              ? <PdfThumbnail name={name} url={url} size={size} source={thumbnailSource} fallback={icon} />
+              : icon || <FileIcon className="h-8 w-8 text-muted-foreground" />}
           </div>
         )}
-        <div className="min-w-0 p-2">
-          <p className="truncate text-xs font-medium">{name}</p>
+        <div className={attachmentCaptionClassName}>
+          <p className={attachmentNameClassName}>{name}</p>
           <p className="text-xs text-muted-foreground">{formatFileSize(size)}</p>
         </div>
       </a>
@@ -214,7 +225,7 @@ export function AttachmentPreview({ name, url, type, size, compact = false }: At
 }
 
 // Compact version for comment attachments - Slack/Jooto style
-export function AttachmentPreviewCompact({ name, url, type, size, imageFit = 'cover' }: AttachmentPreviewProps) {
+export function AttachmentPreviewCompact({ name, url, type, size, imageFit = 'cover', thumbnailSource }: AttachmentPreviewProps) {
   const [isOpen, setIsOpen] = useState(false);
   const previewType = canPreview(type, name);
   const icon = getFileIcon(type, name);
@@ -293,14 +304,21 @@ export function AttachmentPreviewCompact({ name, url, type, size, imageFit = 'co
         target="_blank"
         rel="noopener noreferrer"
         onClick={handleClick}
-        className="flex items-center gap-1 rounded border bg-background px-2 py-1 text-xs hover:bg-muted cursor-pointer"
+        className={previewType === 'pdf' && thumbnailSource
+          ? cn(attachmentCardClassName, 'w-48 max-w-full')
+          : 'flex items-center gap-1 rounded border bg-background px-2 py-1 text-xs hover:bg-muted cursor-pointer'}
       >
-        {icon ? (
+        {previewType === 'pdf' && thumbnailSource ? <>
+          <span className={cn(attachmentSurfaceClassName, 'h-36')}>
+            <PdfThumbnail name={name} url={url} size={size} source={thumbnailSource} fallback={icon} />
+          </span>
+          <span className={attachmentCaptionClassName}><span className={cn(attachmentNameClassName, 'block')}>{name}</span></span>
+        </> : <>{icon ? (
           <span className="h-4 w-4 flex items-center justify-center">{icon}</span>
         ) : (
           <FileIcon className="h-4 w-4" />
         )}
-        <span className="max-w-[120px] truncate">{name}</span>
+        <span className="max-w-[120px] truncate">{name}</span></>}
       </a>
 
       {/* Preview Dialog */}

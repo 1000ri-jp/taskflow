@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 // A separate mock-only server prevents this suite from reusing real Firebase state.
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'pdf-preview.spec.ts',
+  testMatch: ['pdf-preview.spec.ts', 'pdf-thumbnail.spec.ts'],
   workers: 1,
   timeout: 60000,
   reporter: 'list',

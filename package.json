@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/prepare-pdfjs-assets.mjs",
     "dev": "next dev",
     "dev:local": "NEXT_PUBLIC_E2E_MOCK_AUTH=true next dev -p 3002",
     "dev:secretary": "NEXT_PUBLIC_E2E_MOCK_AUTH=true next dev --hostname 127.0.0.1 -p 3010",
     "dev:real": "NEXT_PUBLIC_E2E_MOCK_AUTH=false NEXT_PUBLIC_ENABLE_TEST_AUTH=false NEXT_DEV_DIST_DIR=.next-real next dev --hostname 127.0.0.1 -p 3003",
     "desktop:mac": "./scripts/run-desktop-mini-mac.sh",
+    "prebuild": "node scripts/prepare-pdfjs-assets.mjs",
     "build": "node scripts/generate-task-contract.mjs --check && node ./scripts/run-next-build.mjs",
     "start": "next start",
     "audit": "node scripts/audit-policy.mjs",
@@ -27,7 +29,7 @@
     "test:e2e:ui": "playwright test --ui",
     "ui:refresh": "node scripts/ui-guide.mjs --refresh",
     "release:prepare": "node scripts/prepare-release.mjs",
-    "release:test": "node --test scripts/prepare-release.test.mjs",
+    "release:test": "node --test scripts/prepare-release.test.mjs scripts/prepare-pdfjs-assets.test.mjs",
     "ui:check": "node scripts/ui-guide.mjs",
     "ui:compare": "node scripts/ui-guide.mjs --compare-worktree",
     "ui:test": "node --test scripts/ui-guide.test.mjs",
@@ -85,7 +87,8 @@
     "sharp": "0.35.5",
     "tailwind-merge": "^3.5.0",
     "zustand": "^5.0.11",
-    "oidc-provider": "9.12.2"
+    "oidc-provider": "9.12.2",
+    "pdfjs-dist": "6.4.299"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",

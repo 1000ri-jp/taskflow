@@ -485,7 +485,7 @@ export function TaskDetailModal({
                     添付ファイル ({commentAttachments.length})
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {commentAttachments.map(({ attachment }) => (
+                    {commentAttachments.map(({ commentId, attachment }) => (
                       <AttachmentPreview
                         key={attachment.id}
                         id={attachment.id}
@@ -493,6 +493,7 @@ export function TaskDetailModal({
                         url={attachment.url}
                         type={attachment.type}
                         size={attachment.size}
+                        thumbnailSource={{ projectId, kind: 'comment', taskId: task.id, commentId, attachmentId: attachment.id }}
                       />
                     ))}
                   </div>
@@ -1173,6 +1174,7 @@ export function TaskDetailModal({
                                         url={att.url}
                                         type={att.type}
                                         size={att.size}
+                                        thumbnailSource={{ projectId, kind: 'comment', taskId: task.id, commentId: comment.id, attachmentId: att.id }}
                                       />
                                     ))}
                                   </div>

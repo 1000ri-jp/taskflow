@@ -99,7 +99,8 @@ export function ListReferencesPanel({ projectId, listId, renderTrigger }: { proj
               <label className="block space-y-1 text-sm"><span>添付を追加</span><Input type="file" multiple disabled={busy} onChange={event => setFiles(Array.from(event.target.files ?? []))} /><span className="text-xs text-muted-foreground">1ファイル10MBまで</span></label>
               <div className="flex justify-end gap-2"><Button variant="ghost" disabled={busy} onClick={close}>キャンセル</Button><Button disabled={busy} onClick={() => void handleSave()}>{busy ? '保存中…' : '保存'}</Button></div>
             </div> : reference && <>
-              {reference.attachments.map(file => <AttachmentPreview key={file.id} {...file} />)}
+              {reference.attachments.map(file => <AttachmentPreview key={file.id} {...file}
+                thumbnailSource={{ projectId, kind: 'reference', referenceId: reference.id, attachmentId: file.id }} />)}
               {reference.sourceTaskId && <p><a href={`/projects/${projectId}/board?task=${encodeURIComponent(reference.sourceTaskId)}`} target="_blank" rel="noreferrer" className="text-sm text-primary underline">元のタスク・やり取りを見る</a></p>}
             </>}
             {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
