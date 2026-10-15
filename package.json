@@ -36,6 +36,7 @@
     "mcp:contract": "node scripts/generate-task-contract.mjs",
     "mcp:check": "node scripts/generate-task-contract.mjs --check && npm --prefix mcp-events-functions run prepare:source && npm --prefix mcp-events-functions run check",
     "worker:test": "node tools/slowth-worker/test.mjs",
+    "slowth-mcp:test": "node --test tools/slowth-mcp/server.test.mjs",
     "worker:check": "node tools/slowth-worker/check.mjs",
     "worker:verify": "node tools/slowth-worker/host.mjs --verify-setup",
     "worker:run": "node tools/slowth-worker/host.mjs --run --allow-account-usage"

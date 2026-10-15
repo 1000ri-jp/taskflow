@@ -103,6 +103,7 @@ Current integration routes:
 
 See [`docs/API.md`](./docs/API.md) for the current API surface and auth model.
 See [`docs/API_INTEGRATION.md`](./docs/API_INTEGRATION.md) for curl examples and integration flow.
+See [`tools/slowth-mcp/README.md`](./tools/slowth-mcp/README.md) to connect Claude Code / Claude Desktop to Slowth through a local MCP server that uses a PAT.
 See [`docs/AI_ACCESS_CONTROL.md`](./docs/AI_ACCESS_CONTROL.md) for project-level AI access rules.
 See [`docs/AI_DELIVERY_WORKFLOW.md`](./docs/AI_DELIVERY_WORKFLOW.md) for the TaskFlow-to-GitHub AI delivery loop.
 See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for GitHub Project status automation and production deploy setup.

@@ -88,6 +88,9 @@ jobs:
       - name: Test local worker with fictional fixtures
         run: npm run worker:test
 
+      - name: Test local Slowth MCP server with a fictional API
+        run: npm run slowth-mcp:test
+
   build:
     name: taskflow-ci / build
     runs-on: ubuntu-latest
