@@ -96,7 +96,8 @@ export function ReferenceComments({ projectId, referenceId, legacyBody, legacyLi
           {canEdit && <span className="inline-flex items-center"><Button variant="ghost" size="icon" className="size-6" disabled={busy || !!pending} aria-label="コメントを編集" onClick={() => { setEditing(comment); setEditText(comment.content); }}><Pencil className="size-3" /></Button><Button variant="ghost" size="icon" className="size-6" disabled={busy || !!pending} aria-label="コメントを削除" onClick={() => { if (confirm('このコメントを削除しますか？')) void run(async () => { await change(comment, null); if (editing?.id === comment.id) setEditing(null); }); }}><Trash2 className="size-3" /></Button></span>}
         </div>
         {editing?.id === comment.id ? <div className={commentSpacingClass}><Textarea aria-label="コメントを編集" value={editText} onChange={event => setEditText(event.target.value)} maxLength={20000} disabled={busy} /><div className={commentActionsClass}><Button size="sm" disabled={busy || (!editText.trim() && !comment.attachments?.length)} onClick={() => void run(async () => { await change(editing, editText); setEditing(null); })}>保存</Button><Button size="sm" variant="ghost" disabled={busy} onClick={() => setEditing(null)}>キャンセル</Button></div></div> : <div className={commentCardClass}><Prose className="break-words">{linkifyText(comment.content)}</Prose></div>}
-        {comment.attachments?.map(file => <AttachmentPreview key={file.id} {...file} />)}
+        {comment.attachments?.map(file => <AttachmentPreview key={file.id} {...file}
+          thumbnailSource={{ projectId, kind: 'reference-comment', referenceId, commentId: comment.id, attachmentId: file.id }} />)}
       </div>
     </article>)}
     {canEdit && <div className="rounded-lg border p-3">

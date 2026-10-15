@@ -18,7 +18,8 @@ function fixture(t) {
   fs.mkdirSync(path.dirname(destination),{recursive:true});
   fs.writeFileSync(destination,content);
  }
- for(const file of ['package.json','package-lock.json','next.config.ts','tsconfig.json','postcss.config.mjs','apphosting.yaml','firebase.json','firestore.rules','firestore.indexes.json','storage.rules','vitest.config.ts','scripts/run-next-build.mjs','scripts/run-task-automation-job.mjs','scripts/generate-task-contract.mjs','scripts/mcp-events/task-fields.generated.mjs','scripts/mcp-events/oidc-provider.mjs','licenses/Unicode-LICENSE.txt','public/file.svg','src/app/api/mcp/route.js']) write(file);
+ for(const file of ['package.json','package-lock.json','next.config.ts','tsconfig.json','postcss.config.mjs','apphosting.yaml','firebase.json','firestore.rules','firestore.indexes.json','storage.rules','vitest.config.ts','scripts/run-next-build.mjs','scripts/run-task-automation-job.mjs','scripts/generate-task-contract.mjs','scripts/prepare-pdfjs-assets.mjs','scripts/mcp-events/task-fields.generated.mjs','scripts/mcp-events/oidc-provider.mjs','licenses/Unicode-LICENSE.txt','public/file.svg','src/app/api/mcp/route.js']) write(file);
+ write('public/pdfjs/stale-version/pdf.worker.min.mjs','stale generated worker');
  const video=Buffer.from('fictional approved recording');
  const digest=crypto.createHash('sha256').update(video).digest('hex');
  write('src/lib/help/videos.json',JSON.stringify([{id:'guide',file:'guide.mp4',sha256:digest}]));
@@ -35,7 +36,8 @@ test('candidate contains MCP build inputs, attribution and exactly approved reco
  const {source,manifest}=prepareRelease(root,output);
  assert.deepEqual(fs.readFileSync(path.join(source,'src/assets/help-videos/guide.mp4')),video);
  const paths=manifest.files.map(file=>file.path);
- for(const expected of ['scripts/generate-task-contract.mjs','scripts/mcp-events/task-fields.generated.mjs','scripts/mcp-events/oidc-provider.mjs','licenses/Unicode-LICENSE.txt']) assert.ok(paths.includes(expected),expected);
+ for(const expected of ['scripts/generate-task-contract.mjs','scripts/prepare-pdfjs-assets.mjs','scripts/mcp-events/task-fields.generated.mjs','scripts/mcp-events/oidc-provider.mjs','licenses/Unicode-LICENSE.txt']) assert.ok(paths.includes(expected),expected);
+ assert.equal(fs.existsSync(path.join(source,'public/pdfjs')),false);
  assert.equal(manifest.files.find(file=>file.path==='src/assets/help-videos/guide.mp4').sha256,digest);
  assert.equal(fs.existsSync(path.join(source,'src/assets/help-videos/unapproved.mp4')),false);
  assert.equal(fs.existsSync(path.join(source,'.env.local')),false);

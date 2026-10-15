@@ -21,6 +21,8 @@
 # Isolated development and verification builds (NEXT_DEV_DIST_DIR).
 /.next-*/
 /out/
+# PDF.js public runtime assets are copied from the pinned npm dependency.
+/public/pdfjs/
 
 # production
 /build

@@ -80,6 +80,22 @@ curl http://localhost:3000/api/projects/$PROJECT_ID/lists \
 
 ## Task Read And Write
 
+### Read a registered PDF for a thumbnail
+
+`POST /api/pdf-thumbnail/source` accepts a Firebase ID token or a PAT with `tasks:read`. Project membership and PAT project restrictions apply. Send JSON identifying a saved attachment; arbitrary URLs are not accepted:
+
+```json
+{
+  "kind": "comment",
+  "projectId": "project-id",
+  "taskId": "task-id",
+  "commentId": "comment-id",
+  "attachmentId": "attachment-id"
+}
+```
+
+Other kinds are `task` (omit `commentId`), `reference` (use `referenceId` instead of `taskId`, omit `commentId`) and `reference-comment` (`referenceId` plus `commentId`). The response is a private, non-cacheable PDF, limited to 10 MiB and 15 seconds of source retrieval. The source must be a registered PDF with an existing Firebase download token in the configured Storage bucket. No Admin Storage read permission is used. The first-party UI renders page one locally, lazily, with at most two jobs at once; it keeps the normal PDF icon when a thumbnail cannot be generated.
+
 ### List project tasks
 
 ```bash
