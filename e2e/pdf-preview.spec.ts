@@ -220,27 +220,76 @@ for (const status of [403, 404, 500]) test(`HTTP ${status} is actionable and ret
   expect((await probe(page)).violations).toEqual([]);
 });
 
-test('network failure preserves direct native PDF fallback with an explicit notice and retry', async ({ page }, testInfo) => {
+test('network fetch failure renders a direct PDF without an error, reopens, and retries', async ({ page }, testInfo) => {
   let fetchAttempts = 0;
   let fallbackRequests = 0;
+  let recoverFetch = false;
   const unexpected = await prepare(page, async route => {
     if (route.request().resourceType() === 'fetch') {
       fetchAttempts += 1;
-      if (fetchAttempts === 1) { await route.abort('failed'); return; }
+      if (!recoverFetch) { await route.abort('failed'); return; }
     } else fallbackRequests += 1;
     await validPdf(route);
   });
-  const dialog = await openPreview(page, true);
-  await expect(dialog.getByRole('alert')).toContainText('PDFの読み込みを確認できませんでした。');
+  let dialog = await openPreview(page, true);
   await expect(dialog.locator('iframe')).toHaveAttribute('src', pdfUrl);
   await nativePdfReady(page);
+  await expect(dialog.getByRole('alert')).toHaveCount(0);
+  await expect(dialog.getByRole('status')).toHaveCount(0);
+  await expect(dialog.getByText(/PDFの読み込みを確認できませんでした/)).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('pdf-network-fallback.png') });
+  expect(fetchAttempts).toBe(1);
   expect(fallbackRequests).toBe(1);
-  await dialog.getByRole('button', { name: '再取得', exact: true }).click();
-  await expect(dialog.locator('iframe')).toHaveAttribute('src', /^blob:/);
+  await closePreview(page);
+  dialog = await openPreview(page);
+  await expect(dialog.locator('iframe')).toHaveAttribute('src', pdfUrl);
   await nativePdfReady(page);
   await expect(dialog.getByRole('alert')).toHaveCount(0);
+  await expect(dialog.getByRole('status')).toHaveCount(0);
+  await expect(dialog.getByText(/PDFの読み込みを確認できませんでした/)).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath('pdf-network-fallback-reopened.png') });
   expect(fetchAttempts).toBe(2);
+  expect(fallbackRequests).toBe(2);
+  const directFrames = page.frames().filter(frame => frame.url() === pdfUrl || frame.url().startsWith('chrome-extension://'));
+  recoverFetch = true;
+  await dialog.getByRole('button', { name: '再取得', exact: true }).click();
+  await expect(dialog.locator('iframe')).toHaveAttribute('src', /^blob:/);
+  await expect.poll(() => directFrames.every(frame => frame.isDetached())).toBe(true);
+  await nativePdfReady(page);
+  await expect(dialog.getByRole('alert')).toHaveCount(0);
+  expect(fetchAttempts).toBe(3);
+  expect(fallbackRequests).toBe(2);
+  await closePreview(page);
+  const state = await probe(page);
+  expect(state.created).toHaveLength(1);
+  expect(state.revoked).toEqual(state.created);
+  expect(unexpected).toEqual([]);
+  expect((await probe(page)).violations).toEqual([]);
+});
+
+test('PDF without CORS permission renders natively without a false error', async ({ page }, testInfo) => {
+  let fetchAttempts = 0;
+  let directRequests = 0;
+  const unexpected = await prepare(page, async route => {
+    if (route.request().resourceType() === 'fetch') fetchAttempts += 1;
+    else directRequests += 1;
+    // A valid PDF can be embeddable while its server disallows JavaScript fetch.
+    // Playwright supplies ACAO when omitted; another allowed origin forces real CORS rejection.
+    await route.fulfill({ status: 200, contentType: 'application/pdf',
+      headers: { 'access-control-allow-origin': 'https://unrelated.example.test' }, body: fixturePdf() });
+  });
+  const dialog = await openPreview(page);
+  await expect(dialog.locator('iframe')).toHaveAttribute('src', pdfUrl);
+  await nativePdfReady(page);
+  await expect(dialog.getByRole('alert')).toHaveCount(0);
+  await expect(dialog.getByRole('status')).toHaveCount(0);
+  await expect(dialog.getByText(/PDFの読み込みを確認できませんでした/)).toHaveCount(0);
+  await expect(dialog.getByText('表示されない場合は「新しいタブで開く」からPDFを確認できます。', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: '再取得', exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('pdf-cors-native-preview.png') });
+  expect(fetchAttempts).toBe(1);
+  expect(directRequests).toBe(1);
+  expect(diagnostics.get(page)?.consoleErrors.join('\n')).toMatch(/CORS/);
   await closePreview(page);
   expect(unexpected).toEqual([]);
   expect((await probe(page)).violations).toEqual([]);

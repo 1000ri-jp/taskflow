@@ -3,7 +3,7 @@
   "graphHash": "d590223da95165240c2a22a0fdc05ea8e1c4d503c37c14ed114c242d5c5e095d",
   "entries": {
     "text": {
-      "sourceHash": "3ca51f206d94f38d561a3bf657f2099683abb500a0354b78f4726a57fe834132",
+      "sourceHash": "f278405fdd45683a5afd0c66dc5a1fff98b64c17d7a839652b60d9bf04a8adc0",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -64,7 +64,7 @@
       ]
     },
     "button": {
-      "sourceHash": "8b9859d34ad8caee9b392bc5490dc3d89032ea0fde2cd41e45312027e343eff2",
+      "sourceHash": "c539c50ea3312b37f4d7c2e36323e4c660e46d07b3cd8c07fe1e02e8ea9802c5",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -477,7 +477,7 @@
       ]
     },
     "states": {
-      "sourceHash": "7ab8e4cf3cb5588c2252b224b5c92e90c2db2bb0bed4a79a28e2fa869f5adc6f",
+      "sourceHash": "cfdb5a54d217500c3308279a900dedb7d9a64713e27e99c360cc606b409c1f6d",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/components/common/CommandPalette.tsx",
@@ -890,7 +890,7 @@
       "routes": []
     },
     "search": {
-      "sourceHash": "f0a4e737af1ed00b19cc49037ca9ebf801d9871d88649ffb9a9fd8f1765ee263",
+      "sourceHash": "b850e072b1763d77226c3e325e578e410d3687d706a8a3511b5b86a625ef3607",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1075,7 +1075,7 @@
       ]
     },
     "notifications": {
-      "sourceHash": "e468e5737c3a09da5c1c4654af8d40d2521f2b48f55c88bcfc130ed6ff6497a8",
+      "sourceHash": "58de58056c10d4c0d9cc67bee6030e133c14b9ddf4034f9eb3f290df202b9e5a",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1258,7 +1258,7 @@
       ]
     },
     "calendar": {
-      "sourceHash": "e468e5737c3a09da5c1c4654af8d40d2521f2b48f55c88bcfc130ed6ff6497a8",
+      "sourceHash": "58de58056c10d4c0d9cc67bee6030e133c14b9ddf4034f9eb3f290df202b9e5a",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1441,7 +1441,7 @@
       ]
     },
     "gantt": {
-      "sourceHash": "e468e5737c3a09da5c1c4654af8d40d2521f2b48f55c88bcfc130ed6ff6497a8",
+      "sourceHash": "58de58056c10d4c0d9cc67bee6030e133c14b9ddf4034f9eb3f290df202b9e5a",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1624,7 +1624,7 @@
       ]
     },
     "progress": {
-      "sourceHash": "b40cf91d4676cb55bda8e9c732d88d2bafd73f49127e9d5b5d7ac444a23de111",
+      "sourceHash": "653ba21f3698aad766e52dfb51dba4c7dc922615a107310ad0f722c0a858178d",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1951,7 +1951,7 @@
       ]
     },
     "frame-trial": {
-      "sourceHash": "e468e5737c3a09da5c1c4654af8d40d2521f2b48f55c88bcfc130ed6ff6497a8",
+      "sourceHash": "58de58056c10d4c0d9cc67bee6030e133c14b9ddf4034f9eb3f290df202b9e5a",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2134,7 +2134,7 @@
       ]
     },
     "table-trial": {
-      "sourceHash": "7ef6b28c0aa2237a210b71e2d556bc92313383fcf7fc9e4ce9c518d6cb106134",
+      "sourceHash": "9129543966c3b4094953c1935173424f28018fb1f717fc917e8558fe4f126c2c",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2328,7 +2328,7 @@
       ]
     },
     "history-trial": {
-      "sourceHash": "7ef6b28c0aa2237a210b71e2d556bc92313383fcf7fc9e4ce9c518d6cb106134",
+      "sourceHash": "9129543966c3b4094953c1935173424f28018fb1f717fc917e8558fe4f126c2c",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2562,7 +2562,7 @@
       ]
     },
     "neo-brief-assignee-filter-trial": {
-      "sourceHash": "018a0be8c026365794238b89744c029fed99cf2ecf96e5f4e0b45025c46cd5aa",
+      "sourceHash": "4d832adea76e83798db32937b77df4b1e9b80ba56e5af31c00d805b35622cf89",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2765,7 +2765,7 @@
       ]
     },
     "task-row-one-line-trial": {
-      "sourceHash": "e97454934a124b29fd7ec0ac255b561330c856dc9bed0a11aecca4d225220c3c",
+      "sourceHash": "3801029a13510dc0938357232e183859699b2754bc9a964741530f26f4851a65",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
@@ -2928,7 +2928,7 @@
       ]
     },
     "subtask-view-alignment-trial": {
-      "sourceHash": "f917654ae86adf7fa12df1edf9a8bc10244260b41befb2881029557801eb24b8",
+      "sourceHash": "f64bdabaceab12bb9ecaa7b23f9370ac5a2f7d7ea0d4052cb713e21301075f19",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
@@ -2941,7 +2941,7 @@
       ]
     },
     "task-detail-subtask-order-trial": {
-      "sourceHash": "48722499e47ebecb15bea0a1db0a7abcf22cfbf1bde4fcde89825bc256194d7c",
+      "sourceHash": "6073515f52391f65ba120f3d7adafcad11126b090cb4745e0e8f4d32be9828c3",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx"
@@ -2953,7 +2953,7 @@
       ]
     },
     "proposal-review-flow-trial": {
-      "sourceHash": "92e844f861cebb45e4d13456ba017c341b8965e28d545245ffba8994b279c249",
+      "sourceHash": "913e986a3dcbe538689fb59deb1c807949164634309b6d901d9270ffcdce0169",
       "direct": [
         "src/app/(dashboard)/layout.tsx",
         "src/components/dashboard/NeoDashboard.tsx",

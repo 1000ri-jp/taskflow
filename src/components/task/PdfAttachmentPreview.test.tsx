@@ -68,14 +68,28 @@ it.each(['<html>error</html>', '', '{"error":"missing"}'])('refuses a non-PDF re
   expect(screen.queryByTitle('資料.pdf')).not.toBeInTheDocument();
 });
 
-it('preserves native URL embedding when fetch is unavailable due to CORS or network and offers retry', async () => {
+it('shows the native URL without a false error when fetch cannot verify it, and still offers retry', async () => {
   fetchPdf.mockRejectedValueOnce(new TypeError('Failed to fetch'));
   render(preview());
-  expect(await screen.findByRole('alert')).toHaveTextContent('読み込みを確認できませんでした');
-  expect(screen.getByTitle('資料.pdf')).toHaveAttribute('src', url);
+  const frame = await screen.findByTitle('資料.pdf');
+  expect(frame).toHaveAttribute('src', url);
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  expect(screen.queryByText(/読み込みを確認できませんでした/)).not.toBeInTheDocument();
+  fireEvent.load(frame);
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '再取得' }));
   expect(await screen.findByTitle('資料.pdf')).toHaveAttribute('src', 'blob:pdf-preview');
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it('keeps a real error when an HTTP response arrives but its PDF body cannot be read', async () => {
+  const response = pdfResponse();
+  vi.spyOn(response, 'blob').mockRejectedValueOnce(new TypeError('Body read failed'));
+  fetchPdf.mockResolvedValueOnce(response);
+  render(preview());
+  expect(await screen.findByRole('alert')).toHaveTextContent('PDFを読み込めませんでした');
+  expect(screen.queryByTitle('資料.pdf')).not.toBeInTheDocument();
 });
 
 it('times out a stalled request, aborts it, and ignores a late successful response', async () => {
