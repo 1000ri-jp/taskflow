@@ -15,7 +15,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "57fd770a489bcff40695a4d0c8ca79314e726011030fae87d2772d2f09105e19"
+      "sha256": "fd62dc237ab807f56e5a795db9cb9df9af62022d7248a4795b5367d562e572c4"
     },
     {
       "path": "scripts/ui-guide.mjs",
@@ -71,7 +71,7 @@
     },
     {
       "path": "src/app/(dashboard)/settings/api-keys/page.tsx",
-      "sha256": "1c1e00e538dccc66f1c0cacf5520888dd3b327e35ad08d05505f1e9ce66ae500"
+      "sha256": "3eb2e73e23bbf4d95954a4c402e716364ddd346b23f3d08af63d11460776600b"
     },
     {
       "path": "src/app/(dashboard)/settings/browser-backup/page.tsx",
@@ -1811,7 +1811,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "701527747fa377fceff243df610b5504acfd9eccc7951b5feda275984fb05010"
+      "sha256": "b26eec6693718c4018f80eae734f75caf6f25cfee01cc79b63bfb6d53d78b6c6"
     },
     {
       "path": "src/lib/ui-guide/verification.json",
