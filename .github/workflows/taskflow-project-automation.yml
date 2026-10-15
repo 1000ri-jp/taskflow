@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Sync Project v2 status
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           PROJECTV2_OWNER: ${{ vars.GH_PROJECTV2_OWNER }}
           PROJECTV2_NUMBER: ${{ vars.GH_PROJECTV2_NUMBER }}
