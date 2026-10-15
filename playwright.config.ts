@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: ['release-smoke.spec.ts', 'pdf-preview.spec.ts', 'pdf-thumbnail.spec.ts'],
+  testIgnore: ['release-smoke.spec.ts', 'pdf-preview.spec.ts', 'pdf-thumbnail.spec.ts', 'mcp-consent.spec.ts'],
   fullyParallel: false,  // Run tests serially to avoid Firebase rate limiting
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

@@ -4,6 +4,7 @@ import { getProjectAccess } from '@/lib/auth/projectAccess';
 import { makeProvider, TEST_SCOPE } from '../../../scripts/mcp-events/oidc-provider.mjs';
 import { firestoreAdapter } from '../../../scripts/mcp-events/oidc-store.mjs';
 import { PILOT_PROJECT, READ_SCOPE, TASK_READ_SCOPE, TASK_WRITE_SCOPE } from '../../../scripts/mcp-events/policy.mjs';
+import { grantProjectScope, PROJECT_CONSENT_VERSION } from '../../../scripts/mcp-events/project-scope.mjs';
 
 export const digest = value => createHash('sha256').update(value).digest('hex');
 export function oidcConfig() {
@@ -17,7 +18,9 @@ export function oidcConfig() {
       !/^https:\/\/chatgpt\.com\/(?:connector_platform_oauth_redirect|connector\/oauth\/[A-Za-z0-9_-]+)$/.test(redirectUri ?? '')) throw new Error('OAuth configuration incomplete');
   const productionEnabled = process.env.SLOWTH_MCP_EVENTS_PRODUCTION === 'true';
   if (productionEnabled && process.env.SLOWTH_MCP_EVENTS_PROJECT_ID !== PILOT_PROJECT) throw new Error('Pilot project required');
-  return { origin, issuer: origin + '/api/oidc', resource: origin + '/api/mcp', allowedUid, clientId, redirectUri, productionEnabled, taskAccessEnabled: productionEnabled && process.env.SLOWTH_MCP_TASK_ACCESS === 'true' };
+  const taskAccessEnabled = productionEnabled && process.env.SLOWTH_MCP_TASK_ACCESS === 'true';
+  return { origin, issuer: origin + '/api/oidc', resource: origin + '/api/mcp', allowedUid, clientId, redirectUri, productionEnabled, taskAccessEnabled,
+    multiProjectReadEnabled: taskAccessEnabled && process.env.SLOWTH_MCP_MULTI_PROJECT_READ === 'true' };
 }
 let instance;
 export function oidcProvider() {
@@ -34,10 +37,13 @@ export function oidcProvider() {
         if (artifact) {
           const binding = (await getAdminDb().collection('mcpOAuthGrants').doc(digest(artifact.grantId)).get()).data();
           if (!config.productionEnabled || binding?.mode !== 'production' || binding.userId !== uid ||
-              binding.projectId !== PILOT_PROJECT || binding.expiresAt?.toMillis?.() <= Date.now() ||
+              binding.clientId !== config.clientId || binding.resource !== config.resource ||
+              binding.expiresAt?.toMillis?.() <= Date.now() ||
               !Number.isFinite(binding.expiresAt?.toMillis?.())) throw new Error('Forbidden');
+          const scope = checkedProjectScope(binding, config);
           await activeUser(uid, config, binding.authTime);
-          await assertProject(uid, binding.projectId);
+          await assertAnyCurrentProject(uid, scope.projectIds);
+          if (binding.expiresAt.toMillis() <= Date.now()) throw new Error('Forbidden');
         } else await activeUser(uid, config);
         return { accountId: uid, claims: async () => ({ sub: uid }) };
       },
@@ -63,7 +69,20 @@ export async function firebaseConsentUser(header) {
 }
 export async function assertProject(uid, projectId, write = false) {
   if (typeof projectId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(projectId)) throw new Error('Forbidden');
-  await getProjectAccess(uid, projectId, write ? ['tasks:read', 'tasks:write'] : ['tasks:read'], [projectId], write ? 'tasks:write' : 'tasks:read');
+  return getProjectAccess(uid, projectId, write ? ['tasks:read', 'tasks:write'] : ['tasks:read'], [projectId], write ? 'tasks:write' : 'tasks:read');
+}
+function checkedProjectScope(binding, config) {
+  const scope = grantProjectScope(binding);
+  if (binding.consentVersion === PROJECT_CONSENT_VERSION ? !config.multiProjectReadEnabled
+    : binding.mode === 'production' && binding.projectId !== PILOT_PROJECT) throw new Error('Unauthorized');
+  return scope;
+}
+async function assertAnyCurrentProject(uid, projectIds) {
+  for (const id of projectIds) {
+    try { await assertProject(uid, id); return; }
+    catch (error) { if (!['FORBIDDEN', 'NOT_FOUND'].includes(error.message)) throw error; }
+  }
+  throw new Error('Forbidden');
 }
 export async function authenticateMcp(header) {
   const config = oidcConfig();
@@ -87,12 +106,16 @@ export async function authenticateMcp(header) {
       binding.resource !== config.resource || !deadlines.every(Number.isFinite) || expiresAt <= Date.now()) throw new Error('Unauthorized');
   const taskScopes = scopes.filter(s => [TASK_READ_SCOPE, TASK_WRITE_SCOPE].includes(s));
   if (taskScopes.some(s => !binding.taskScopes?.includes(s))) throw new Error('Unauthorized');
-  if (production && (binding.mode !== 'production' || binding.projectId !== PILOT_PROJECT)) throw new Error('Unauthorized');
+  if (production && binding.mode !== 'production') throw new Error('Unauthorized');
   if (!production && binding.mode === 'production') throw new Error('Unauthorized');
+  const scope = checkedProjectScope(binding, config);
   await activeUser(binding.userId, config, binding.authTime);
-  await assertProject(binding.userId, binding.projectId);
+  // Membership is checked for the requested project by every task/event operation.
+  // Do not rescan all projects for each token use or rewrite the consent snapshot.
+  if (binding.consentVersion === undefined) await assertProject(binding.userId, binding.projectId);
   if (expiresAt <= Date.now()) throw new Error('Unauthorized');
-  return { userId: binding.userId, grantId: token.grantId, expiresAt, permissions: ['tasks:read', ...(taskScopes.includes(TASK_WRITE_SCOPE) ? ['tasks:write'] : [])], projectIds: [binding.projectId],
+  return { userId: binding.userId, grantId: token.grantId, expiresAt, permissions: ['tasks:read', ...(taskScopes.includes(TASK_WRITE_SCOPE) ? ['tasks:write'] : [])], projectIds: scope.projectIds,
+    ...(binding.consentVersion === PROJECT_CONSENT_VERSION ? { ...scope, consentVersion: PROJECT_CONSENT_VERSION, includeFutureProjects: false } : {}),
     ...(taskScopes.length ? { taskScopes } : {}),
     ...(production ? { mode: 'production', authorizationExpiresAt: Math.min(binding.expiresAt.toMillis(), grant.exp * 1000) } : {}) };
 }

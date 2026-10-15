@@ -2,15 +2,16 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import handler from '@/pages/api/mcp-consent';
 import { PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
-const f = vi.hoisted(() => ({ production: false, taskAccess: false, details: vi.fn(), finish: vi.fn(), user: vi.fn(), access: vi.fn(), create: vi.fn(), save: vi.fn(), write: vi.fn(), projects: vi.fn(), oidcScope: vi.fn(), resourceScope: vi.fn() }));
+const f = vi.hoisted(() => ({ production: false, taskAccess: false, multiple: false, selectors: vi.fn(), details: vi.fn(), finish: vi.fn(), user: vi.fn(), access: vi.fn(), create: vi.fn(), save: vi.fn(), write: vi.fn(), projects: vi.fn(), oidcScope: vi.fn(), resourceScope: vi.fn() }));
 vi.mock('@/lib/mcp/oidc', () => ({
-  oidcConfig: () => ({ origin: 'https://slowth.example.test', clientId: 'fixture-client', redirectUri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', productionEnabled: f.production, taskAccessEnabled: f.taskAccess }),
+  oidcConfig: () => ({ origin: 'https://slowth.example.test', clientId: 'fixture-client', redirectUri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', productionEnabled: f.production, taskAccessEnabled: f.taskAccess, multiProjectReadEnabled: f.multiple }),
   oidcProvider: () => ({ interactionDetails: f.details, interactionResult: f.finish,
     Grant: class { addOIDCScope(scope) { f.oidcScope(scope); } addResourceScope(resource, scope) { f.resourceScope(resource, scope); } save() { return f.save(); } } }),
   firebaseConsentUser: f.user, assertProject: f.access, digest: value => value,
 }));
 vi.mock('@/lib/firebase/admin', () => ({ getAdminDb: () => ({ collection: () => ({ doc: () => ({ create: f.create, set: f.write }) }) }) }));
 vi.mock('@/lib/firebase/admin-projects', () => ({ listUserProjects: f.projects }));
+vi.mock('@/lib/mcp/projectConsent', () => ({ listConsentProjects: f.selectors }));
 function request(patch = {}) {
   return { method: 'POST', headers: { origin: 'https://slowth.example.test', 'content-type': 'application/json', authorization: 'Bearer fixture-only' },
     body: { interaction: 'fixture-interaction', approve: true, projectId: 'fixture-project' }, ...patch };
@@ -21,7 +22,7 @@ function response() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
-  f.production = false; f.taskAccess = false;
+  f.production = false; f.taskAccess = false; f.multiple = false;
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   f.details.mockResolvedValue({ uid: 'fixture-interaction', params: { client_id: 'fixture-client', redirect_uri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', scope: 'events:test' } });
   f.user.mockResolvedValue({ uid: 'fixture-user', auth_time: 123 });
@@ -113,4 +114,56 @@ it('records exact expanded consent and checks write membership before issuing an
   f.access.mockRejectedValueOnce(new Error('viewer')); f.create.mockClear();
   const viewer = response(); await handler(request({ body: { interaction: 'fixture-interaction', approve: true, projectId: PILOT_PROJECT } }), viewer);
   expect(viewer.code).toBe(403); expect(f.create).not.toHaveBeenCalled();
+});
+
+async function multipleConsent() {
+  f.production = true; f.taskAccess = true; f.multiple = true;
+  f.details.mockResolvedValue({ ...(await f.details()), params: { ...(await f.details()).params, scope: 'events:read tasks:read tasks:write openid offline_access' } });
+  f.selectors.mockResolvedValue([
+    { id: PILOT_PROJECT, name: '架空pilot', canWrite: true, canWork: true, canNotify: true },
+    { id: 'viewer', name: '架空閲覧専用', canWrite: false, canWork: false, canNotify: false },
+    { id: 'editable', name: '架空編集可能', canWrite: true, canWork: true, canNotify: false },
+  ]);
+  return { interaction: 'fixture-interaction', approve: true, consentVersion: 2,
+    projectIds: [PILOT_PROJECT, 'viewer', 'editable'], writeProjectIds: [], aiProjectIds: [], eventProjectIds: [], includeFutureProjects: false };
+}
+it('offers every currently readable project for new consent without changing a grant', async () => {
+  await multipleConsent();
+  const r = response(); await handler(request({ method: 'GET', query: { interaction: 'fixture-interaction' } }), r);
+  expect(r.body).toMatchObject({ consentVersion: 2, includeFutureProjects: false, maxDays: 30, maxProjects: 500 });
+  expect(r.body.projects).toEqual(await f.selectors()); expect(f.write).not.toHaveBeenCalled(); expect(f.save).not.toHaveBeenCalled();
+});
+it('records an exact read snapshot including viewers and creates no event connection by default', async () => {
+  const body = await multipleConsent(); const r = response(); await handler(request({ body }), r);
+  expect(r.code).toBe(200); expect(f.write).toHaveBeenCalledTimes(1);
+  expect(f.write.mock.calls[0][0]).toMatchObject({ consentVersion: 2, projectIds: body.projectIds, writeProjectIds: [], aiProjectIds: [], eventProjectIds: [], includeFutureProjects: false });
+  expect(f.write.mock.calls[0][0]).not.toHaveProperty('projectId');
+});
+it('records independent per-project write, AI and pilot event choices on a new grant', async () => {
+  const body = { ...await multipleConsent(), writeProjectIds: [PILOT_PROJECT, 'editable'], aiProjectIds: ['editable'], eventProjectIds: [PILOT_PROJECT] };
+  const r = response(); await handler(request({ body }), r);
+  expect(r.code).toBe(200); expect(f.save).toHaveBeenCalledOnce(); expect(f.write).toHaveBeenCalledTimes(2);
+  expect(f.write.mock.calls[0][0]).toMatchObject({ projectIds: body.projectIds, writeProjectIds: body.writeProjectIds, aiProjectIds: ['editable'], eventProjectIds: [PILOT_PROJECT] });
+  expect(f.write.mock.calls[1][0]).toMatchObject({ consentVersion: 2, projectId: PILOT_PROJECT, eventProjectIds: [PILOT_PROJECT] });
+});
+it.each([
+  { projectIds: [] }, { projectIds: ['unknown'] }, { projectIds: ['viewer', 'viewer'] }, { projectIds: ['*'] },
+  { includeFutureProjects: true }, { includeFutureProjects: null }, { consentVersion: 3 }, { projectId: PILOT_PROJECT },
+  { writeProjectIds: ['unknown'] }, { writeProjectIds: ['viewer'] }, { aiProjectIds: ['editable'] },
+  { eventProjectIds: ['editable'] }, { eventProjectIds: [PILOT_PROJECT], projectIds: ['viewer'] },
+])('refuses invalid or unauthorized consent %j before issuing anything', async patch => {
+  const body = { ...await multipleConsent(), ...patch }; const r = response(); await handler(request({ body }), r);
+  expect([400, 403]).toContain(r.code); expect(f.create).not.toHaveBeenCalled(); expect(f.save).not.toHaveBeenCalled(); expect(f.write).not.toHaveBeenCalled();
+});
+it('rechecks current permissions on approval rather than trusting selector metadata', async () => {
+  const body = await multipleConsent(); f.selectors.mockResolvedValueOnce([]);
+  const r = response(); await handler(request({ body }), r);
+  expect(r.code).toBe(403); expect(f.save).not.toHaveBeenCalled();
+});
+it('does not accept write choices with a read-only scope or arrays in a legacy request', async () => {
+  const body = { ...await multipleConsent(), writeProjectIds: ['editable'] };
+  f.details.mockResolvedValue({ ...(await f.details()), params: { ...(await f.details()).params, scope: 'events:read tasks:read openid offline_access' } });
+  const read = response(); await handler(request({ body }), read); expect(read.code).toBe(403);
+  f.multiple = false; const legacy = response(); await handler(request({ body }), legacy); expect(legacy.code).toBe(400);
+  expect(f.save).not.toHaveBeenCalled();
 });

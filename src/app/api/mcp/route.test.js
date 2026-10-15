@@ -1,10 +1,11 @@
 // @vitest-environment node
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
+import { createHash } from 'node:crypto';
 import { POST } from './route';
 import { memoryFirestore } from '../../../lib/mcp/firestore.fixture.mjs';
 
 const fake = vi.hoisted(() => ({ auth: vi.fn(), access: vi.fn(), post: vi.fn(), safePost: vi.fn(), db: vi.fn() }));
-vi.mock('@/lib/mcp/oidc', () => ({ authenticateMcp: fake.auth, oidcConfig: () => ({ origin: 'https://slowth.example.test' }) }));
+vi.mock('@/lib/mcp/oidc', () => ({ authenticateMcp: fake.auth, oidcConfig: () => ({ origin: 'https://slowth.example.test', clientId: 'fixture-client', resource: 'https://slowth.example.test/api/mcp', allowedUid: 'fictional-user', productionEnabled: process.env.SLOWTH_MCP_EVENTS_PRODUCTION === 'true', multiProjectReadEnabled: true }) }));
 vi.mock('@/lib/auth/projectAccess', () => ({ getProjectAccess: fake.access }));
 vi.mock('@/lib/firebase/admin', () => ({ getAdminDb: fake.db }));
 vi.mock('../../../../scripts/mcp-events/transport.mjs', () => ({ createSafePost: fake.safePost }));
@@ -462,8 +463,15 @@ async function productionFixture() {
   vi.stubEnv('SLOWTH_MCP_EVENTS_PRODUCTION', 'true');
   vi.stubEnv('SLOWTH_MCP_OAUTH_STORAGE_KEY', Buffer.alloc(32, 4).toString('base64'));
   fake.auth.mockResolvedValue({ ...(await fake.auth()), mode: 'production', authorizationExpiresAt: Date.now() + 30 * 86400000 });
-  const db = memoryFirestore(); fake.db.mockReturnValue(db); return db;
+  const db = memoryFirestore(); fake.db.mockReturnValue(db);
+  db.records.set('mcpOAuthGrants/' + createHash('sha256').update('fictional-grant').digest('hex'), { userId: 'fictional-user', mode: 'production', projectId: 'fictional-project', clientId: 'fixture-client', resource: 'https://slowth.example.test/api/mcp', expiresAt: new Date(Date.now() + 30 * 86400000) });
+  db.records.set('mcpOAuthState/' + createHash('sha256').update('Grant:fictional-grant').digest('hex'), { expiresAt: new Date(Date.now() + 30 * 86400000) });
+  db.records.set('projects/fictional-project', { memberIds: ['fictional-user'], isArchived: false });
+  db.records.set('projects/fictional-project/members/fictional-user', { userId: 'fictional-user', role: 'viewer' });
+  db.records.set('users/fictional-user', {});
+  return db;
 }
+const subscriptionsIn = db => [...db.records].filter(([path]) => path.includes('/subscriptions/'));
 it('production catalog hides the synthetic sender and exposes journal/acknowledgement tools', async () => {
   await productionFixture();
   const listed = (await (await call('tools/list')).json()).result.tools;
@@ -476,7 +484,7 @@ it('production subscription outlives a token but not its finite grant, with encr
   const response = (await (await call('events/subscribe', subscription)).json()).result;
   expect(Date.parse(response.refreshBefore)).toBeGreaterThan((await fake.auth()).expiresAt);
   expect(Date.parse(response.refreshBefore)).toBeLessThanOrEqual(Date.now() + 86400000);
-  const record = [...db.records.values()][0]; expect(record.secret).toBeUndefined(); expect(record.deliveryKey).toBeTruthy();
+  const record = subscriptionsIn(db)[0][1]; expect(record.secret).toBeUndefined(); expect(record.deliveryKey).toBeTruthy();
   expect(JSON.stringify(record)).not.toContain(subscription.delivery.secret);
 });
 it('production reader and acknowledgement retain burst events and reject missing IDs', async () => {
@@ -502,7 +510,7 @@ it('production cannot activate a subscription when its access token expires duri
     return new Response(JSON.stringify({ challenge: JSON.parse(options.body).challenge }));
   });
   expect((await (await call('events/subscribe', subscription)).json()).error.code).toBe(-32001);
-  expect(db.records.size).toBe(0);
+  expect(subscriptionsIn(db)).toHaveLength(0);
 });
 it.each([null, [], { limit: 0 }, { limit: 51 }, { limit: 1.5 }, { unknown: true }])('rejects invalid production list arguments %j', async args => {
   await productionFixture();
@@ -524,4 +532,114 @@ it('discovers the full task tools under an old grant and prompts explicit step-u
   expect(contract.isError).toBe(false); expect(Object.keys(contract.structuredContent.task_fields)).toHaveLength(47);
   const readOnly = (await (await call('tools/call', { name: 'write_task_data', arguments: {} })).json()).result;
   expect(readOnly.structuredContent.code).toBe('INSUFFICIENT_SCOPE');
+});
+
+it('does not infer event subscriptions, feed reads or acknowledgements from multi-project read consent', async () => {
+  const db = await productionFixture();
+  fake.auth.mockResolvedValue({ ...(await fake.auth()), consentVersion: 2, includeFutureProjects: false,
+    projectIds: ['fictional-project', 'other'], writeProjectIds: [], aiProjectIds: [], eventProjectIds: [], taskScopes: ['tasks:read'] });
+  expect((await (await call('events/subscribe', subscription)).json()).error.code).toBe(-32001);
+  expect((await (await call('tools/call', { name: 'list_task_updates', arguments: { project_id: 'fictional-project' } })).json()).error.message).toBe('Project requires event consent');
+  expect((await (await call('tools/call', { name: 'acknowledge_task_updates', arguments: { project_id: 'fictional-project', event_ids: ['task_' + 'a'.repeat(64)] } })).json()).error.message).toBe('Project requires event consent');
+  expect(fake.post).not.toHaveBeenCalled(); expect(subscriptionsIn(db)).toHaveLength(0);
+});
+it('uses the separately selected event target rather than the first read project', async () => {
+  await productionFixture();
+  fake.auth.mockResolvedValue({ ...(await fake.auth()), consentVersion: 2, includeFutureProjects: false,
+    projectIds: ['read-only', 'fictional-project'], writeProjectIds: [], aiProjectIds: [], eventProjectIds: ['fictional-project'], taskScopes: ['tasks:read'] });
+  const listed = (await (await call('tools/call', { name: 'list_task_updates', arguments: {} })).json()).result.structuredContent;
+  expect(listed).toMatchObject({ project_id: 'fictional-project', events: [] });
+  expect(fake.access).toHaveBeenCalledWith('fictional-user', 'fictional-project', ['tasks:read'], ['fictional-project'], 'tasks:read');
+  expect((await (await call('events/subscribe', { ...subscription, arguments: { project_id: 'read-only' } })).json()).error.code).toBe(-32001);
+  expect(fake.post).not.toHaveBeenCalled();
+});
+it('refuses to save a subscription if membership is revoked during the verification challenge', async () => {
+  const db = await productionFixture();
+  fake.access.mockResolvedValueOnce({ role: 'viewer' }).mockRejectedValue(new Error('FORBIDDEN'));
+  const response = (await (await call('events/subscribe', subscription)).json());
+  expect(response.error.code).toBe(-32001); expect(subscriptionsIn(db)).toHaveLength(0);
+});
+
+async function liveEventFixture() {
+  const db = await productionFixture();
+  const bindingPath = 'mcpOAuthGrants/' + createHash('sha256').update('fictional-grant').digest('hex');
+  const grantPath = 'mcpOAuthState/' + createHash('sha256').update('Grant:fictional-grant').digest('hex');
+  const binding = db.records.get(bindingPath); delete binding.projectId;
+  Object.assign(binding, { consentVersion: 2, includeFutureProjects: false, projectIds: ['fictional-project'], writeProjectIds: [], aiProjectIds: [], eventProjectIds: ['fictional-project'], taskScopes: ['tasks:read'] });
+  const initial = await fake.auth(); let identityRevoked = false;
+  fake.auth.mockImplementation(async () => {
+    const b = db.records.get(bindingPath), g = db.records.get(grantPath);
+    if (identityRevoked || !b || !g || b.expiresAt.getTime() <= Date.now() || g.expiresAt.getTime() <= Date.now()) throw new Error('Unauthorized');
+    return { ...initial, consentVersion: 2, includeFutureProjects: false, projectIds: [...b.projectIds], writeProjectIds: [], aiProjectIds: [], eventProjectIds: [...b.eventProjectIds], taskScopes: ['tasks:read'] };
+  });
+  fake.access.mockImplementation(async () => {
+    const project = db.records.get('projects/fictional-project'), member = db.records.get('projects/fictional-project/members/fictional-user');
+    if (!project?.memberIds.includes('fictional-user') || !member) throw new Error('FORBIDDEN');
+    return { role: member.role };
+  });
+  const revoke = reason => {
+    if (reason === 'grant') db.records.delete(grantPath);
+    if (reason === 'binding') db.records.delete(bindingPath);
+    if (reason === 'event-scope') db.records.get(bindingPath).eventProjectIds = [];
+    if (reason === 'membership') db.records.delete('projects/fictional-project/members/fictional-user');
+    if (reason === 'archived') db.records.get('projects/fictional-project').isArchived = true;
+    if (reason === 'identity') identityRevoked = true;
+    if (reason === 'expired') db.records.get(bindingPath).expiresAt = new Date(0);
+  };
+  const owner = createHash('sha256').update(JSON.stringify(['fictional-user', 'fictional-grant'])).digest('hex');
+  const eventId = 'task_' + 'a'.repeat(64), journalPath = 'mcpEventPrincipals/' + owner + '/journal/' + eventId;
+  db.records.set(journalPath, { event: { eventId, name: 'task.updated', data: { project_id: 'fictional-project', title: '架空の非公開イベント', synthetic: false } }, acknowledged: false, occurredAt: Date.now(), expiresAt: Date.now() + 86400000, changeType: 'updated', changedFields: ['title'] });
+  return { db, revoke, eventId, journalPath };
+}
+const authorityLoss = ['grant', 'binding', 'event-scope', 'membership', 'archived', 'identity', 'expired'];
+it.each(authorityLoss)('rejects subscription creation after %s loss during callback verification', async reason => {
+  const { db, revoke } = await liveEventFixture();
+  fake.post.mockImplementationOnce(async (_url, options) => { revoke(reason); return new Response(JSON.stringify({ challenge: JSON.parse(options.body).challenge })); });
+  const response = (await (await call('events/subscribe', subscription)).json());
+  expect(response.error?.code).toBe(-32001); expect(subscriptionsIn(db)).toHaveLength(0);
+});
+it('does not renew or rotate an existing subscription after grant revocation during verification', async () => {
+  const { db, revoke } = await liveEventFixture();
+  expect((await (await call('events/subscribe', subscription)).json()).result.id).toBeTruthy();
+  const before = structuredClone(subscriptionsIn(db));
+  fake.post.mockImplementationOnce(async (_url, options) => { revoke('grant'); return new Response(JSON.stringify({ challenge: JSON.parse(options.body).challenge })); });
+  const response = await (await call('events/subscribe', { ...subscription, delivery: { ...subscription.delivery, secret: 'whsec_' + Buffer.alloc(32, 8).toString('base64') } })).json();
+  expect(response.error?.code).toBe(-32001); expect(subscriptionsIn(db)).toEqual(before);
+});
+it.each(authorityLoss)('withholds feed data after %s loss during journal query', async reason => {
+  const { db, revoke } = await liveEventFixture();
+  const original = db.collection;
+  const wrap = target => new Proxy(target, { get(value, key) {
+    if (key === 'get') return async () => {
+      const result = await value.get();
+      if (result.docs?.some(row => row.data()?.event?.name === 'task.updated')) revoke(reason);
+      return result;
+    };
+    if (['doc', 'collection', 'where', 'orderBy', 'limit'].includes(key)) return (...args) => wrap(value[key](...args));
+    return value[key];
+  } });
+  db.collection = (...args) => wrap(original(...args));
+  const response = await (await call('tools/call', { name: 'list_task_updates', arguments: {} })).json();
+  expect(response.error).toBeDefined(); expect(JSON.stringify(response)).not.toContain('架空の非公開イベント');
+});
+it.each(authorityLoss)('refuses ACK writes after %s loss before the transaction', async reason => {
+  const { db, revoke, eventId, journalPath } = await liveEventFixture();
+  const original = db.runTransaction;
+  db.runTransaction = async fn => { revoke(reason); return original(fn); };
+  const response = await (await call('tools/call', { name: 'acknowledge_task_updates', arguments: { event_ids: [eventId] } })).json();
+  expect(response.error).toBeDefined(); expect(db.records.get(journalPath).acknowledged).toBe(false);
+});
+it.each(['grant', 'binding', 'event-scope', 'membership', 'profile'])('locks current %s authority into the ACK transaction after bearer refresh', async reason => {
+  const { db, revoke, eventId, journalPath } = await liveEventFixture();
+  const access = fake.access.getMockImplementation(); let checks = 0;
+  fake.access.mockImplementation(async (...args) => {
+    const result = await access(...args);
+    if (++checks === 2) {
+      if (reason === 'profile') db.records.delete('users/fictional-user');
+      else revoke(reason);
+    }
+    return result;
+  });
+  const response = await (await call('tools/call', { name: 'acknowledge_task_updates', arguments: { event_ids: [eventId] } })).json();
+  expect(checks).toBe(2); expect(response.error).toBeDefined(); expect(db.records.get(journalPath).acknowledged).toBe(false);
 });
