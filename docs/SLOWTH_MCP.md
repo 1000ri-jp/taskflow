@@ -10,6 +10,7 @@ Taskflow のタスク・コメント・確認・サブタスク・チェック�
 - `src/app/mcp-connect/`、`src/pages/api/mcp-consent.js`：接続本人による Google アカウント選択と同意。通常ログインの動作は保持します。
 - `scripts/mcp-events/`、`mcp-events-functions/`：変更の記録、署名付き通知、再送、処理済みの保存。Functions の `lib/` は prepare で生成します。
 - `tools/slowth-worker/`：明示的な設定で動く Mac の Codex ワーカー。稼働中の状態や委任情報は Git の追跡対象にしません。
+- `tools/slowth-mcp/`：Claude Code・Claude Desktop 用のローカル stdio MCP サーバー。この OAuth 接続ではなく PAT の REST API を使います。使い方は [README](../tools/slowth-mcp/README.md) を参照してください。
 
 共通ツールは `get_task_contract`、`read_task_data`、`write_task_data` です。既存の `list_task_updates` と `acknowledge_task_updates` で通知を取得・処理済みにします。項目ごとの専用ツールを増やさず、TypeScript のモデルから生成した契約と関連リソースの操作を使用します。
 
