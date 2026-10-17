@@ -131,6 +131,8 @@ export function createEventService({ store, authorize, post, now = Date.now, aut
     }
     assertAuthorizationActive();
     if (sub.expiresAt <= now()) throw new RpcError(-32001, 'Authorization expired');
+    if (!await authorize(owner, sub.projectId)) throw new RpcError(-32001, 'Forbidden');
+    assertAuthorizationActive();
     await store.set(id, sub);
     return { id, refreshBefore: new Date(sub.expiresAt).toISOString(), cursor: null, truncated: false };
   }

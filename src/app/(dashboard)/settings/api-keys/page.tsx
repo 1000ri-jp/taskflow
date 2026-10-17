@@ -675,22 +675,22 @@ export default function ApiKeysPage() {
         <CardHeader>
           <CardTitle>MCP サーバー設定</CardTitle>
           <CardDescription>
-            Claude DesktopやCursorなどのMCPクライアントで使用する設定です
+            Claude DesktopやClaude Codeなどのローカル MCP クライアントで使用する設定です
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg bg-muted p-4">
             <p className="text-sm text-muted-foreground mb-2">
-              MCPクライアントの設定ファイルに以下を追加してください:
+              taskflow リポジトリの tools/slowth-mcp/server.mjs を手元に置き、MCPクライアントの設定ファイルに以下を追加してください:
             </p>
             <pre className="text-xs bg-background p-3 rounded overflow-x-auto">
 {`{
   "mcpServers": {
-    "taskflow": {
-      "command": "npx",
-      "args": ["-y", "@taskflow/mcp-server"],
+    "slowth": {
+      "command": "node",
+      "args": ["/path/to/taskflow/tools/slowth-mcp/server.mjs"],
       "env": {
-        "TASKFLOW_API_KEY": "your-api-key-here"
+        "SLOWTH_API_TOKEN": "tf_your-api-key-here"
       }
     }
   }

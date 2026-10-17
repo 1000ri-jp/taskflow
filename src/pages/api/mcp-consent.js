@@ -1,9 +1,11 @@
 import { oidcProvider, oidcConfig, firebaseConsentUser, assertProject, digest, allowedClient } from '@/lib/mcp/oidc';
 import { getAdminDb } from '@/lib/firebase/admin';
 import { listUserProjects } from '@/lib/firebase/admin-projects';
+import { listConsentProjects } from '@/lib/mcp/projectConsent';
 import { authorizationMode, TEST_SCOPE, READ_SCOPE, TASK_READ_SCOPE, TASK_WRITE_SCOPE, CONSENT_MS, PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
+import { grantProjectScope, MAX_CONSENT_PROJECTS, PROJECT_CONSENT_VERSION } from '../../../scripts/mcp-events/project-scope.mjs';
 
-export const config = { api: { bodyParser: { sizeLimit: '8kb' } } };
+export const config = { api: { bodyParser: { sizeLimit: '512kb' } } };
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store'); res.setHeader('Referrer-Policy', 'no-referrer');
   let stage = 'configuration';
@@ -16,21 +18,28 @@ export default async function handler(req, res) {
     const user = await firebaseConsentUser(req.headers.authorization);
     stage = 'interaction_cookie';
     const details = await provider.interactionDetails(req, res);
-    const mode = authorizationMode(details.params.scope, settings.productionEnabled, settings.taskAccessEnabled);
-    const taskScopes = details.params.scope.split(' ').filter(s => [TASK_READ_SCOPE, TASK_WRITE_SCOPE].includes(s));
+    const client = allowedClient(settings, details.params.client_id, details.params.redirect_uri);
+    const mode = authorizationMode(details.params.scope, settings.productionEnabled, settings.taskAccessEnabled, client === 'claude' || client === 'claude-code');
+    const taskScopes = typeof details.params.scope === 'string' ? details.params.scope.split(' ').filter(s => [TASK_READ_SCOPE, TASK_WRITE_SCOPE].includes(s)) : [];
+    const multiple = settings.multiProjectReadEnabled && mode === 'production' && taskScopes.includes(TASK_READ_SCOPE);
     const resourceScope = mode === 'production' ? [READ_SCOPE, ...taskScopes].join(' ') : TEST_SCOPE;
     const requested = req.method === 'GET' ? req.query.interaction : req.body?.interaction;
-    const client = allowedClient(settings, details.params.client_id, details.params.redirect_uri);
     if (details.uid !== requested || !client || details.params.resource !== settings.resource ||
-        !mode || (client === 'claude-code' && mode !== 'production')) {
+        !mode || client !== 'chatgpt' && mode !== 'production') {
       console.warn('Slowth MCP consent rejected', { stage: 'interaction_binding' });
       res.status(403).end(); return;
     }
+    const redirectHost = new URL(details.params.redirect_uri).hostname;
     if (req.method === 'GET') {
       stage = 'project_selector';
+      if (multiple) {
+        const projects = (await listConsentProjects(user.uid)).map(project => client !== 'chatgpt' ? { ...project, canNotify: false } : project);
+        res.json({ projects, scope: resourceScope, mode, taskScopes, client, redirectHost, maxDays: 30,
+          consentVersion: PROJECT_CONSENT_VERSION, includeFutureProjects: false, maxProjects: MAX_CONSENT_PROJECTS }); return;
+      }
       const projects = (await listUserProjects(user.uid)).filter(p => mode !== 'production' || p.id === PILOT_PROJECT)
         .map(p => ({ id: p.id, name: p.name }));
-      res.json({ projects, scope: resourceScope, mode, taskScopes, client,
+      res.json({ projects, scope: resourceScope, mode, taskScopes, client, redirectHost,
         maxDays: mode === 'production' ? 30 : null }); return;
     }
     if (typeof req.body.approve !== 'boolean') { res.status(400).end(); return; }
@@ -39,8 +48,25 @@ export default async function handler(req, res) {
       res.json({ redirect }); return;
     }
     stage = 'project_authorization';
-    if (mode === 'production' && req.body.projectId !== PILOT_PROJECT) { res.status(403).end(); return; }
-    await assertProject(user.uid, req.body.projectId, taskScopes.includes(TASK_WRITE_SCOPE));
+    let projectBinding;
+    if (multiple) {
+      if (Object.keys(req.body).some(key => !['interaction', 'approve', 'consentVersion', 'projectIds', 'writeProjectIds', 'aiProjectIds', 'eventProjectIds', 'includeFutureProjects'].includes(key))) { res.status(400).end(); return; }
+      projectBinding = { consentVersion: req.body.consentVersion, includeFutureProjects: req.body.includeFutureProjects,
+        projectIds: req.body.projectIds, writeProjectIds: req.body.writeProjectIds, aiProjectIds: req.body.aiProjectIds, eventProjectIds: req.body.eventProjectIds };
+      const scope = grantProjectScope({ ...projectBinding, mode, taskScopes });
+      if (client !== 'chatgpt' && scope.eventProjectIds.length) { res.status(403).end(); return; }
+      const projects = await listConsentProjects(user.uid);
+      for (const id of scope.projectIds) {
+        const project = projects.find(p => p.id === id);
+        if (!project || scope.writeProjectIds.includes(id) && !project.canWrite ||
+            scope.aiProjectIds.includes(id) && !project.canWork || scope.eventProjectIds.includes(id) && !project.canNotify) { res.status(403).end(); return; }
+      }
+    } else {
+      if (Object.keys(req.body).some(key => !['interaction', 'approve', 'projectId'].includes(key))) { res.status(400).end(); return; }
+      if (mode === 'production' && req.body.projectId !== PILOT_PROJECT) { res.status(403).end(); return; }
+      await assertProject(user.uid, req.body.projectId, taskScopes.includes(TASK_WRITE_SCOPE));
+      projectBinding = { projectId: req.body.projectId };
+    }
     stage = 'consent_storage';
     // One explicit consent per interaction, even for concurrent double-clicks.
     await getAdminDb().collection('mcpOAuthConsents').doc(digest(details.uid)).create({ expiresAt: new Date(Date.now() + 300000) });
@@ -50,14 +76,15 @@ export default async function handler(req, res) {
     const grantId = await grant.save();
     const expiresAt = new Date(Date.now() + (mode === 'production' ? CONSENT_MS : 900000));
     const binding = {
-      userId: user.uid, authTime: user.auth_time, projectId: req.body.projectId,
+      userId: user.uid, authTime: user.auth_time, ...projectBinding,
       clientId: details.params.client_id, resource: settings.resource, mode, expiresAt, ...(taskScopes.length ? { taskScopes } : {}),
     };
     await getAdminDb().collection('mcpOAuthGrants').doc(digest(grantId)).set(binding);
-    // Update notifications are delivered to ChatGPT connectors only.
-    if (mode === 'production' && client === 'chatgpt') {
+    if (mode === 'production' && client === 'chatgpt' && (!multiple || projectBinding.eventProjectIds.length)) {
       const owner = digest(JSON.stringify([user.uid, grantId]));
-      await getAdminDb().collection('mcpEventConnections').doc(owner).set({ ...binding, owner,
+      // This compatibility projectId is an event routing key, never the read selection.
+      const eventBinding = { ...binding }; delete eventBinding.projectId;
+      await getAdminDb().collection('mcpEventConnections').doc(owner).set({ ...eventBinding, projectId: PILOT_PROJECT, owner,
         bindingId: digest(grantId), grantRecordId: digest(`Grant:${grantId}`), createdAt: Date.now(), mcpExpiresAt: expiresAt });
     }
     stage = 'interaction_completion';

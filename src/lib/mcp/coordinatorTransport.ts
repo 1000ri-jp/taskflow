@@ -7,6 +7,7 @@ import { coordinationProjectIds } from './coordinator';
 import { activeUser, oidcConfig } from './oidc';
 import type { CoordinationCapability, CoordinationPolicy } from './coordinatorTypes';
 import type { TaskPrincipal } from './taskData';
+import { grantProjectScope, principalProjectIds } from '../../../scripts/mcp-events/project-scope.mjs';
 
 const delegationId = (projectId: string, planId: string) => coordinationFingerprint([projectId, planId]);
 const privateRef = (id: string) => getAdminDb().doc(`mcpCoordinationDelegations/${id}`);
@@ -62,15 +63,21 @@ export async function readCoordinationWorkerAvailability(projectRef: DocumentRef
   return { serverNow: now.toISOString(), status: !workers.length ? 'missing' : workers.some(worker => worker.available) ? 'available' : 'unavailable', workers };
 }
 function plainPrincipal(auth: TaskPrincipal): TaskPrincipal {
-  return { userId: auth.userId, grantId: auth.grantId, expiresAt: auth.expiresAt, authorizationExpiresAt: auth.authorizationExpiresAt, projectIds: [...auth.projectIds], taskScopes: [...auth.taskScopes], permissions: [...auth.permissions] };
+  return { userId: auth.userId, grantId: auth.grantId, expiresAt: auth.expiresAt, authorizationExpiresAt: auth.authorizationExpiresAt, projectIds: [...auth.projectIds], taskScopes: [...auth.taskScopes], permissions: [...auth.permissions],
+    ...(auth.consentVersion !== undefined ? { consentVersion: auth.consentVersion, includeFutureProjects: false, writeProjectIds: [...principalProjectIds(auth, 'write')], aiProjectIds: [...principalProjectIds(auth, 'ai')], eventProjectIds: [...principalProjectIds(auth, 'event')] } : {}) };
+}
+function workConsent(binding: DocumentData | undefined, auth: TaskPrincipal, projectId: string): boolean {
+  try { const scope = grantProjectScope(binding); return binding?.consentVersion === auth.consentVersion && scope.writeProjectIds.includes(projectId) && scope.aiProjectIds.includes(projectId) && principalProjectIds(auth, 'ai').includes(projectId); }
+  catch { return false; }
 }
 /** Save the existing grant-scoped offline job authorization; no bearer token or grant is minted. */
 export async function saveCoordinationDelegation(tx: Transaction, auth: TaskPrincipal, projectId: string, planId: string) {
   const binding = (await tx.get(getAdminDb().doc(`mcpOAuthGrants/${createHash('sha256').update(auth.grantId).digest('hex')}`))).data();
   const grantExpiry = binding?.expiresAt instanceof Date ? binding.expiresAt.getTime() : binding?.expiresAt?.toMillis?.();
-  if (binding?.userId !== auth.userId || binding?.projectId !== projectId || binding?.mode !== 'production' || !binding?.taskScopes?.includes('tasks:read') || !binding?.taskScopes?.includes('tasks:write') || !Number.isFinite(grantExpiry)) denied('DELEGATION_REVOKED', '現在のOAuth許可から作業委任を保存してください。');
+  if (binding?.userId !== auth.userId || !workConsent(binding, auth, projectId) || binding?.mode !== 'production' || !binding?.taskScopes?.includes('tasks:read') || !binding?.taskScopes?.includes('tasks:write') || !Number.isFinite(grantExpiry)) denied('DELEGATION_REVOKED', '現在のOAuth許可から作業委任を保存してください。');
   const expiresAt = Math.min(auth.authorizationExpiresAt, grantExpiry);
   const principal = { ...plainPrincipal(auth), projectIds: [projectId], expiresAt, authorizationExpiresAt: expiresAt };
+  if (auth.consentVersion !== undefined) Object.assign(principal, { writeProjectIds: [projectId], aiProjectIds: [projectId], eventProjectIds: [] });
   if (![auth.expiresAt, auth.authorizationExpiresAt, expiresAt].every(value => Number.isFinite(value) && value > Date.now()) || !auth.projectIds.includes(projectId)) denied('AUTHORIZATION_EXPIRED', '作業委任には現在有効な接続が必要です。', 401);
   const stored: CoordinationDelegation = { projectId, planId, principal, principalFingerprint: coordinationFingerprint(principal), expiresAt, sourceAccessTokenExpiresAt: auth.coordinationSourceAccessTokenExpiresAt ?? auth.expiresAt, updatedAt: new Date().toISOString() };
   tx.set(privateRef(delegationId(projectId, planId)), stored);
@@ -87,13 +94,13 @@ export async function assertCoordinationDelegation(auth: TaskPrincipal, projectI
   const stored = (await get(privateRef(auth.coordinationDelegationId).path)).data(); checkStored(auth, projectId, stored);
   const binding = (await get(`mcpOAuthGrants/${createHash('sha256').update(auth.grantId).digest('hex')}`)).data();
   const expiry = binding?.expiresAt instanceof Date ? binding.expiresAt.getTime() : binding?.expiresAt?.toMillis?.();
-  if (binding?.userId !== auth.userId || binding?.projectId !== projectId || binding?.mode !== 'production' || !binding?.taskScopes?.includes('tasks:read') || !binding?.taskScopes?.includes('tasks:write') || !Number.isFinite(expiry) || expiry <= Date.now()) denied('DELEGATION_REVOKED', '元のOAuth許可が失効または取消されました。', 403);
+  if (binding?.userId !== auth.userId || !workConsent(binding, auth, projectId) || binding?.mode !== 'production' || !binding?.taskScopes?.includes('tasks:read') || !binding?.taskScopes?.includes('tasks:write') || !Number.isFinite(expiry) || expiry <= Date.now()) denied('DELEGATION_REVOKED', '元のOAuth許可が失効または取消されました。', 403);
   const sourceGrant = (await get(`mcpOAuthState/${createHash('sha256').update(`Grant:${auth.grantId}`).digest('hex')}`)).data();
   const sourceExpiry = sourceGrant?.expiresAt instanceof Date ? sourceGrant.expiresAt.getTime() : sourceGrant?.expiresAt?.toMillis?.();
   if (!Number.isFinite(sourceExpiry) || sourceExpiry <= Date.now()) denied('DELEGATION_REVOKED', '元のOAuth許可が失効または取消されました。', 403);
   try {
     const config = oidcConfig();
-    if (!config.productionEnabled || !config.taskAccessEnabled || !config.clientIds.includes(binding.clientId) ||
+    if (!config.productionEnabled || !config.taskAccessEnabled || binding.consentVersion === 2 && !config.multiProjectReadEnabled || !config.clientIds.includes(binding.clientId) ||
         binding.resource !== config.resource || !Number.isFinite(binding.authTime)) throw new Error('Invalid source authorization');
     await activeUser(auth.userId, config, binding.authTime);
   } catch { denied('DELEGATION_REVOKED', '元のOAuth許可またはGoogleアカウントが無効になりました。', 403); }

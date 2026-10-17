@@ -38,9 +38,11 @@ export function prepareRelease(rootDirectory, outputDirectory) {
  }
  fs.mkdirSync(output,{recursive:true,mode:0o700});
  const source=path.join(output,'source'); fs.mkdirSync(source,{mode:0o700});
- const entries=['src','public','licenses','package.json','package-lock.json','next.config.ts','tsconfig.json','postcss.config.mjs','apphosting.yaml','firebase.json','firestore.rules','firestore.indexes.json','storage.rules','scripts/run-next-build.mjs','scripts/run-task-automation-job.mjs','scripts/generate-task-contract.mjs','scripts/mcp-events','vitest.config.ts'];
+ const entries=['src','public','licenses','package.json','package-lock.json','next.config.ts','tsconfig.json','postcss.config.mjs','apphosting.yaml','firebase.json','firestore.rules','firestore.indexes.json','storage.rules','scripts/run-next-build.mjs','scripts/run-task-automation-job.mjs','scripts/generate-task-contract.mjs','scripts/prepare-pdfjs-assets.mjs','scripts/mcp-events','vitest.config.ts'];
  const files=[];
  function copy(relative) {
+  // Recreate only the pinned PDF.js package assets during install/build.
+  if(relative===path.join('public','pdfjs')) return;
   const original=path.join(root,relative); const info=fs.lstatSync(original);
   if(info.isSymbolicLink()) throw new Error(`Symlink requires review: ${relative}`);
   if(info.isDirectory()) {

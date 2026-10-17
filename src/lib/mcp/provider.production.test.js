@@ -3,7 +3,7 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import { createServer } from 'node:http';
 import { createHash, generateKeyPairSync, randomBytes } from 'node:crypto';
 import { CookieJar } from 'tough-cookie';
-import { makeProvider, mountedCallback, CLAUDE_CODE_CLIENT } from '../../../scripts/mcp-events/oidc-provider.mjs';
+import { makeProvider, mountedCallback, CLAUDE_CODE_CLIENT, CLAUDE_CLIENT } from '../../../scripts/mcp-events/oidc-provider.mjs';
 
 let server, port, provider, active = true;
 const origin = 'https://slowth.example.test', clientId = 'https://chatgpt.com/oauth/client.json';
@@ -21,7 +21,7 @@ class Adapter {
 }
 beforeAll(async () => {
   const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
-  provider = makeProvider({ issuer: origin + '/api/oidc', resource, clientId, redirectUri, productionEnabled: true, taskAccessEnabled: true, claudeCodeEnabled: true,
+  provider = makeProvider({ issuer: origin + '/api/oidc', resource, clientId, redirectUri, productionEnabled: true, taskAccessEnabled: true, claudeCodeEnabled: true, claudeEnabled: true,
     jwks: { keys: [{ ...privateKey.export({ format: 'jwk' }), kid: 'fixture', use: 'sig', alg: 'RS256' }] },
     cookieKeys: [randomBytes(32).toString('hex')], adapter: Adapter,
     clients: [{ client_id: clientId, redirect_uris: [redirectUri], token_endpoint_auth_method: 'none',
@@ -121,8 +121,11 @@ it.each([
   [CLAUDE_CODE_CLIENT.client_id, 'https://evil.example/callback', claudeScope],
   [CLAUDE_CODE_CLIENT.client_id, 'http://localhost:55050/other', claudeScope],
   [CLAUDE_CODE_CLIENT.client_id, 'http://localhost/callback', claudeScope],
+  [CLAUDE_CODE_CLIENT.client_id, 'http://localhost:65536/callback', claudeScope],
+  [CLAUDE_CODE_CLIENT.client_id, 'https://claude.ai/api/mcp/auth_callback', claudeScope],
   [CLAUDE_CODE_CLIENT.client_id, 'http://localhost:55050/callback', 'events:test openid'],
   [clientId, 'http://localhost:55050/callback', 'events:read openid offline_access'],
+  [clientId, redirectUri, 'events:read offline_access'],
 ])('rejects %s with callback %s and scope %s before any redirect', async (client, redirect, scope) => {
   const url = authorizeUrl(scope, client, redirect);
   const response = await fetch(`http://127.0.0.1:${port}${url.pathname}${url.search}`, { redirect: 'manual' });
@@ -134,4 +137,43 @@ it('keeps Claude Code unknown unless enabled', async () => {
     jwks: { keys: [{ ...privateKey.export({ format: 'jwk' }), kid: 'fixture', use: 'sig', alg: 'RS256' }] },
     cookieKeys: [randomBytes(32).toString('hex')], adapter: Adapter, findAccount: async () => undefined });
   await expect(disabled.Client.find(CLAUDE_CODE_CLIENT.client_id)).rejects.toThrow('invalid_client');
+  await expect(disabled.Client.find(CLAUDE_CLIENT.client_id)).rejects.toThrow('invalid_client');
+});
+
+const hostedId = CLAUDE_CLIENT.client_id, hostedRedirect = CLAUDE_CLIENT.redirect_uris[0];
+it('connects Desktop hosted with its own public client, exact HTTPS callback and rotating refresh', async () => {
+  const first = await issue('events:read tasks:read offline_access', hostedId, hostedRedirect);
+  expect(first.scope).toBe('events:read tasks:read'); expect(first.id_token).toBeUndefined();
+  expect((await token({ grant_type: 'refresh_token', refresh_token: first.refresh_token }, CLAUDE_CODE_CLIENT.client_id)).status).toBe(400);
+  const refreshed = await token({ grant_type: 'refresh_token', refresh_token: first.refresh_token }, hostedId);
+  expect(refreshed.status).toBe(200); expect(refreshed.body.scope).toBe(first.scope);
+  expect(refreshed.body.refresh_token).not.toBe(first.refresh_token);
+  const replay = await token({ grant_type: 'refresh_token', refresh_token: first.refresh_token }, hostedId);
+  expect(replay.body.error).toBe('invalid_grant');
+});
+it.each([
+  'http://localhost:55050/callback', 'https://chatgpt.com/connector_platform_oauth_redirect',
+  'https://claude.ai/api/mcp/auth_callback/', 'https://claude.ai/api/mcp/auth_callback?x=1',
+  'https://claude.ai.evil.example/api/mcp/auth_callback', 'https://evil.example/callback',
+])('rejects a hosted callback outside its exact registration: %s', async redirect => {
+  const url = authorizeUrl('events:read tasks:read offline_access', hostedId, redirect);
+  const r = await fetch(`http://127.0.0.1:${port}${url.pathname}${url.search}`, { redirect: 'manual' });
+  expect(r.status).toBe(400); expect(await r.json()).toEqual({ error: 'invalid_request' });
+});
+it('keeps DCR disabled and rejects missing or mismatched resource and PKCE before redirecting hosted clients', async () => {
+  const meta = await (await fetch(`http://127.0.0.1:${port}/api/oidc/.well-known/openid-configuration`)).json();
+  expect(meta.registration_endpoint).toBeUndefined(); expect(meta.client_id_metadata_document_supported).toBe(true);
+  expect(meta.token_endpoint_auth_methods_supported).toContain('none');
+  expect(meta.code_challenge_methods_supported).toEqual(['S256']);
+  for (const [key, value] of [['resource', 'https://other.example/mcp'], ['resource', ''], ['code_challenge_method', 'plain'], ['client_id', 'https://claude.ai/oauth/unregistered']]) {
+    const url = authorizeUrl('events:read tasks:read offline_access', hostedId, hostedRedirect); url.searchParams.set(key, value);
+    expect((await fetch(`http://127.0.0.1:${port}${url.pathname}${url.search}`, { redirect: 'manual' })).status).toBe(400);
+  }
+  const first = await issue('events:read tasks:read offline_access', hostedId, hostedRedirect);
+  const invalid = await token({ grant_type: 'refresh_token', refresh_token: first.refresh_token, resource: 'https://other.example/mcp' }, hostedId);
+  expect(invalid.status).toBe(400);
+});
+it('accepts the explicit initial hosted read challenge with OIDC and preserves its exact resource scopes', async () => {
+  const first = await issue('events:read tasks:read openid offline_access', hostedId, hostedRedirect);
+  expect(first.scope).toBe('events:read tasks:read'); expect(first.id_token).toBeTypeOf('string');
 });

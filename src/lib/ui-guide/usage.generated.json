@@ -1,9 +1,9 @@
 {
   "revision": "ui-guide-2026-09-18.17",
-  "graphHash": "2361077dcf3e4ad43d5b41bc32aff3424f92dfe034c4f674ae653a206a85469d",
+  "graphHash": "fff731a0a379f2578a6bd23932968cb395c118d0eb5728c5247b8ec5466bef60",
   "entries": {
     "text": {
-      "sourceHash": "ebf0105b5dfa01e2af0e3a435276b3704ca4c99ad774fd187d0fac18152ea11a",
+      "sourceHash": "507eb1c4f9ef5660f2c7766344ff2b1308837ae250c8735148442a43ee2acb97",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -14,6 +14,7 @@
         "src/components/board/ReferenceComments.tsx",
         "src/components/help/HelpVideos.tsx",
         "src/components/project/ProjectEmojiPicker.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/TaskDetailModal.tsx",
         "src/components/task/TaskWorkflow.tsx",
         "src/components/ui/setting-field.tsx"
@@ -25,6 +26,8 @@
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/mcp-connect/page.tsx",
+        "src/components/ai/CompanionAI.tsx",
+        "src/components/ai/CompanionComments.tsx",
         "src/components/board/BoardList.tsx",
         "src/components/board/BoardView.tsx",
         "src/components/board/ListReferencesPanel.tsx",
@@ -32,7 +35,8 @@
         "src/components/dashboard/NeoToday.tsx",
         "src/components/dashboard/NeoWorkContinuation.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
-        "src/components/project/ProjectFormModal.tsx"
+        "src/components/project/ProjectFormModal.tsx",
+        "src/components/task/AttachmentPreview.tsx"
       ],
       "routes": [
         "/",
@@ -60,7 +64,7 @@
       ]
     },
     "button": {
-      "sourceHash": "af82ee64009d5ef43b78600f8374dcf33b926089fae5d5caad708fc7c9333d50",
+      "sourceHash": "5b888b6dc4ab5971a06abc4282cc9eee4d06c0246f3bdf65ffa4bc53774d058d",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -172,6 +176,7 @@
         "src/components/task/CommentRecipients.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
@@ -220,6 +225,7 @@
         "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
         "src/components/project/ActivityLogPanel.tsx",
+        "src/components/task/AttachmentPreview.tsx",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
       ],
@@ -249,12 +255,13 @@
       ]
     },
     "input": {
-      "sourceHash": "6b2b8f26f13f3e35e09dbaaefe19568933483a99b5dcc67351d30bd9bdc8788e",
+      "sourceHash": "e4e9aa6c32e0b06deecb5fd540f5d58860049f33cb8e5a14ced7b18c8275604c",
       "direct": [
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/app/(dashboard)/projects/page.tsx",
         "src/app/(dashboard)/settings/api-keys/page.tsx",
+        "src/app/mcp-connect/consent.tsx",
         "src/components/ai/AIModelSelector.tsx",
         "src/components/ai/AIReferenceFields.tsx",
         "src/components/ai/AISettingsForm.tsx",
@@ -320,6 +327,7 @@
         "src/app/(dashboard)/projects/[projectId]/milestones/page.tsx",
         "src/app/(dashboard)/settings/ai/page.tsx",
         "src/app/(dashboard)/settings/page.tsx",
+        "src/app/mcp-connect/page.tsx",
         "src/components/ai/CompanionAI.tsx",
         "src/components/ai/CompanionComments.tsx",
         "src/components/ai/ScopedConversation.tsx",
@@ -346,6 +354,7 @@
         "/",
         "/classic",
         "/help",
+        "/mcp-connect",
         "/my-dashboard",
         "/neo",
         "/neo/meetings",
@@ -399,7 +408,7 @@
       ]
     },
     "card": {
-      "sourceHash": "aceceafd55b30ffc193b6a3b09e2602a89f72257afb98165f1900488a4f177d3",
+      "sourceHash": "29dcbed2880c6459ecba69e03aa1cc2e1c638c3a1a5fdb08b93f523c2194bd51",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -471,18 +480,29 @@
       ]
     },
     "states": {
-      "sourceHash": "a61e7d4b7f8f0be62ac16b9c60d089f0642d45e9631d1d3d45a59a9d3c94f0e1",
+      "sourceHash": "9632c7b00b72e39949b679eac2e2fa20aa1983d6b5822b4bbada64dc70a088ba",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
         "src/components/common/CommandPalette.tsx",
-        "src/components/project/ActivityLogPanel.tsx"
+        "src/components/project/ActivityLogPanel.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx"
       ],
       "indirect": [
         "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/neo/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/activity/page.tsx",
+        "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
+        "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
+        "src/components/ai/CompanionAI.tsx",
+        "src/components/ai/CompanionComments.tsx",
+        "src/components/board/BoardList.tsx",
+        "src/components/board/BoardView.tsx",
+        "src/components/board/ListReferencesPanel.tsx",
+        "src/components/board/ReferenceComments.tsx",
         "src/components/dashboard/NeoDashboard.tsx",
-        "src/components/dashboard/NeoRecentChanges.tsx"
+        "src/components/dashboard/NeoRecentChanges.tsx",
+        "src/components/task/AttachmentPreview.tsx",
+        "src/components/task/TaskDetailModal.tsx"
       ],
       "routes": [
         "/",
@@ -506,7 +526,7 @@
       ]
     },
     "outline": {
-      "sourceHash": "fa45264aab723974d5e6a845356fa27b1705f9a2007a15c0fbd88eaed29afc35",
+      "sourceHash": "ef8d7a3819fc516626d7f8ec65b82c55535e734aa360ed2b9509059ffc8b64c1",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/AutoArchiveSettings.tsx",
@@ -707,7 +727,7 @@
       ]
     },
     "setting": {
-      "sourceHash": "23791d28696cd8ab9c911d97698b7a09671cad543f388c0b4d96896f4ef05c1e",
+      "sourceHash": "43c18502a8c5a1682dddcb28f05df44ab56f1b136750a8fd2893b8374d3413fb",
       "direct": [
         "src/app/mcp-connect/consent.tsx",
         "src/components/help/HelpVideos.tsx",
@@ -756,7 +776,7 @@
       ]
     },
     "detail-layout": {
-      "sourceHash": "a50b98efa988c0c48a114aeb961bb9f9357574d39f7024f8eab4bcba1d98d843",
+      "sourceHash": "0f227c6a42d5ef1c168ec31a4456af86e356f5f9fcce90e7c358d489af8f0254",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -786,7 +806,7 @@
       ]
     },
     "settings-layout": {
-      "sourceHash": "e6d4d0c58a6e362eae44252a6d60278c81b285e4fc106b0753b8c1d1b20f162b",
+      "sourceHash": "efe05dff8e7683ad824525e4dcb0845ca62df6c00487baf525050aeefc867283",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/help/page.tsx",
@@ -873,7 +893,7 @@
       "routes": []
     },
     "search": {
-      "sourceHash": "9e87eff7cb299ac7038e8e888399844896d86dfbcaf66e574ea7c142facae20e",
+      "sourceHash": "8b56754a2cf48014d6975fa51b49499d230fc4a1e6d3ea4926c5a2d5c4f48d9e",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -983,6 +1003,7 @@
         "src/components/task/CommentRecipients.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
@@ -1027,6 +1048,7 @@
         "src/components/dashboard/NeoMorningBrief.tsx",
         "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
+        "src/components/task/AttachmentPreview.tsx",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
       ],
@@ -1056,7 +1078,7 @@
       ]
     },
     "notifications": {
-      "sourceHash": "adf35e92a3a5692557cb3e6d2946bef9cab058a7925217af67443c663c204c5e",
+      "sourceHash": "8d3d206489232f60ff1bfe5cc30285a837e36d8a041e86907ba906a90e70df0e",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1164,6 +1186,7 @@
         "src/components/task/CommentComposer.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
@@ -1208,6 +1231,7 @@
         "src/components/dashboard/NeoMorningBrief.tsx",
         "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
+        "src/components/task/AttachmentPreview.tsx",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
       ],
@@ -1237,7 +1261,7 @@
       ]
     },
     "calendar": {
-      "sourceHash": "adf35e92a3a5692557cb3e6d2946bef9cab058a7925217af67443c663c204c5e",
+      "sourceHash": "8d3d206489232f60ff1bfe5cc30285a837e36d8a041e86907ba906a90e70df0e",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1342,6 +1366,7 @@
         "src/components/task/CommentComposer.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
@@ -1389,6 +1414,7 @@
         "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
         "src/components/project/ActivityLogPanel.tsx",
+        "src/components/task/AttachmentPreview.tsx",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
       ],
@@ -1418,7 +1444,7 @@
       ]
     },
     "gantt": {
-      "sourceHash": "adf35e92a3a5692557cb3e6d2946bef9cab058a7925217af67443c663c204c5e",
+      "sourceHash": "8d3d206489232f60ff1bfe5cc30285a837e36d8a041e86907ba906a90e70df0e",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1524,6 +1550,7 @@
         "src/components/task/CommentComposer.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
@@ -1570,6 +1597,7 @@
         "src/components/dashboard/NeoMorningBrief.tsx",
         "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/project/ActivityLogPanel.tsx",
+        "src/components/task/AttachmentPreview.tsx",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
       ],
@@ -1599,7 +1627,7 @@
       ]
     },
     "progress": {
-      "sourceHash": "0b5789864843a9c5b7140cea82616e8902a334da431c989bfa6bd9200104ded4",
+      "sourceHash": "a6b6fcefae8c72198fc1c6e27caf1d64a78659e5a036512f0694646f052eef9c",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1712,6 +1740,7 @@
         "src/components/task/CommentComposer.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
@@ -1795,6 +1824,7 @@
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/providers/index.tsx",
         "src/components/task/AssigneeSelector.tsx",
+        "src/components/task/AttachmentPreview.tsx",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskAutomationRunner.tsx",
         "src/components/task/TaskMaterials.tsx",
@@ -1924,7 +1954,7 @@
       ]
     },
     "frame-trial": {
-      "sourceHash": "adf35e92a3a5692557cb3e6d2946bef9cab058a7925217af67443c663c204c5e",
+      "sourceHash": "8d3d206489232f60ff1bfe5cc30285a837e36d8a041e86907ba906a90e70df0e",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2030,6 +2060,7 @@
         "src/components/task/CommentComposer.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
@@ -2076,6 +2107,7 @@
         "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
         "src/components/project/ActivityLogPanel.tsx",
+        "src/components/task/AttachmentPreview.tsx",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
       ],
@@ -2105,7 +2137,7 @@
       ]
     },
     "table-trial": {
-      "sourceHash": "bbd5bff16610376b88a9ba4ed31e4059a7e67cee5462ef8337a68d128b5c6aca",
+      "sourceHash": "2e2f1f18f73994400438533ad677a4f8e5b4fee855cdb3776d65a56cefef6d6e",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2224,6 +2256,7 @@
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
         "src/components/task/OrganizedWorkFollowUp.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
@@ -2268,6 +2301,7 @@
         "src/components/dashboard/MeetingIntakeDialog.tsx",
         "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
+        "src/components/task/AttachmentPreview.tsx",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
       ],
@@ -2297,7 +2331,7 @@
       ]
     },
     "history-trial": {
-      "sourceHash": "bbd5bff16610376b88a9ba4ed31e4059a7e67cee5462ef8337a68d128b5c6aca",
+      "sourceHash": "2e2f1f18f73994400438533ad677a4f8e5b4fee855cdb3776d65a56cefef6d6e",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2416,6 +2450,7 @@
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
         "src/components/task/OrganizedWorkFollowUp.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
@@ -2460,6 +2495,7 @@
         "src/components/dashboard/MeetingIntakeDialog.tsx",
         "src/components/desktop/DesktopMiniApp.tsx",
         "src/components/gantt/index.ts",
+        "src/components/task/AttachmentPreview.tsx",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
       ],
@@ -2489,7 +2525,7 @@
       ]
     },
     "neo-brief-row-trial": {
-      "sourceHash": "d966d5df3d4d77c58588171a840bd308ee5fd1b94cd7b6fd10f8c57e92ca51e3",
+      "sourceHash": "628f4c6712c2a80b6729889ee5315dd5712ea4ce7d3d363d4822d9b554cf2440",
       "direct": [
         "src/components/board/TaskCalendarView.tsx",
         "src/components/board/TaskCard.tsx",
@@ -2529,7 +2565,7 @@
       ]
     },
     "neo-brief-assignee-filter-trial": {
-      "sourceHash": "21c1f95624df7e1c78a75e9e7c750d1f7fe9800cae223148fa1e3b7b50cd4bba",
+      "sourceHash": "6f99c97ef8351708745f2992d5e4217563be977c2a31f31d3970bd7a342ee1f5",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2642,6 +2678,7 @@
         "src/components/task/CommentRecipients.tsx",
         "src/components/task/CommentSection.tsx",
         "src/components/task/OrganizationDraftEditor.tsx",
+        "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/ReferenceMigrationDialog.tsx",
         "src/components/task/SortableChecklistItems.tsx",
         "src/components/task/TaskArchiveButton.tsx",
@@ -2686,6 +2723,7 @@
         "src/components/dashboard/MeetingIntakeDialog.tsx",
         "src/components/gantt/index.ts",
         "src/components/project/ActivityLogPanel.tsx",
+        "src/components/task/AttachmentPreview.tsx",
         "src/components/task/CommentStampSettings.tsx",
         "src/components/task/TaskRecordLink.tsx"
       ],
@@ -2730,7 +2768,7 @@
       ]
     },
     "task-row-one-line-trial": {
-      "sourceHash": "b90f38622f69c8ef41a3df27dda310926237408e9e3f730b883705158aee1c93",
+      "sourceHash": "23000c53b65e6a21efa68f7bbba8dbc523423aaa70b9680704025339a75fb4b2",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
@@ -2792,7 +2830,7 @@
       ]
     },
     "neo-home-layout-trial": {
-      "sourceHash": "6ac2ac325ddd136aaee35843f387b2af4272abf67b6325e8dd14d1588f5e6574",
+      "sourceHash": "994fa2994041ff74902d4181065eb0013e909d7eef791177d053184b307e019e",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2863,7 +2901,7 @@
       ]
     },
     "detail-header-spacing-trial": {
-      "sourceHash": "74cd6d5954c3b1fc774dcb81e95eb8ba821401180022378fcdb849f6ed3116ca",
+      "sourceHash": "0362aa8c5358326a8dc122c681a5edd09f350d402cf996b587e0dbce20000fe0",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2893,7 +2931,7 @@
       ]
     },
     "subtask-view-alignment-trial": {
-      "sourceHash": "104cf52527dcecaf3a2bbdd789747647d983a4cc0fc7a01e92a639e3cca2cf53",
+      "sourceHash": "e8d7d3d37ca17cf64189a048035ef0e5d7bbdd9cbf3ab457576c3b37cfed659f",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/components/board/AlternateTaskViews.tsx",
@@ -2906,7 +2944,7 @@
       ]
     },
     "task-detail-subtask-order-trial": {
-      "sourceHash": "746fe3431c1a5a954e28b5a019b9c70e6d0363473b58c0eabbfb56ff010df34f",
+      "sourceHash": "2af465abc62fe8223d5da00ea2aae58d05ca406798300ab6f306836a24aa29ba",
       "direct": [
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx"
@@ -2918,7 +2956,7 @@
       ]
     },
     "proposal-review-flow-trial": {
-      "sourceHash": "28dc89b16000632f6ab1eecd2ea9080c1cb604f27294ae00280714c4146a9f53",
+      "sourceHash": "9638bc6887bfb2d4892df50b90e6ba8914b56f5ce6996d9a6b650f009cdedc4d",
       "direct": [
         "src/app/(dashboard)/layout.tsx",
         "src/components/dashboard/NeoDashboard.tsx",
@@ -2954,7 +2992,7 @@
       ]
     },
     "calendar-task-create-trial": {
-      "sourceHash": "baf35b682fa171e60babcd11424a7a83454f0038f40ba9cd9982638c954ab212",
+      "sourceHash": "c62915760efe7b8c50548b9846f1b348051069db00a0c7e2eb3f32f15f275116",
       "direct": [
         "src/components/board/AlternateTaskViews.tsx",
         "src/components/board/BoardList.tsx",

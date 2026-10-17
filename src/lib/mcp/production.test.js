@@ -251,3 +251,41 @@ it('captures real comment/checklist/attachment changes without including their t
 it('automatically observes model fields that the old hand-written list omitted', () => {
   expect(taskEvent(change({ before: { title: '仕事', relatedTaskIds: [] }, after: { title: '仕事', relatedTaskIds: ['other-task'] } })).changedFields).toEqual(['relatedTaskIds']);
 });
+
+async function versionedConnection(events = [PILOT_PROJECT]) {
+  config.multiProjectReadEnabled = true;
+  const binding = { ...(await db.collection('mcpOAuthGrants').doc('fixture-binding').get()).data(), consentVersion: 2,
+    projectIds: [PILOT_PROJECT, 'reader'], writeProjectIds: [], aiProjectIds: [], eventProjectIds: events, includeFutureProjects: false, taskScopes: ['tasks:read'] };
+  delete binding.projectId;
+  await db.collection('mcpOAuthGrants').doc('fixture-binding').set(binding);
+  connection = { ...connection, ...binding, projectId: PILOT_PROJECT };
+  await db.collection('mcpEventConnections').doc('fixture-owner').set(connection);
+}
+it('captures and delivers only separately event-consented pilot events for a multi-project reader', async () => {
+  await versionedConnection(); expect((await pipeline.capture(change())).captured).toBe(1);
+  expect((await pipeline.capture(change({ projectId: 'reader' }))).captured).toBe(0);
+  await pipeline.sweep(); expect(post).toHaveBeenCalledOnce();
+});
+it('neither retains nor sends events merely because a project was included in read consent', async () => {
+  await versionedConnection([]); expect((await pipeline.capture(change())).captured).toBe(0);
+  expect(jobs()).toHaveLength(0); expect(post).not.toHaveBeenCalled();
+});
+it('keeps v2 event production disabled until its own worker configuration is enabled', async () => {
+  await versionedConnection(); config.multiProjectReadEnabled = false;
+  expect((await pipeline.capture(change())).captured).toBe(0); expect(post).not.toHaveBeenCalled();
+});
+it('cancels a queued notification when event consent or project membership is removed', async () => {
+  await versionedConnection(); await pipeline.capture(change());
+  await db.collection('mcpOAuthGrants').doc('fixture-binding').update({ eventProjectIds: [] });
+  await pipeline.sweep(); expect(post).not.toHaveBeenCalled(); expect(jobs()[0][1].state).toBe('cancelled');
+});
+it.each(['subscription', 'journal', 'archived'])('cancels queued cross-target or unavailable %s delivery without sending data', async reason => {
+  await versionedConnection(); await pipeline.capture(change());
+  if (reason === 'subscription') await store.set('fixture-sub', { ...(await store.get('fixture-sub')), projectId: 'reader' });
+  if (reason === 'journal') {
+    const ref = principal().collection('journal').doc(taskEvent(change()).event.eventId);
+    const record = (await ref.get()).data(); record.event.data.project_id = 'reader'; await ref.set(record);
+  }
+  if (reason === 'archived') await db.collection('projects').doc(PILOT_PROJECT).update({ isArchived: true });
+  await pipeline.sweep(); expect(post).not.toHaveBeenCalled(); expect(jobs()[0][1].state).toBe('cancelled');
+});
