@@ -1,7 +1,9 @@
-import { expect, it } from 'vitest';
-import nextConfig from '../../next.config';
+import type { NextConfig } from 'next';
+import { expect, it, vi } from 'vitest';
 
 it('permits PDF blobs and the exact Storage origin while retaining other frame and object restrictions', async () => {
+  // App Hosting rewrites this module's exports during its production type check.
+  const { default: nextConfig } = await vi.importActual<{ default: NextConfig }>('../../next.config');
   const headers = await nextConfig.headers!();
   const globalHeaders = headers.find(rule => rule.source === '/(.*)')!.headers;
   const policy = globalHeaders.find(header => header.key === 'Content-Security-Policy')!.value;
