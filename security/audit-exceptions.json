@@ -3,9 +3,9 @@
   "exceptions": [
     {
       "advisory": "GHSA-vfj7-8cjw-p6xm",
-      "expiresAt": "2026-10-17T00:00:00+09:00",
+      "expiresAt": "2026-10-24T00:00:00+09:00",
       "scope": "dev-only-current-eslint-chain",
-      "acceptedRisk": "The owner accepts this dev-only lint-chain risk through October 16 JST. The vulnerability is not fixed. No downgrade, production/shared use, added advisory, changed package/configuration or expiry extension is authorized.",
+      "acceptedRisk": "On October 17, 2026, the owner explicitly renewed this same dev-only lint-chain risk acceptance until October 24, 2026 at 00:00 JST for the MCP release. The vulnerability is not fixed. No downgrade, production/shared use, added advisory, changed package/configuration or further expiry extension is authorized.",
       "eslintConfig": {
         "path": "eslint.config.mjs",
         "sha256": "870f1adccecf3051cbcd9fd307cef51d7633cf510979c181a81f4b1797273493"
