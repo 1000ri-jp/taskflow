@@ -176,7 +176,7 @@ const [policy, lockfile, packageJson, eslintConfigBytes] = await Promise.all([
 const runtimeSources = await readRuntimeSources(root);
 const fixture = () => ({ fullReport: structuredClone(full), productionReport: structuredClone(clean),
   policy: structuredClone(policy), lockfile: structuredClone(lockfile), packageJson: structuredClone(packageJson),
-  eslintConfigBytes: Buffer.from(eslintConfigBytes), runtimeSources: structuredClone(runtimeSources), now: new Date('2026-10-16T14:59:59.999Z') });
+  eslintConfigBytes: Buffer.from(eslintConfigBytes), runtimeSources: structuredClone(runtimeSources), now: new Date('2026-10-23T14:59:59.999Z') });
 const failed = (input, code) => { const result = evaluateAudit(input); assert.equal(result.ok, false); assert.equal(result.exceptionUsed, false); if (code) assert.equal(result.code, code); return result; };
 const command = (report, status = report.metadata.vulnerabilities.high + report.metadata.vulnerabilities.critical ? 1 : 0, stderr = '') => ({ status, stdout: JSON.stringify(report), stderr });
 const warning = kind => `npm warn Unknown ${kind} config "minimum-release-age". This will stop working in the next major version of npm. See \`npm help npmrc\` for supported config options.`;
@@ -193,10 +193,10 @@ test('accepts exactly the observed five high dev lint findings as risk, never as
   assert.match(result.message, /Production audit: zero findings/);
 });
 
-test('expiry is exclusive at midnight October 17 JST and cannot be extended in policy', () => {
-  failed({ ...fixture(), now: new Date('2026-10-16T15:00:00.000Z') }, 'EXCEPTION_EXPIRED');
-  failed({ ...fixture(), now: new Date('2026-10-17T00:00:00.000Z') }, 'EXCEPTION_EXPIRED');
-  const changed = fixture(); changed.policy.exceptions[0].expiresAt = '2026-10-18T00:00:00+09:00';
+test('expiry is exclusive at midnight October 24 JST and cannot be extended in policy', () => {
+  failed({ ...fixture(), now: new Date('2026-10-23T15:00:00.000Z') }, 'EXCEPTION_EXPIRED');
+  failed({ ...fixture(), now: new Date('2026-10-24T00:00:00.000Z') }, 'EXCEPTION_EXPIRED');
+  const changed = fixture(); changed.policy.exceptions[0].expiresAt = '2026-10-25T00:00:00+09:00';
   failed(changed, 'EXCEPTION_POLICY_INVALID');
   failed({ ...fixture(), now: NaN }, 'AUDIT_CLOCK_INVALID');
 });

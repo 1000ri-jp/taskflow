@@ -62,6 +62,14 @@ env:
     value: https://chatgpt.com/connector_platform_oauth_redirect
     availability:
       - RUNTIME
+  - variable: SLOWTH_MCP_OAUTH_CLAUDE_CODE
+    value: 'true'
+    availability:
+      - RUNTIME
+  - variable: SLOWTH_MCP_OAUTH_CLAUDE
+    value: 'true'
+    availability:
+      - RUNTIME
   - variable: SLOWTH_MCP_OAUTH_JWKS
     secret: SLOWTH_MCP_OAUTH_JWKS@1
     availability:

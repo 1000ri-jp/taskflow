@@ -99,3 +99,21 @@ it('invalidates old selection immediately when the interaction changes', async (
   expect(screen.queryByRole('button', { name: '選択した範囲で30日間の接続を許可' })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: '架空通知のテストを許可' })).toBeDisabled();
 });
+
+it.each([{ client: 'claude-code', name: 'Claude Code', host: 'localhost' }, { client: 'claude', name: 'Claude', host: 'claude.ai' }])('shows $name for v2 consent while preserving separate choices', async ({ client, name, host }) => {
+  const fetch = vi.fn().mockImplementation(async (_url, options) => options.method === 'POST' ? new Response('{}', { status: 403 }) : new Response(JSON.stringify({
+    consentVersion: 2, mode: 'production', client, redirectHost: host, maxProjects: 500, taskScopes: ['tasks:read', 'tasks:write'],
+    projects: [{ id: 'editor', name: '架空編集', canWrite: true, canWork: true, canNotify: true }, { id: 'viewer', name: '架空閲覧', canWrite: false }],
+  })));
+  vi.stubGlobal('fetch', fetch); render(<Consent interaction="fixture-claude" />);
+  expect(await screen.findByRole('heading', { name: name + 'との接続確認' })).toBeInTheDocument();
+  expect(screen.getByText(new RegExp(name + 'が読み取り'))).not.toHaveTextContent(/ChatGPT|更新通知/);
+  expect(screen.getByText('接続先のホスト：' + host)).toBeInTheDocument();
+  expect(screen.queryByRole('checkbox', { name: '架空編集の更新通知' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '現在閲覧できる全件を読み取り対象にする' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '架空編集の書き込み' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '架空編集のAI作業' }));
+  fireEvent.click(screen.getByRole('button', { name: '選択した範囲で30日間の接続を許可' }));
+  await screen.findByRole('alert');
+  expect(JSON.parse(fetch.mock.calls.find(call => call[1].method === 'POST')![1].body)).toEqual({ interaction: 'fixture-claude', approve: true, consentVersion: 2, projectIds: ['editor', 'viewer'], writeProjectIds: ['editor'], aiProjectIds: ['editor'], eventProjectIds: [], includeFutureProjects: false });
+});

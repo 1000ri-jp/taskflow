@@ -2,9 +2,11 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import handler from '@/pages/api/mcp-consent';
 import { PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
-const f = vi.hoisted(() => ({ production: false, taskAccess: false, multiple: false, selectors: vi.fn(), details: vi.fn(), finish: vi.fn(), user: vi.fn(), access: vi.fn(), create: vi.fn(), save: vi.fn(), write: vi.fn(), projects: vi.fn(), oidcScope: vi.fn(), resourceScope: vi.fn() }));
-vi.mock('@/lib/mcp/oidc', () => ({
-  oidcConfig: () => ({ origin: 'https://slowth.example.test', clientId: 'fixture-client', redirectUri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', productionEnabled: f.production, taskAccessEnabled: f.taskAccess, multiProjectReadEnabled: f.multiple }),
+import { CLAUDE_CODE_CLIENT, CLAUDE_CLIENT } from '../../../scripts/mcp-events/oidc-provider.mjs';
+const f = vi.hoisted(() => ({ production: false, taskAccess: false, multiple: false, claudeCode: false, claude: false, selectors: vi.fn(), details: vi.fn(), finish: vi.fn(), user: vi.fn(), access: vi.fn(), create: vi.fn(), save: vi.fn(), write: vi.fn(), projects: vi.fn(), oidcScope: vi.fn(), resourceScope: vi.fn() }));
+vi.mock('@/lib/mcp/oidc', async () => ({
+  allowedClient: (await vi.importActual('@/lib/mcp/oidc')).allowedClient,
+  oidcConfig: () => ({ origin: 'https://slowth.example.test', clientId: 'fixture-client', redirectUri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', productionEnabled: f.production, taskAccessEnabled: f.taskAccess, multiProjectReadEnabled: f.multiple, claudeCodeEnabled: f.production && f.claudeCode, claudeEnabled: f.production && f.claude }),
   oidcProvider: () => ({ interactionDetails: f.details, interactionResult: f.finish,
     Grant: class { addOIDCScope(scope) { f.oidcScope(scope); } addResourceScope(resource, scope) { f.resourceScope(resource, scope); } save() { return f.save(); } } }),
   firebaseConsentUser: f.user, assertProject: f.access, digest: value => value,
@@ -22,7 +24,7 @@ function response() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
-  f.production = false; f.taskAccess = false; f.multiple = false;
+  f.production = false; f.taskAccess = false; f.multiple = false; f.claudeCode = false; f.claude = false;
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   f.details.mockResolvedValue({ uid: 'fixture-interaction', params: { client_id: 'fixture-client', redirect_uri: 'https://chatgpt.com/fixture-callback', resource: 'https://slowth.example.test/api/mcp', scope: 'events:test' } });
   f.user.mockResolvedValue({ uid: 'fixture-user', auth_time: 123 });
@@ -166,4 +168,70 @@ it('does not accept write choices with a read-only scope or arrays in a legacy r
   const read = response(); await handler(request({ body }), read); expect(read.code).toBe(403);
   f.multiple = false; const legacy = response(); await handler(request({ body }), legacy); expect(legacy.code).toBe(400);
   expect(f.save).not.toHaveBeenCalled();
+});
+
+async function claudeConsent(multiple = true) {
+  const body = await multipleConsent(); f.multiple = multiple; f.claudeCode = true;
+  f.details.mockResolvedValue({ ...(await f.details()), params: { ...(await f.details()).params,
+    client_id: CLAUDE_CODE_CLIENT.client_id, redirect_uri: 'http://localhost:55050/callback', scope: 'events:read tasks:read tasks:write offline_access' } });
+  return body;
+}
+it('returns Claude identity in the v2 selector and disables ChatGPT-only notification choices', async () => {
+  await claudeConsent();
+  const r = response(); await handler(request({ method: 'GET', query: { interaction: 'fixture-interaction' } }), r);
+  expect(r.body).toMatchObject({ client: 'claude-code', consentVersion: 2, includeFutureProjects: false, maxProjects: 500 });
+  expect(r.body.projects).toEqual((await f.selectors()).map(p => ({ ...p, canNotify: false })));
+  expect(f.write).not.toHaveBeenCalled();
+});
+it('binds the v2 snapshot to Claude and keeps independent write and AI choices without event records', async () => {
+  const body = { ...await claudeConsent(), writeProjectIds: ['editable'], aiProjectIds: ['editable'] };
+  const r = response(); await handler(request({ body }), r);
+  expect(r.code).toBe(200); expect(f.write).toHaveBeenCalledOnce();
+  expect(f.write.mock.calls[0][0]).toMatchObject({ clientId: CLAUDE_CODE_CLIENT.client_id, consentVersion: 2, projectIds: body.projectIds, writeProjectIds: ['editable'], aiProjectIds: ['editable'], eventProjectIds: [] });
+  expect(f.write.mock.calls[0][0]).not.toHaveProperty('projectId');
+});
+it('refuses Claude event consent on the server before storing any grant', async () => {
+  const body = { ...await claudeConsent(), eventProjectIds: [PILOT_PROJECT] };
+  const r = response(); await handler(request({ body }), r);
+  expect(r.code).toBe(403); expect(f.create).not.toHaveBeenCalled(); expect(f.save).not.toHaveBeenCalled(); expect(f.write).not.toHaveBeenCalled();
+});
+it('keeps legacy Claude consent bound to its client without creating a notification connection', async () => {
+  await claudeConsent(false);
+  const selector = response(); await handler(request({ method: 'GET', query: { interaction: 'fixture-interaction' } }), selector);
+  expect(selector.body.client).toBe('claude-code');
+  const r = response(); await handler(request({ body: { interaction: 'fixture-interaction', approve: true, projectId: PILOT_PROJECT } }), r);
+  expect(r.code).toBe(200); expect(f.write).toHaveBeenCalledOnce();
+  expect(f.write.mock.calls[0][0]).toMatchObject({ clientId: CLAUDE_CODE_CLIENT.client_id, projectId: PILOT_PROJECT });
+});
+it.each(['disabled', 'hosted-callback', 'cross-client', 'expired-interaction'])('rejects native consent with %s', async reason => {
+  const body = await claudeConsent(); const details = await f.details();
+  if (reason === 'disabled') f.claudeCode = false;
+  if (reason === 'hosted-callback') details.params.redirect_uri = 'https://claude.ai/api/mcp/auth_callback';
+  if (reason === 'cross-client') details.params.client_id = 'fixture-client';
+  if (reason === 'expired-interaction') details.uid = 'different-interaction';
+  f.details.mockResolvedValue(details);
+  const r = response(); await handler(request({ body }), r);
+  expect(r.code).toBe(403); expect(f.create).not.toHaveBeenCalled(); expect(f.save).not.toHaveBeenCalled();
+});
+
+async function hostedConsent() {
+  const body = await multipleConsent(); f.claude = true;
+  f.details.mockResolvedValue({ ...(await f.details()), params: { ...(await f.details()).params,
+    client_id: CLAUDE_CLIENT.client_id, redirect_uri: CLAUDE_CLIENT.redirect_uris[0], scope: 'events:read tasks:read tasks:write offline_access' } });
+  return body;
+}
+it('returns hosted identity and callback hostname with the v2 project selector', async () => {
+  await hostedConsent(); const r = response();
+  await handler(request({ method: 'GET', query: { interaction: 'fixture-interaction' } }), r);
+  expect(r.body).toMatchObject({ client: 'claude', redirectHost: 'claude.ai', consentVersion: 2 });
+  expect(r.body.projects.every(p => p.canNotify === false)).toBe(true);
+});
+it('stores hosted read/write/AI snapshots under the exact client and never creates event connections', async () => {
+  const body = { ...await hostedConsent(), writeProjectIds: ['editable'], aiProjectIds: ['editable'] };
+  const r = response(); await handler(request({ body }), r);
+  expect(r.code).toBe(200); expect(f.write).toHaveBeenCalledOnce();
+  expect(f.write.mock.calls[0][0]).toMatchObject({ clientId: CLAUDE_CLIENT.client_id, projectIds: body.projectIds, writeProjectIds: ['editable'], aiProjectIds: ['editable'], eventProjectIds: [] });
+  f.create.mockClear(); f.save.mockClear(); f.write.mockClear();
+  const denied = response(); await handler(request({ body: { ...body, eventProjectIds: [PILOT_PROJECT] } }), denied);
+  expect(denied.code).toBe(403); expect(f.save).not.toHaveBeenCalled(); expect(f.write).not.toHaveBeenCalled();
 });

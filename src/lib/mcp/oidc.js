@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { getProjectAccess } from '@/lib/auth/projectAccess';
-import { makeProvider, TEST_SCOPE } from '../../../scripts/mcp-events/oidc-provider.mjs';
+import { makeProvider, TEST_SCOPE, CLAUDE_CODE_CLIENT, CLAUDE_CLIENT, isClaudeCodeCallback } from '../../../scripts/mcp-events/oidc-provider.mjs';
 import { firestoreAdapter } from '../../../scripts/mcp-events/oidc-store.mjs';
 import { PILOT_PROJECT, READ_SCOPE, TASK_READ_SCOPE, TASK_WRITE_SCOPE } from '../../../scripts/mcp-events/policy.mjs';
 import { grantProjectScope, PROJECT_CONSENT_VERSION } from '../../../scripts/mcp-events/project-scope.mjs';
@@ -19,8 +19,18 @@ export function oidcConfig() {
   const productionEnabled = process.env.SLOWTH_MCP_EVENTS_PRODUCTION === 'true';
   if (productionEnabled && process.env.SLOWTH_MCP_EVENTS_PROJECT_ID !== PILOT_PROJECT) throw new Error('Pilot project required');
   const taskAccessEnabled = productionEnabled && process.env.SLOWTH_MCP_TASK_ACCESS === 'true';
+  const claudeCodeEnabled = productionEnabled && process.env.SLOWTH_MCP_OAUTH_CLAUDE_CODE === 'true';
+  const claudeEnabled = productionEnabled && process.env.SLOWTH_MCP_OAUTH_CLAUDE === 'true';
   return { origin, issuer: origin + '/api/oidc', resource: origin + '/api/mcp', allowedUid, clientId, redirectUri, productionEnabled, taskAccessEnabled,
+    claudeCodeEnabled, claudeEnabled, clientIds: [clientId, ...(claudeCodeEnabled ? [CLAUDE_CODE_CLIENT.client_id] : []), ...(claudeEnabled ? [CLAUDE_CLIENT.client_id] : [])],
     multiProjectReadEnabled: taskAccessEnabled && process.env.SLOWTH_MCP_MULTI_PROJECT_READ === 'true' };
+}
+/** Keep ChatGPT's exact callback separate from the pinned native client's loopback callback. */
+export function allowedClient(config, clientId, redirectUri) {
+  if (clientId === config.clientId) return redirectUri === config.redirectUri ? 'chatgpt' : null;
+  if (config.claudeCodeEnabled && clientId === CLAUDE_CODE_CLIENT.client_id && isClaudeCodeCallback(redirectUri)) return 'claude-code';
+  if (config.claudeEnabled && clientId === CLAUDE_CLIENT.client_id && redirectUri === CLAUDE_CLIENT.redirect_uris[0]) return 'claude';
+  return null;
 }
 let instance;
 export function oidcProvider() {
@@ -37,7 +47,7 @@ export function oidcProvider() {
         if (artifact) {
           const binding = (await getAdminDb().collection('mcpOAuthGrants').doc(digest(artifact.grantId)).get()).data();
           if (!config.productionEnabled || binding?.mode !== 'production' || binding.userId !== uid ||
-              binding.clientId !== config.clientId || binding.resource !== config.resource ||
+              !config.clientIds.includes(artifact.clientId) || binding.clientId !== artifact.clientId || binding.resource !== config.resource ||
               binding.expiresAt?.toMillis?.() <= Date.now() ||
               !Number.isFinite(binding.expiresAt?.toMillis?.())) throw new Error('Forbidden');
           const scope = checkedProjectScope(binding, config);
@@ -94,7 +104,7 @@ export async function authenticateMcp(header) {
   const validScopes = token?.scope === TEST_SCOPE || production && new Set(scopes).size === scopes.length &&
     scopes.every(s => [READ_SCOPE, ...(config.taskAccessEnabled ? [TASK_READ_SCOPE, TASK_WRITE_SCOPE] : [])].includes(s)) &&
     (!scopes.includes(TASK_WRITE_SCOPE) || scopes.includes(TASK_READ_SCOPE));
-  if (!token || token.clientId !== config.clientId || token.aud !== config.resource ||
+  if (!token || !config.clientIds.includes(token.clientId) || token.clientId !== config.clientId && !production || token.aud !== config.resource ||
       !validScopes ||
       !token.grantId || !Number.isFinite(token.exp)) throw new Error('Unauthorized');
   const grant = await provider.Grant.find(token.grantId);
@@ -102,7 +112,7 @@ export async function authenticateMcp(header) {
   const binding = (await getAdminDb().collection('mcpOAuthGrants').doc(digest(token.grantId)).get()).data();
   const deadlines = [binding?.expiresAt?.toMillis?.(), grant.exp * 1000, token.exp * 1000];
   const expiresAt = Math.min(...deadlines);
-  if (!binding || binding.userId !== token.accountId || binding.clientId !== config.clientId ||
+  if (!binding || binding.userId !== token.accountId || binding.clientId !== token.clientId ||
       binding.resource !== config.resource || !deadlines.every(Number.isFinite) || expiresAt <= Date.now()) throw new Error('Unauthorized');
   const taskScopes = scopes.filter(s => [TASK_READ_SCOPE, TASK_WRITE_SCOPE].includes(s));
   if (taskScopes.some(s => !binding.taskScopes?.includes(s))) throw new Error('Unauthorized');
@@ -115,6 +125,8 @@ export async function authenticateMcp(header) {
   if (binding.consentVersion === undefined) await assertProject(binding.userId, binding.projectId);
   if (expiresAt <= Date.now()) throw new Error('Unauthorized');
   return { userId: binding.userId, grantId: token.grantId, expiresAt, permissions: ['tasks:read', ...(taskScopes.includes(TASK_WRITE_SCOPE) ? ['tasks:write'] : [])], projectIds: scope.projectIds,
+    ...(token.clientId === CLAUDE_CODE_CLIENT.client_id ? { client: 'claude-code' } : {}),
+    ...(token.clientId === CLAUDE_CLIENT.client_id ? { client: 'claude' } : {}),
     ...(binding.consentVersion === PROJECT_CONSENT_VERSION ? { ...scope, consentVersion: PROJECT_CONSENT_VERSION, includeFutureProjects: false } : {}),
     ...(taskScopes.length ? { taskScopes } : {}),
     ...(production ? { mode: 'production', authorizationExpiresAt: Math.min(binding.expiresAt.toMillis(), grant.exp * 1000) } : {}) };

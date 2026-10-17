@@ -7,7 +7,7 @@ import { saveCoordinationDelegation, loadCoordinationDelegation } from './coordi
 const fake = vi.hoisted(() => ({ db: null as unknown, storage: vi.fn(), revokeDuringDownload: false }));
 vi.mock('@/lib/firebase/admin', () => ({ getAdminDb: () => fake.db, getAdminStorage: fake.storage }));
 vi.mock('@/lib/task/changeStamp.server', () => ({ stampTaskWrite: (_ref: unknown, data: unknown) => data }));
-vi.mock('./oidc', () => ({ activeUser: vi.fn(), oidcConfig: () => ({ productionEnabled: true, taskAccessEnabled: true, multiProjectReadEnabled: true, clientId: 'client', resource: 'resource' }) }));
+vi.mock('./oidc', () => ({ activeUser: vi.fn(), oidcConfig: () => ({ productionEnabled: true, taskAccessEnabled: true, multiProjectReadEnabled: true, clientId: 'client', clientIds: ['client'], resource: 'resource' }) }));
 let fixture: ReturnType<typeof taskFirestore>;
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const bindingPath = 'mcpOAuthGrants/' + hash('grant');

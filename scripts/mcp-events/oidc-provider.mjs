@@ -12,12 +12,43 @@ export function isTestAuthorizationScope(scope) {
     scopes.every(value => value === TEST_SCOPE || value === 'openid');
 }
 
+// Claude Code publishes this metadata at its client_id, but without application_type.
+// Pinning it as a native client keeps the published callbacks and applies RFC 8252's
+// any-port rule to its loopback listener.
+export const CLAUDE_CODE_CLIENT = Object.freeze({
+  client_id: 'https://claude.ai/oauth/claude-code-client-metadata', client_name: 'Claude Code',
+  application_type: 'native', redirect_uris: ['http://localhost/callback', 'http://127.0.0.1/callback'],
+  grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'], token_endpoint_auth_method: 'none',
+});
+// Hosted connectors (Desktop/web/mobile) use a separate public client and exact HTTPS callback.
+export const CLAUDE_CLIENT = Object.freeze({
+  client_id: 'https://claude.ai/oauth/mcp-oauth-client-metadata', client_name: 'Claude',
+  application_type: 'web', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'],
+  grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'], token_endpoint_auth_method: 'none',
+});
+export function isClaudeCodeCallback(uri) {
+  const match = typeof uri === 'string' && /^http:\/\/(?:localhost|127\.0\.0\.1):([1-9][0-9]{0,4})\/callback$/.exec(uri);
+  return Boolean(match && Number(match[1]) <= 65535);
+}
+
+// Claude Code requests every advertised scope. events:test is the separate synthetic
+// mode, so production connections drop it instead of being sent back to consent.
+export function claudeScope(scope) {
+  if (typeof scope !== 'string') return scope;
+  const scopes = scope.split(' ');
+  return new Set(scopes).size === scopes.length ? scopes.filter(s => s !== TEST_SCOPE).join(' ') : scope;
+}
+
 // Protocol validation/code issuance/PKCE/replay protection are owned by oidc-provider.
 export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, cookieKeys,
-  adapter, findAccount, clients = [], productionEnabled = false, taskAccessEnabled = false }) {
+  adapter, findAccount, clients = [], productionEnabled = false, taskAccessEnabled = false, claudeCodeEnabled = false, claudeEnabled = false }) {
   if (!jwks?.keys?.length || !cookieKeys?.length) throw new Error('Explicit OAuth keys required');
+  const claudeCode = productionEnabled && claudeCodeEnabled;
+  const claude = productionEnabled && claudeEnabled;
+  const pinnedClients = [...(claudeCode ? [{ ...CLAUDE_CODE_CLIENT }] : []), ...(claude ? [{ ...CLAUDE_CLIENT }] : [])];
+  const clientIds = new Set([clientId, ...pinnedClients.map(client => client.client_id)]);
   const provider = new Provider(issuer, {
-    adapter, jwks, clients, findAccount,
+    adapter, jwks, findAccount, clients: [...clients, ...pinnedClients],
     cookies: { keys: cookieKeys, short: { signed: true }, long: { signed: true } },
     scopes: productionEnabled ? [TEST_SCOPE, READ_SCOPE, 'offline_access', ...(taskAccessEnabled ? [TASK_READ_SCOPE, TASK_WRITE_SCOPE] : [])] : [TEST_SCOPE], claims: {},
     pkce: { required: () => true },
@@ -48,25 +79,31 @@ export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, co
         defaultResource: () => { throw new errors.InvalidTarget('resource is required'); },
         useGrantedResource: () => false,
         getResourceServerInfo: async (_ctx, target, client) => {
-          if (target !== resource || client.clientId !== clientId) throw new errors.InvalidTarget();
+          if (target !== resource || !clientIds.has(client.clientId)) throw new errors.InvalidTarget();
           return { scope: productionEnabled ? `${TEST_SCOPE} ${READ_SCOPE}${taskAccessEnabled ? ` ${TASK_READ_SCOPE} ${TASK_WRITE_SCOPE}` : ''}` : TEST_SCOPE,
             audience: resource, accessTokenFormat: 'opaque', accessTokenTTL: productionEnabled ? 3600 : 900 };
         },
       },
     },
-    renderError: async (ctx) => { ctx.type = 'text/plain'; ctx.body = 'OAuth request could not be completed. Return to ChatGPT and retry.'; },
+    renderError: async (ctx) => { ctx.type = 'text/plain'; ctx.body = 'OAuth request could not be completed. Return to the connecting app and retry.'; },
   });
   provider.proxy = true;
   provider.use(async (ctx, next) => {
-    // Reject before any redirect. One pinned client and exact callback only.
+    // Reject before any redirect. Pinned clients and their exact (or loopback) callbacks only.
     if (ctx.path === '/auth') {
-      if (ctx.method !== 'GET' || ctx.query.client_id !== clientId || ctx.query.redirect_uri !== redirectUri ||
-          !authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled) || ctx.query.resource !== resource ||
+      const native = claudeCode && ctx.query.client_id === CLAUDE_CODE_CLIENT.client_id;
+      const hosted = claude && ctx.query.client_id === CLAUDE_CLIENT.client_id;
+      if (native || hosted) ctx.query.scope = claudeScope(ctx.query.scope);
+      if (ctx.method !== 'GET' || !(native ? isClaudeCodeCallback(ctx.query.redirect_uri)
+        : hosted ? ctx.query.redirect_uri === CLAUDE_CLIENT.redirect_uris[0]
+        : ctx.query.client_id === clientId && ctx.query.redirect_uri === redirectUri) ||
+          ((native || hosted) && authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled, true) !== 'production') ||
+          !authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled, native || hosted) || ctx.query.resource !== resource ||
           ctx.query.response_type !== 'code' || ctx.query.code_challenge_method !== 'S256' ||
           typeof ctx.query.state !== 'string' || !ctx.query.state || ctx.query.state.length > 1024) {
         ctx.status = 400; ctx.body = { error: 'invalid_request' }; return;
       }
-      if (authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled) === 'production') {
+      if (authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled, native || hosted) === 'production') {
         // offline_access requires explicit consent. Our UI always asks afresh;
         // preserve caller prompts and make that policy explicit to oidc-provider.
         const prompts = (ctx.query.prompt ?? '').split(' ').filter(Boolean);

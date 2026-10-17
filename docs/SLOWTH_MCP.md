@@ -22,6 +22,18 @@ Taskflow のタスク・コメント・確認・サブタスク・チェック�
 
 複数プロジェクト読み取りのローカル実装は、既定で無効の設定と新しい明示同意を使用します。全件選択も同意時点の固定リストであり、書き込み・AI作業・イベントを別々に選択します。既存grantへの対象追加はしません。設計、API、検証方法と公開時の残件は [プロジェクト別同意](SLOWTH_MCP_PROJECT_CONSENT.md) を参照してください。
 
+### ClaudeアプリとClaude Codeのリモート接続
+
+`SLOWTH_MCP_OAUTH_CLAUDE=true` はClaude Desktop・web・mobileのhosted connectorを有効にします。固定public client `https://claude.ai/oauth/mcp-oauth-client-metadata` と `https://claude.ai/api/mcp/auth_callback` の完全一致だけを許可します。`SLOWTH_MCP_OAUTH_CLAUDE_CODE=true` は別の固定native client `https://claude.ai/oauth/claude-code-client-metadata` と、`http://localhost:<port>/callback` / `http://127.0.0.1:<port>/callback` のみを許可します。portは1〜65535です。両設定とも本番モードでだけ有効で、既存ChatGPTのclient/callbackを保持します。任意client・任意redirect・動的client登録は許可しません。新しい秘密鍵や永続client secretは不要です。
+
+```sh
+claude mcp add --transport http slowth https://slowth.1000ri.jp/api/mcp
+```
+
+配備・有効化後、Claudeアプリのコネクタには `https://slowth.1000ri.jp/api/mcp` を指定し、公開identityを使って接続します。Claude Codeでは `/mcp` から認証します。公開scope全件を要求するClaude Codeでは合成用 `events:test` を除き、`openid` なしの本番scopeも受け付けます。PKCE、本人確認、最大30日の期限、resource一致、clientへの束縛、refresh時の失効・現在のアクセス権検証は維持します。token交換とrefreshには同じ `resource=https://slowth.1000ri.jp/api/mcp` が必要です。
+
+複数project同意では現在閲覧できる対象の固定snapshotを保存し、書き込みとAI作業はそれぞれ個別同意を必要とします。ClaudeではChatGPT用の通知同意・通知接続・購読を作りません。初回401は読み取りに必要なscopeを提示し、書き込みは追加の明示同意です。既存Claude grantにscopeが不足する場合はHTTP 403と `WWW-Authenticate` で追加同意を要求します。ChatGPT用の既存toolエラー応答は保持します。既存ChatGPTのgrant・購読は変更しません。ローカルPAT接続は [別の接続方式](../tools/slowth-mcp/README.md) です。実クライアントの接続成功は、配備後の本人確認と区別して記録します。
+
 書込は共有サービスのトランザクション内で行います。古い版を拒否し、同じ操作ID・同じ内容の再送では保存済みの結果を返します。一括操作の途中失敗は、成功済み・失敗・未実行を区別して返します。投稿者・確認回答者・記録時刻・導出値を任意の入力から偽造することはできません。
 
 Dot は `coordination.propose` に理由と仕事の分解を保存し、実際の子タスク・担当・前提を保存した後で有効化します。利用可能な能力で着手し、成果・検証結果を親へ添付して、人間の確認を待ちます。人間の実回答を `sync_human` で同期し、修正時は新しい実行版へ進みます。AI の確認代行は拒否します。計画の完了と通常の親タスクの完了は別です。
@@ -47,3 +59,5 @@ Mac ワーカーの設定・起動・停止時の扱いは [SLOWTH_WORKER.md](SL
 この統合は、既存の配備用コピーから確認済みの MCP・通知処理と、Mac ワーカーのソースを選択して移したものです。配備用アプリ全体や別の UI・素材を上書きしていません。元の作業フォルダとローカル保全アーカイブは維持しています。
 
 本番ではタスクの読み書き、割り振り、実成果と本人確認を個別に確認済みです。通知を起点とするネイティブ実行の起動元、真正な修正の往復、継続運用の全条件は引き続き別の確認項目です。機能を Git に取り込んだことを理由に、これらを達成済みとしません。
+
+参照：[Claude公式の認証要件](https://claude.com/docs/connectors/building/authentication)、[Keycloak公式のDesktop client説明](https://www.keycloak.org/securing-apps/mcp-authz-server#_claude_desktop_integration)。hosted public metadataの現在のJSON取得は実行環境のCONNECT proxy 403で未確認です。固定client識別子とcallbackを相互交換する要求は拒否し、metadata取得先を任意URLへ開放しません。

@@ -8,7 +8,7 @@ import ts from 'typescript';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ADVISORY = 'GHSA-vfj7-8cjw-p6xm';
-const EXPIRY = '2026-10-17T00:00:00+09:00';
+const EXPIRY = '2026-10-24T00:00:00+09:00';
 const NAMES = ['eslint-config-next', '@next/eslint-plugin-next', 'fast-glob', 'micromatch', 'braces'];
 const SEVERITIES = ['info', 'low', 'moderate', 'high', 'critical'];
 const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];

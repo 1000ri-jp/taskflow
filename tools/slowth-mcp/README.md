@@ -2,7 +2,7 @@
 
 Claude Code や Claude Desktop から Slowth（https://slowth.1000ri.jp/）のプロジェクトとタスクを操作するための stdio MCP サーバーです。既存の個人アクセストークン（`tf_`）の REST API（[docs/API.md](../../docs/API.md)）を呼びます。
 
-本番の `/api/mcp`（OAuth、ChatGPT 用の1クライアントに固定）は使わず、変更もしません。依存パッケージはなく、Node.js 20 以上だけで動きます。
+このローカルサーバーは本番の `/api/mcp`（OAuth）を使いません。依存パッケージはなく、Node.js 20 以上だけで動きます。Claudeアプリ・Claude Code向けリモートOAuthの実装・有効化条件は [MCPの説明](../../docs/SLOWTH_MCP.md#claudeアプリとclaude-codeのリモート接続) を参照してください。
 
 ## ツール
 
@@ -84,4 +84,4 @@ npm run slowth-mcp:test
 
 ## claude.ai のカスタムコネクタについて
 
-claude.ai（ブラウザ・モバイル）のカスタムコネクタはリモート MCP の URL と OAuth を必要とします。現在の `/api/mcp` は OAuth のクライアントとコールバックを ChatGPT に固定しているため（`src/lib/mcp/oidc.js`）、そのままでは claude.ai から接続できません。対応するには Claude のクライアントとコールバック（`https://claude.ai/api/mcp/auth_callback`）を許可する本番認証の変更が別途必要です。
+claude.ai（ブラウザ・モバイル）のカスタムコネクタは、このローカルstdioサーバーを直接使えません。Claudeアプリのhosted connectorは `/api/mcp` のOAuth接続を使います。`SLOWTH_MCP_OAUTH_CLAUDE=true` の配備・有効化と本人の明示同意が必要です。使い方・固定client/callbackは [MCPの説明](../../docs/SLOWTH_MCP.md#claudeアプリとclaude-codeのリモート接続) を参照してください。

@@ -1,4 +1,4 @@
-import { oidcProvider, oidcConfig, firebaseConsentUser, assertProject, digest } from '@/lib/mcp/oidc';
+import { oidcProvider, oidcConfig, firebaseConsentUser, assertProject, digest, allowedClient } from '@/lib/mcp/oidc';
 import { getAdminDb } from '@/lib/firebase/admin';
 import { listUserProjects } from '@/lib/firebase/admin-projects';
 import { listConsentProjects } from '@/lib/mcp/projectConsent';
@@ -18,27 +18,28 @@ export default async function handler(req, res) {
     const user = await firebaseConsentUser(req.headers.authorization);
     stage = 'interaction_cookie';
     const details = await provider.interactionDetails(req, res);
-    const mode = authorizationMode(details.params.scope, settings.productionEnabled, settings.taskAccessEnabled);
+    const client = allowedClient(settings, details.params.client_id, details.params.redirect_uri);
+    const mode = authorizationMode(details.params.scope, settings.productionEnabled, settings.taskAccessEnabled, client === 'claude' || client === 'claude-code');
     const taskScopes = typeof details.params.scope === 'string' ? details.params.scope.split(' ').filter(s => [TASK_READ_SCOPE, TASK_WRITE_SCOPE].includes(s)) : [];
     const multiple = settings.multiProjectReadEnabled && mode === 'production' && taskScopes.includes(TASK_READ_SCOPE);
     const resourceScope = mode === 'production' ? [READ_SCOPE, ...taskScopes].join(' ') : TEST_SCOPE;
     const requested = req.method === 'GET' ? req.query.interaction : req.body?.interaction;
-    if (details.uid !== requested || details.params.client_id !== settings.clientId ||
-        details.params.redirect_uri !== settings.redirectUri || details.params.resource !== settings.resource ||
-        !mode) {
+    if (details.uid !== requested || !client || details.params.resource !== settings.resource ||
+        !mode || client !== 'chatgpt' && mode !== 'production') {
       console.warn('Slowth MCP consent rejected', { stage: 'interaction_binding' });
       res.status(403).end(); return;
     }
+    const redirectHost = new URL(details.params.redirect_uri).hostname;
     if (req.method === 'GET') {
       stage = 'project_selector';
       if (multiple) {
-        const projects = await listConsentProjects(user.uid);
-        res.json({ projects, scope: resourceScope, mode, taskScopes, maxDays: 30,
+        const projects = (await listConsentProjects(user.uid)).map(project => client !== 'chatgpt' ? { ...project, canNotify: false } : project);
+        res.json({ projects, scope: resourceScope, mode, taskScopes, client, redirectHost, maxDays: 30,
           consentVersion: PROJECT_CONSENT_VERSION, includeFutureProjects: false, maxProjects: MAX_CONSENT_PROJECTS }); return;
       }
       const projects = (await listUserProjects(user.uid)).filter(p => mode !== 'production' || p.id === PILOT_PROJECT)
         .map(p => ({ id: p.id, name: p.name }));
-      res.json({ projects, scope: resourceScope, mode, taskScopes,
+      res.json({ projects, scope: resourceScope, mode, taskScopes, client, redirectHost,
         maxDays: mode === 'production' ? 30 : null }); return;
     }
     if (typeof req.body.approve !== 'boolean') { res.status(400).end(); return; }
@@ -53,6 +54,7 @@ export default async function handler(req, res) {
       projectBinding = { consentVersion: req.body.consentVersion, includeFutureProjects: req.body.includeFutureProjects,
         projectIds: req.body.projectIds, writeProjectIds: req.body.writeProjectIds, aiProjectIds: req.body.aiProjectIds, eventProjectIds: req.body.eventProjectIds };
       const scope = grantProjectScope({ ...projectBinding, mode, taskScopes });
+      if (client !== 'chatgpt' && scope.eventProjectIds.length) { res.status(403).end(); return; }
       const projects = await listConsentProjects(user.uid);
       for (const id of scope.projectIds) {
         const project = projects.find(p => p.id === id);
@@ -69,16 +71,16 @@ export default async function handler(req, res) {
     // One explicit consent per interaction, even for concurrent double-clicks.
     await getAdminDb().collection('mcpOAuthConsents').doc(digest(details.uid)).create({ expiresAt: new Date(Date.now() + 300000) });
     stage = 'grant_storage';
-    const grant = new provider.Grant({ accountId: user.uid, clientId: settings.clientId });
+    const grant = new provider.Grant({ accountId: user.uid, clientId: details.params.client_id });
     grant.addOIDCScope(details.params.scope); grant.addResourceScope(settings.resource, resourceScope);
     const grantId = await grant.save();
     const expiresAt = new Date(Date.now() + (mode === 'production' ? CONSENT_MS : 900000));
     const binding = {
       userId: user.uid, authTime: user.auth_time, ...projectBinding,
-      clientId: settings.clientId, resource: settings.resource, mode, expiresAt, ...(taskScopes.length ? { taskScopes } : {}),
+      clientId: details.params.client_id, resource: settings.resource, mode, expiresAt, ...(taskScopes.length ? { taskScopes } : {}),
     };
     await getAdminDb().collection('mcpOAuthGrants').doc(digest(grantId)).set(binding);
-    if (mode === 'production' && (!multiple || projectBinding.eventProjectIds.length)) {
+    if (mode === 'production' && client === 'chatgpt' && (!multiple || projectBinding.eventProjectIds.length)) {
       const owner = digest(JSON.stringify([user.uid, grantId]));
       // This compatibility projectId is an event routing key, never the read selection.
       const eventBinding = { ...binding }; delete eventBinding.projectId;
@@ -93,6 +95,6 @@ export default async function handler(req, res) {
   } catch {
     // Fixed stage names only: never include exception text, tokens, cookies or account IDs.
     console.warn('Slowth MCP consent rejected', { stage });
-    if (!res.headersSent) res.status(403).json({ error: 'Connection could not be authorized. Start again from ChatGPT.' });
+    if (!res.headersSent) res.status(403).json({ error: 'Connection could not be authorized. Start again from the connecting app.' });
   }
 }

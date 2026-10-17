@@ -5,7 +5,7 @@ import { POST } from './route';
 import { memoryFirestore } from '../../../lib/mcp/firestore.fixture.mjs';
 
 const fake = vi.hoisted(() => ({ auth: vi.fn(), access: vi.fn(), post: vi.fn(), safePost: vi.fn(), db: vi.fn() }));
-vi.mock('@/lib/mcp/oidc', () => ({ authenticateMcp: fake.auth, oidcConfig: () => ({ origin: 'https://slowth.example.test', clientId: 'fixture-client', resource: 'https://slowth.example.test/api/mcp', allowedUid: 'fictional-user', productionEnabled: process.env.SLOWTH_MCP_EVENTS_PRODUCTION === 'true', multiProjectReadEnabled: true }) }));
+vi.mock('@/lib/mcp/oidc', () => ({ authenticateMcp: fake.auth, oidcConfig: () => ({ origin: 'https://slowth.example.test', clientId: 'fixture-client', resource: 'https://slowth.example.test/api/mcp', allowedUid: 'fictional-user', productionEnabled: process.env.SLOWTH_MCP_EVENTS_PRODUCTION === 'true', multiProjectReadEnabled: true, claudeEnabled: process.env.SLOWTH_MCP_OAUTH_CLAUDE === 'true', taskAccessEnabled: process.env.SLOWTH_MCP_TASK_ACCESS === 'true' }) }));
 vi.mock('@/lib/auth/projectAccess', () => ({ getProjectAccess: fake.access }));
 vi.mock('@/lib/firebase/admin', () => ({ getAdminDb: fake.db }));
 vi.mock('../../../../scripts/mcp-events/transport.mjs', () => ({ createSafePost: fake.safePost }));
@@ -642,4 +642,33 @@ it.each(['grant', 'binding', 'event-scope', 'membership', 'profile'])('locks cur
   });
   const response = await (await call('tools/call', { name: 'acknowledge_task_updates', arguments: { event_ids: [eventId] } })).json();
   expect(checks).toBe(2); expect(response.error).toBeDefined(); expect(db.records.get(journalPath).acknowledged).toBe(false);
+});
+
+it.each(['claude', 'claude-code'])('does not advertise notification tools or create subscriptions for %s, including legacy grants', async client => {
+  vi.stubEnv('SLOWTH_MCP_EVENTS_PRODUCTION', 'true'); vi.stubEnv('SLOWTH_MCP_TASK_ACCESS', 'true');
+  fake.auth.mockResolvedValue({ ...(await fake.auth()), client, mode: 'production', authorizationExpiresAt: Date.now() + 3600000 });
+  const tools = (await (await call('tools/list', {})).json()).result.tools;
+  expect(tools.map(t => t.name)).toContain('read_task_data');
+  expect(tools.map(t => t.name)).not.toContain('list_task_updates');
+  const r = await (await call('events/subscribe', subscription)).json();
+  expect(r.error).toBeDefined(); expect(subscriptionCount()).toBe(0); expect(fake.post).not.toHaveBeenCalled();
+});
+
+it('advertises explicit task-read consent for new hosted connections without requesting writes', async () => {
+  vi.stubEnv('SLOWTH_MCP_EVENTS_PRODUCTION', 'true'); vi.stubEnv('SLOWTH_MCP_TASK_ACCESS', 'true'); vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE', 'true');
+  fake.auth.mockRejectedValue(new Error('Unauthorized'));
+  const r = await call('initialize', {});
+  expect(r.status).toBe(401);
+  expect(r.headers.get('WWW-Authenticate')).toContain('scope="events:read tasks:read openid offline_access"');
+  expect(r.headers.get('WWW-Authenticate')).not.toContain('tasks:write');
+});
+it.each(['claude', 'claude-code'])('returns transport-level scope step-up for %s while preserving ChatGPT handling', async client => {
+  vi.stubEnv('SLOWTH_MCP_EVENTS_PRODUCTION', 'true'); vi.stubEnv('SLOWTH_MCP_TASK_ACCESS', 'true');
+  fake.auth.mockResolvedValue({ ...(await fake.auth()), client, mode: 'production', authorizationExpiresAt: Date.now() + 3600000, taskScopes: [] });
+  const r = await call('tools/call', { name: 'read_task_data', arguments: { resource: 'projects' } });
+  expect(r.status).toBe(403); expect(r.headers.get('WWW-Authenticate')).toContain('error="insufficient_scope"');
+  expect(r.headers.get('WWW-Authenticate')).toContain('tasks:read');
+  fake.auth.mockResolvedValue({ ...(await fake.auth()), client: undefined });
+  const old = await call('tools/call', { name: 'read_task_data', arguments: { resource: 'projects' } });
+  expect(old.status).toBe(200); expect((await old.json()).result._meta['mcp/www_authenticate'][0]).toContain('insufficient_scope');
 });
