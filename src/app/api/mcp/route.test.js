@@ -654,13 +654,13 @@ it.each(['claude', 'claude-code'])('does not advertise notification tools or cre
   expect(r.error).toBeDefined(); expect(subscriptionCount()).toBe(0); expect(fake.post).not.toHaveBeenCalled();
 });
 
-it('advertises explicit task-read consent for new hosted connections without requesting writes', async () => {
+it('advertises task read/write consent for new hosted connections so writes can be chosen per project', async () => {
   vi.stubEnv('SLOWTH_MCP_EVENTS_PRODUCTION', 'true'); vi.stubEnv('SLOWTH_MCP_TASK_ACCESS', 'true'); vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE', 'true');
   fake.auth.mockRejectedValue(new Error('Unauthorized'));
   const r = await call('initialize', {});
   expect(r.status).toBe(401);
-  expect(r.headers.get('WWW-Authenticate')).toContain('scope="events:read tasks:read openid offline_access"');
-  expect(r.headers.get('WWW-Authenticate')).not.toContain('tasks:write');
+  expect(r.headers.get('WWW-Authenticate')).toContain('scope="events:read tasks:read tasks:write openid offline_access"');
+  expect(r.headers.get('WWW-Authenticate')).not.toContain('events:test');
 });
 it.each(['claude', 'claude-code'])('returns transport-level scope step-up for %s while preserving ChatGPT handling', async client => {
   vi.stubEnv('SLOWTH_MCP_EVENTS_PRODUCTION', 'true'); vi.stubEnv('SLOWTH_MCP_TASK_ACCESS', 'true');

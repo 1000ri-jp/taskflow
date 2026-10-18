@@ -117,3 +117,17 @@ it.each([{ client: 'claude-code', name: 'Claude Code', host: 'localhost' }, { cl
   await screen.findByRole('alert');
   expect(JSON.parse(fetch.mock.calls.find(call => call[1].method === 'POST')![1].body)).toEqual({ interaction: 'fixture-claude', approve: true, consentVersion: 2, projectIds: ['editor', 'viewer'], writeProjectIds: ['editor'], aiProjectIds: ['editor'], eventProjectIds: [], includeFutureProjects: false });
 });
+
+it('explains why write cannot be chosen instead of silently hiding it', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => multipleResponse()));
+  const view = render(<Consent interaction="fixture-interaction" />);
+  await screen.findByRole('checkbox', { name: '架空閲覧の読み取り' });
+  expect(screen.getByText(/書き込み：選べません/)).toBeInTheDocument();
+  expect(screen.queryByText(/tasks:write）を要求していない/)).not.toBeInTheDocument();
+  view.unmount();
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => new Response(JSON.stringify({ consentVersion: 2, mode: 'production', client: 'claude', maxProjects: 500, taskScopes: ['tasks:read'],
+    projects: [{ id: 'editor', name: '架空編集', canWrite: true, canWork: true }] }))));
+  render(<Consent interaction="fixture-read-only" />);
+  expect(await screen.findByText(/tasks:write）を要求していない/)).toBeInTheDocument();
+  expect(screen.queryByRole('checkbox', { name: '架空編集の書き込み' })).not.toBeInTheDocument();
+});

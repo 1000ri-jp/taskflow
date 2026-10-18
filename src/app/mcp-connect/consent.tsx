@@ -95,6 +95,7 @@ export default function Consent({ interaction }: { interaction: string }) {
         {error && !ready && <Button className="w-full" disabled={busy} onClick={reconnect}>SlowthのGoogleアカウントで再ログイン</Button>}
         {multiple ? <SettingsLayout align="start">
           <Prose>読み取り対象を選択してください。全件選択は、現在表示されているプロジェクトだけが対象です。</Prose>
+          {!taskWrite && <Prose role="note">接続元が書き込み権限（tasks:write）を要求していないため、この接続では書き込みを選べません。書き込みが必要な場合は、接続元で接続を解除してから接続し直してください。</Prose>}
           <Button variant="outline" disabled={busy || !data?.projects.length || data.projects.length > data.maxProjects} onClick={() => setReadIds(data!.projects.map(p => p.id))}>現在閲覧できる全件を読み取り対象にする</Button>
           <Button variant="outline" disabled={busy || !readIds.length} onClick={() => { setReadIds([]); setWriteIds([]); setAiIds([]); setEventIds([]); }}>選択を解除</Button>
           {data!.projects.map(p => <Card key={p.id} density="compact"><CardContent><SettingsLayout align="start">
@@ -104,6 +105,7 @@ export default function Consent({ interaction }: { interaction: string }) {
               setWriteIds(ids => value === true ? [...ids, p.id] : ids.filter(id => id !== p.id));
               if (value !== true) setAiIds(ids => ids.filter(id => id !== p.id));
             }} />タスク・子リソースの作成と変更を許可</label>}
+            {taskWrite && !p.canWrite && <Prose>書き込み：選べません（閲覧専用、またはAI利用設定で対象外のプロジェクト）</Prose>}
             {taskWrite && p.canWork && <label className={settingSelectionRow}><Checkbox checked={aiIds.includes(p.id)} disabled={busy || !writeIds.includes(p.id)} aria-label={p.name + 'のAI作業'} onCheckedChange={value => setAiIds(ids => value === true ? [...ids, p.id] : ids.filter(id => id !== p.id))} />AIの計画・作業委任を許可</label>}
             {!claude && p.canNotify && <label className={settingSelectionRow}><Checkbox checked={eventIds.includes(p.id)} disabled={busy || !readIds.includes(p.id)} aria-label={p.name + 'の更新通知'} onCheckedChange={value => setEventIds(ids => value === true ? [...ids, p.id] : ids.filter(id => id !== p.id))} />タスク更新通知を許可</label>}
           </SettingsLayout></CardContent></Card>)}
