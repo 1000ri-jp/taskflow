@@ -95,7 +95,7 @@
     },
     {
       "path": "src/app/mcp-connect/consent.tsx",
-      "sha256": "e2d670ffde9b13899a50029417ef7abaa18ac6cb4aaea1f200914168dcd0293a"
+      "sha256": "89d600c9446bd6cfb1e787d71d2b67a723ddb80e56d6273b4d47870648bc8a39"
     },
     {
       "path": "src/app/neo-appearance.css",
@@ -1811,7 +1811,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "709d31d2348bf0a7809708441258f2dfcc0d9624443ffa88a6a8d13e1ca1e330"
+      "sha256": "e2c0897156cf82312f251ee6469dfea4709e663a4c30ebf2c33a1bcdf94afcb6"
     },
     {
       "path": "src/lib/ui-guide/verification.json",

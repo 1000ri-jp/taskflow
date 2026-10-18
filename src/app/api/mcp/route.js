@@ -68,8 +68,9 @@ export async function POST(request) {
   catch {
     let config;
     try { config = oidcConfig(); } catch { return reply({ error: 'Not configured' }, 503); }
-    // New Claude connections need read consent. Existing grants are never widened here.
-    const scope = config.productionEnabled ? (config.claudeEnabled && config.taskAccessEnabled ? 'events:read tasks:read openid offline_access' : 'events:read') : 'events:test';
+    // New Claude connections request task read/write so the consent screen can offer per-project
+    // write choices (all unchecked). Existing grants are never widened here.
+    const scope = config.productionEnabled ? (config.claudeEnabled && config.taskAccessEnabled ? 'events:read tasks:read tasks:write openid offline_access' : 'events:read') : 'events:test';
     return Response.json({ error: 'Unauthorized' }, { status: 401, headers: {
       'Cache-Control': 'no-store',
       'WWW-Authenticate': `Bearer resource_metadata="${config.origin}/.well-known/oauth-protected-resource/api/mcp", scope="${scope}"`,
