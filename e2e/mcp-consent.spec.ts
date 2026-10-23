@@ -18,7 +18,7 @@ test.beforeAll(async () => {
       window.fixtureClient = 'chatgpt';
       window.fetch = async (_url, options = {}) => {
         if (options.method === 'POST') { window.submittedConsent = JSON.parse(options.body); return new Response('{}', {status:403}); }
-        return new Response(JSON.stringify({consentVersion:2,mode:'production',client:window.fixtureClient,redirectHost:window.fixtureClient==='claude-code'?'localhost':window.fixtureClient==='claude'?'claude.ai':'chatgpt.com',maxProjects:500,taskScopes:['tasks:read','tasks:write'],projects:[
+        return new Response(JSON.stringify({consentVersion:2,mode:'production',client:window.fixtureClient,redirectHost:window.fixtureClient==='claude-code'?'localhost':window.fixtureClient==='claude'?'claude.ai':window.fixtureClient==='muse'?'agent.meta.ai':'chatgpt.com',maxProjects:500,taskScopes:['tasks:read','tasks:write'],projects:[
           {id:'${editorId}',name:'架空の編集プロジェクト',canWrite:true,canWork:true,canNotify:true},
           {id:'${longId}',name:'架空の閲覧プロジェクト・長い名前と説明がある場合の表示確認',canWrite:false,canWork:false,canNotify:false}
         ]}));
@@ -59,7 +59,7 @@ for (const width of [1200, 390]) test(`explicit current-project consent at ${wid
   expect(requests).toEqual([]);
 });
 
-for (const client of ['claude-code', 'claude']) for (const width of [1200, 390]) test(`${client} current-project consent at ${width}px`, async ({ page }, info) => {
+for (const client of ['claude-code', 'claude', 'muse']) for (const width of [1200, 390]) test(`${client} current-project consent at ${width}px`, async ({ page }, info) => {
   await page.setViewportSize({ width, height: 950 });
   await page.setContent('<!doctype html><html lang="ja"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div></body></html>');
   await page.addStyleTag({ content: css }); await page.addScriptTag({ content: javascript });
@@ -67,7 +67,7 @@ for (const client of ['claude-code', 'claude']) for (const width of [1200, 390])
     const fixture = window as unknown as { fixtureClient: string; changeInteraction: (value: string) => void };
     fixture.fixtureClient = client; fixture.changeInteraction('fixture-claude');
   }, client);
-  await expect(page.getByRole('heading', { name: (client === 'claude-code' ? 'Claude Code' : 'Claude') + 'との接続確認' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: (client === 'muse' ? 'Muse' : client === 'claude-code' ? 'Claude Code' : 'Claude') + 'との接続確認' })).toBeVisible();
   await page.getByRole('button', { name: '現在閲覧できる全件を読み取り対象にする' }).click();
   await expect(page.getByRole('checkbox', { name: '架空の編集プロジェクトの更新通知' })).toHaveCount(0);
   await page.getByRole('checkbox', { name: '架空の編集プロジェクトの書き込み' }).check();

@@ -3,7 +3,7 @@
   "files": [
     {
       "path": "AGENTS.md",
-      "sha256": "b67c74418b949e93dbfc83dde172ab02152d0872d4f77b84680e7c155a6c2c40"
+      "sha256": "2e29a4f13649f905069f08ab69520bfc328810b5fe49f2bebe1a815c313bf82d"
     },
     {
       "path": "docs/TASKFLOW_DESIGN_STANDARD_2026-09-13.md",
@@ -15,7 +15,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "fd62dc237ab807f56e5a795db9cb9df9af62022d7248a4795b5367d562e572c4"
+      "sha256": "03511a2087e7352a1b35554c1ffa79f5a1ae2b64dee77f5fe4f28ce1ebcb77dc"
     },
     {
       "path": "scripts/ui-guide.mjs",
@@ -95,7 +95,7 @@
     },
     {
       "path": "src/app/mcp-connect/consent.tsx",
-      "sha256": "89d600c9446bd6cfb1e787d71d2b67a723ddb80e56d6273b4d47870648bc8a39"
+      "sha256": "e50a1fb8e3f751eefc00cd9cdf54b3df5ce89623828d2b6be0b0d8de6f1c5071"
     },
     {
       "path": "src/app/neo-appearance.css",
@@ -1811,7 +1811,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "e2c0897156cf82312f251ee6469dfea4709e663a4c30ebf2c33a1bcdf94afcb6"
+      "sha256": "afcc0e85ee8cf14ccd9e819c3ad894d8f187b86123052d8be7eaf84e7cc4b506"
     },
     {
       "path": "src/lib/ui-guide/verification.json",

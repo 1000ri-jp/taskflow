@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { getProjectAccess } from '@/lib/auth/projectAccess';
-import { makeProvider, TEST_SCOPE, CLAUDE_CODE_CLIENT, CLAUDE_CLIENT, isClaudeCodeCallback } from '../../../scripts/mcp-events/oidc-provider.mjs';
+import { makeProvider, TEST_SCOPE, CLAUDE_CODE_CLIENT, CLAUDE_CLIENT, MUSE_CLIENT, isClaudeCodeCallback } from '../../../scripts/mcp-events/oidc-provider.mjs';
 import { firestoreAdapter } from '../../../scripts/mcp-events/oidc-store.mjs';
 import { PILOT_PROJECT, READ_SCOPE, TASK_READ_SCOPE, TASK_WRITE_SCOPE } from '../../../scripts/mcp-events/policy.mjs';
 import { grantProjectScope, PROJECT_CONSENT_VERSION } from '../../../scripts/mcp-events/project-scope.mjs';
@@ -21,8 +21,9 @@ export function oidcConfig() {
   const taskAccessEnabled = productionEnabled && process.env.SLOWTH_MCP_TASK_ACCESS === 'true';
   const claudeCodeEnabled = productionEnabled && process.env.SLOWTH_MCP_OAUTH_CLAUDE_CODE === 'true';
   const claudeEnabled = productionEnabled && process.env.SLOWTH_MCP_OAUTH_CLAUDE === 'true';
+  const museEnabled = productionEnabled && process.env.SLOWTH_MCP_OAUTH_MUSE === 'true';
   return { origin, issuer: origin + '/api/oidc', resource: origin + '/api/mcp', allowedUid, clientId, redirectUri, productionEnabled, taskAccessEnabled,
-    claudeCodeEnabled, claudeEnabled, clientIds: [clientId, ...(claudeCodeEnabled ? [CLAUDE_CODE_CLIENT.client_id] : []), ...(claudeEnabled ? [CLAUDE_CLIENT.client_id] : [])],
+    claudeCodeEnabled, claudeEnabled, museEnabled, clientIds: [clientId, ...(claudeCodeEnabled ? [CLAUDE_CODE_CLIENT.client_id] : []), ...(claudeEnabled ? [CLAUDE_CLIENT.client_id] : []), ...(museEnabled ? [MUSE_CLIENT.client_id] : [])],
     multiProjectReadEnabled: taskAccessEnabled && process.env.SLOWTH_MCP_MULTI_PROJECT_READ === 'true' };
 }
 /** Keep ChatGPT's exact callback separate from the pinned native client's loopback callback. */
@@ -30,6 +31,7 @@ export function allowedClient(config, clientId, redirectUri) {
   if (clientId === config.clientId) return redirectUri === config.redirectUri ? 'chatgpt' : null;
   if (config.claudeCodeEnabled && clientId === CLAUDE_CODE_CLIENT.client_id && isClaudeCodeCallback(redirectUri)) return 'claude-code';
   if (config.claudeEnabled && clientId === CLAUDE_CLIENT.client_id && redirectUri === CLAUDE_CLIENT.redirect_uris[0]) return 'claude';
+  if (config.museEnabled && clientId === MUSE_CLIENT.client_id && redirectUri === MUSE_CLIENT.redirect_uris[0]) return 'muse';
   return null;
 }
 let instance;
@@ -127,6 +129,7 @@ export async function authenticateMcp(header) {
   return { userId: binding.userId, grantId: token.grantId, expiresAt, permissions: ['tasks:read', ...(taskScopes.includes(TASK_WRITE_SCOPE) ? ['tasks:write'] : [])], projectIds: scope.projectIds,
     ...(token.clientId === CLAUDE_CODE_CLIENT.client_id ? { client: 'claude-code' } : {}),
     ...(token.clientId === CLAUDE_CLIENT.client_id ? { client: 'claude' } : {}),
+    ...(token.clientId === MUSE_CLIENT.client_id ? { client: 'muse' } : {}),
     ...(binding.consentVersion === PROJECT_CONSENT_VERSION ? { ...scope, consentVersion: PROJECT_CONSENT_VERSION, includeFutureProjects: false } : {}),
     ...(taskScopes.length ? { taskScopes } : {}),
     ...(production ? { mode: 'production', authorizationExpiresAt: Math.min(binding.expiresAt.toMillis(), grant.exp * 1000) } : {}) };

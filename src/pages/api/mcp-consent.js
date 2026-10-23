@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     stage = 'interaction_cookie';
     const details = await provider.interactionDetails(req, res);
     const client = allowedClient(settings, details.params.client_id, details.params.redirect_uri);
-    const mode = authorizationMode(details.params.scope, settings.productionEnabled, settings.taskAccessEnabled, client === 'claude' || client === 'claude-code');
+    const mode = authorizationMode(details.params.scope, settings.productionEnabled, settings.taskAccessEnabled, Boolean(client && client !== 'chatgpt'));
     const taskScopes = typeof details.params.scope === 'string' ? details.params.scope.split(' ').filter(s => [TASK_READ_SCOPE, TASK_WRITE_SCOPE].includes(s)) : [];
     const multiple = settings.multiProjectReadEnabled && mode === 'production' && taskScopes.includes(TASK_READ_SCOPE);
     const resourceScope = mode === 'production' ? [READ_SCOPE, ...taskScopes].join(' ') : TEST_SCOPE;

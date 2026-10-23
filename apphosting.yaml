@@ -70,6 +70,10 @@ env:
     value: 'true'
     availability:
       - RUNTIME
+  - variable: SLOWTH_MCP_OAUTH_MUSE
+    value: 'true'
+    availability:
+      - RUNTIME
   - variable: SLOWTH_MCP_OAUTH_JWKS
     secret: SLOWTH_MCP_OAUTH_JWKS@1
     availability:
