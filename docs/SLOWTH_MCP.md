@@ -38,6 +38,27 @@ claude mcp add --transport http slowth https://slowth.1000ri.jp/api/mcp
 
 Dot は `coordination.propose` に理由と仕事の分解を保存し、実際の子タスク・担当・前提を保存した後で有効化します。利用可能な能力で着手し、成果・検証結果を親へ添付して、人間の確認を待ちます。人間の実回答を `sync_human` で同期し、修正時は新しい実行版へ進みます。AI の確認代行は拒否します。計画の完了と通常の親タスクの完了は別です。
 
+### Muse（Meta Agent）の手動登録接続
+
+`SLOWTH_MCP_OAUTH_MUSE=true` で固定public client `slowth-muse` を登録します。本番OAuthモードでのみ有効です。既定値は`false`です。2026-10-23のユーザー承認により`apphosting.yaml`で`true`を設定し、Muse接続を有効にします。任意clientの動的登録は行いません。
+
+配備・有効化後、MuseのカスタムMCP接続に以下を設定します。
+
+| 項目 | 値 |
+| --- | --- |
+| MCP URL | `https://slowth.1000ri.jp/api/mcp` |
+| Client ID | `slowth-muse` |
+| Client Secret | 空欄（public client、`token_endpoint_auth_method=none`） |
+| Redirect URI | `https://agent.meta.ai/api/hatch/oauth/callback` |
+| Authorization URL（手動設定時） | `https://slowth.1000ri.jp/api/oidc/auth` |
+| Token URL（手動設定時） | `https://slowth.1000ri.jp/api/oidc/token` |
+| Scope（読み取り） | `events:read tasks:read openid offline_access` |
+| Scope（読み書き） | `events:read tasks:read tasks:write openid offline_access` |
+
+戻り先はユーザーから提示された上記URLとの完全一致のみを許可します。PKCE S256と`resource=https://slowth.1000ri.jp/api/mcp`が必須で、token交換・refreshにも同じresourceが必要です。`openid`を送らない要求も受け付けますが、`events:test`や未知scopeとの混在は拒否します。本人のGoogleログイン、新しい明示同意、現在のメンバー権限、最大30日の期限、refreshのローテーション・失効検証を使用します。ChatGPT用の通知接続・購読は作成しません。
+
+この追加はリモートOAuth MCPの認証・同意だけに適用します。REST APIとローカルstdio MCPは従来のPAT認証と共有タスク処理を使用します。ローカルの認可・token交換・refresh・同意画面検証と、Muse実サービスでの接続成功は区別します。本番配備後、Museから認証を開始し、読み取り・追加書込同意を本人が確認する必要があります。Muse側の必須認証方式がpublic clientと異なる場合は、その要求を確認してから対応します。
+
 ## 設定・配備・復旧
 
 開発・CI・Functions は Node.js 22 を使用します。OAuth の Node HTTP API を扱うため、`pages/` には API エンドポイントだけを置きます。App Router の画面に追加した非null指定は、この API 追加による Next.js の互換型への対応です。

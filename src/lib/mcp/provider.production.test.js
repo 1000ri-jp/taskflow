@@ -3,7 +3,7 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import { createServer } from 'node:http';
 import { createHash, generateKeyPairSync, randomBytes } from 'node:crypto';
 import { CookieJar } from 'tough-cookie';
-import { makeProvider, mountedCallback, CLAUDE_CODE_CLIENT, CLAUDE_CLIENT } from '../../../scripts/mcp-events/oidc-provider.mjs';
+import { makeProvider, mountedCallback, CLAUDE_CODE_CLIENT, CLAUDE_CLIENT, MUSE_CLIENT } from '../../../scripts/mcp-events/oidc-provider.mjs';
 
 let server, port, provider, active = true;
 const origin = 'https://slowth.example.test', clientId = 'https://chatgpt.com/oauth/client.json';
@@ -21,7 +21,7 @@ class Adapter {
 }
 beforeAll(async () => {
   const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
-  provider = makeProvider({ issuer: origin + '/api/oidc', resource, clientId, redirectUri, productionEnabled: true, taskAccessEnabled: true, claudeCodeEnabled: true, claudeEnabled: true,
+  provider = makeProvider({ issuer: origin + '/api/oidc', resource, clientId, redirectUri, productionEnabled: true, taskAccessEnabled: true, claudeCodeEnabled: true, claudeEnabled: true, museEnabled: true,
     jwks: { keys: [{ ...privateKey.export({ format: 'jwk' }), kid: 'fixture', use: 'sig', alg: 'RS256' }] },
     cookieKeys: [randomBytes(32).toString('hex')], adapter: Adapter,
     clients: [{ client_id: clientId, redirect_uris: [redirectUri], token_endpoint_auth_method: 'none',
@@ -138,6 +138,7 @@ it('keeps Claude Code unknown unless enabled', async () => {
     cookieKeys: [randomBytes(32).toString('hex')], adapter: Adapter, findAccount: async () => undefined });
   await expect(disabled.Client.find(CLAUDE_CODE_CLIENT.client_id)).rejects.toThrow('invalid_client');
   await expect(disabled.Client.find(CLAUDE_CLIENT.client_id)).rejects.toThrow('invalid_client');
+  expect(await disabled.Client.find(MUSE_CLIENT.client_id)).toBeUndefined();
 });
 
 const hostedId = CLAUDE_CLIENT.client_id, hostedRedirect = CLAUDE_CLIENT.redirect_uris[0];
@@ -176,4 +177,54 @@ it('keeps DCR disabled and rejects missing or mismatched resource and PKCE befor
 it('accepts the explicit initial hosted read challenge with OIDC and preserves its exact resource scopes', async () => {
   const first = await issue('events:read tasks:read openid offline_access', hostedId, hostedRedirect);
   expect(first.scope).toBe('events:read tasks:read'); expect(first.id_token).toBeTypeOf('string');
+});
+
+it.each(['events:read tasks:read offline_access', 'events:read tasks:read tasks:write openid offline_access'])('connects the registered Muse public client with scope %s', async scope => {
+  const first = await issue(scope, MUSE_CLIENT.client_id, MUSE_CLIENT.redirect_uris[0]);
+  expect(first.scope.split(' ').sort()).toEqual(scope.split(' ').filter(s => s.startsWith('events:') || s.startsWith('tasks:')).sort());
+  expect(first.refresh_token).toBeTypeOf('string');
+  expect((await token({ grant_type: 'refresh_token', refresh_token: first.refresh_token }, hostedId)).status).toBe(400);
+  const refreshed = await token({ grant_type: 'refresh_token', refresh_token: first.refresh_token }, MUSE_CLIENT.client_id);
+  expect(refreshed.status).toBe(200); expect(refreshed.body.scope).toBe(first.scope);
+  expect(refreshed.body.refresh_token).not.toBe(first.refresh_token);
+  expect((await token({ grant_type: 'refresh_token', refresh_token: first.refresh_token }, MUSE_CLIENT.client_id)).body.error).toBe('invalid_grant');
+});
+it.each([
+  'http://agent.meta.ai/api/hatch/oauth/callback',
+  'https://agent.meta.ai/api/hatch/oauth/callback/',
+  'https://agent.meta.ai/api/hatch/oauth/callback?next=evil',
+  'https://agent.meta.ai.evil.example/api/hatch/oauth/callback',
+  'https://claude.ai/api/mcp/auth_callback',
+  'https://chatgpt.com/connector_platform_oauth_redirect',
+])('rejects Muse callback substitutions before redirect: %s', async redirect => {
+  const url = authorizeUrl('events:read tasks:read offline_access', MUSE_CLIENT.client_id, redirect);
+  const r = await fetch(`http://127.0.0.1:${port}${url.pathname}${url.search}`, { redirect: 'manual' });
+  expect(r.status).toBe(400); expect(await r.json()).toEqual({ error: 'invalid_request' });
+});
+it.each([
+  ['client_id', 'unregistered-muse'], ['resource', ''], ['resource', 'https://other.example/mcp'],
+  ['code_challenge_method', 'plain'], ['state', ''],
+  ['scope', 'events:test openid'], ['scope', 'events:read tasks:write offline_access'],
+])('rejects invalid Muse authorization %s=%s', async (key, value) => {
+  const url = authorizeUrl('events:read tasks:read offline_access', MUSE_CLIENT.client_id, MUSE_CLIENT.redirect_uris[0]);
+  url.searchParams.set(key, value);
+  const r = await fetch(`http://127.0.0.1:${port}${url.pathname}${url.search}`, { redirect: 'manual' });
+  expect(r.status).toBe(400);
+});
+it('does not register Muse outside production even when its flag is set', async () => {
+  const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const disabled = makeProvider({ issuer: origin + '/api/oidc', resource, clientId, redirectUri, museEnabled: true,
+    jwks: { keys: [{ ...privateKey.export({ format: 'jwk' }), kid: 'fixture', use: 'sig', alg: 'RS256' }] },
+    cookieKeys: [randomBytes(32).toString('hex')], adapter: Adapter });
+  expect(await disabled.Client.find(MUSE_CLIENT.client_id)).toBeUndefined();
+});
+it('returns a PKCE error to the registered Muse callback without issuing a code when its challenge is missing', async () => {
+  const url = authorizeUrl('events:read tasks:read offline_access', MUSE_CLIENT.client_id, MUSE_CLIENT.redirect_uris[0]);
+  url.searchParams.delete('code_challenge');
+  const r = await fetch(`http://127.0.0.1:${port}${url.pathname}${url.search}`, { redirect: 'manual' });
+  expect(r.status).toBe(303);
+  const destination = new URL(r.headers.get('location'));
+  expect(destination.origin + destination.pathname).toBe(MUSE_CLIENT.redirect_uris[0]);
+  expect(destination.searchParams.get('error')).toBe('invalid_request');
+  expect(destination.searchParams.has('code')).toBe(false);
 });

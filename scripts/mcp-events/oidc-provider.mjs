@@ -26,6 +26,12 @@ export const CLAUDE_CLIENT = Object.freeze({
   application_type: 'web', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'],
   grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'], token_endpoint_auth_method: 'none',
 });
+// Manually registered public client; Muse's supplied callback must match exactly.
+export const MUSE_CLIENT = Object.freeze({
+  client_id: 'slowth-muse', client_name: 'Muse',
+  application_type: 'web', redirect_uris: ['https://agent.meta.ai/api/hatch/oauth/callback'],
+  grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'], token_endpoint_auth_method: 'none',
+});
 export function isClaudeCodeCallback(uri) {
   const match = typeof uri === 'string' && /^http:\/\/(?:localhost|127\.0\.0\.1):([1-9][0-9]{0,4})\/callback$/.exec(uri);
   return Boolean(match && Number(match[1]) <= 65535);
@@ -41,11 +47,12 @@ export function claudeScope(scope) {
 
 // Protocol validation/code issuance/PKCE/replay protection are owned by oidc-provider.
 export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, cookieKeys,
-  adapter, findAccount, clients = [], productionEnabled = false, taskAccessEnabled = false, claudeCodeEnabled = false, claudeEnabled = false }) {
+  adapter, findAccount, clients = [], productionEnabled = false, taskAccessEnabled = false, claudeCodeEnabled = false, claudeEnabled = false, museEnabled = false }) {
   if (!jwks?.keys?.length || !cookieKeys?.length) throw new Error('Explicit OAuth keys required');
   const claudeCode = productionEnabled && claudeCodeEnabled;
   const claude = productionEnabled && claudeEnabled;
-  const pinnedClients = [...(claudeCode ? [{ ...CLAUDE_CODE_CLIENT }] : []), ...(claude ? [{ ...CLAUDE_CLIENT }] : [])];
+  const muse = productionEnabled && museEnabled;
+  const pinnedClients = [...(claudeCode ? [{ ...CLAUDE_CODE_CLIENT }] : []), ...(claude ? [{ ...CLAUDE_CLIENT }] : []), ...(muse ? [{ ...MUSE_CLIENT }] : [])];
   const clientIds = new Set([clientId, ...pinnedClients.map(client => client.client_id)]);
   const provider = new Provider(issuer, {
     adapter, jwks, findAccount, clients: [...clients, ...pinnedClients],
@@ -93,17 +100,20 @@ export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, co
     if (ctx.path === '/auth') {
       const native = claudeCode && ctx.query.client_id === CLAUDE_CODE_CLIENT.client_id;
       const hosted = claude && ctx.query.client_id === CLAUDE_CLIENT.client_id;
+      const metaAgent = muse && ctx.query.client_id === MUSE_CLIENT.client_id;
+      const pinned = native || hosted || metaAgent;
       if (native || hosted) ctx.query.scope = claudeScope(ctx.query.scope);
       if (ctx.method !== 'GET' || !(native ? isClaudeCodeCallback(ctx.query.redirect_uri)
         : hosted ? ctx.query.redirect_uri === CLAUDE_CLIENT.redirect_uris[0]
+        : metaAgent ? ctx.query.redirect_uri === MUSE_CLIENT.redirect_uris[0]
         : ctx.query.client_id === clientId && ctx.query.redirect_uri === redirectUri) ||
-          ((native || hosted) && authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled, true) !== 'production') ||
-          !authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled, native || hosted) || ctx.query.resource !== resource ||
+          (pinned && authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled, true) !== 'production') ||
+          !authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled, pinned) || ctx.query.resource !== resource ||
           ctx.query.response_type !== 'code' || ctx.query.code_challenge_method !== 'S256' ||
           typeof ctx.query.state !== 'string' || !ctx.query.state || ctx.query.state.length > 1024) {
         ctx.status = 400; ctx.body = { error: 'invalid_request' }; return;
       }
-      if (authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled, native || hosted) === 'production') {
+      if (authorizationMode(ctx.query.scope, productionEnabled, taskAccessEnabled, pinned) === 'production') {
         // offline_access requires explicit consent. Our UI always asks afresh;
         // preserve caller prompts and make that policy explicit to oidc-provider.
         const prompts = (ctx.query.prompt ?? '').split(' ').filter(Boolean);

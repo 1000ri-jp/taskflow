@@ -3,7 +3,7 @@
   "graphHash": "fff731a0a379f2578a6bd23932968cb395c118d0eb5728c5247b8ec5466bef60",
   "entries": {
     "text": {
-      "sourceHash": "c663bfd5c7e6cdb1dc7f5645f110b958d1685d9f1747dae1786ad959ffd31c92",
+      "sourceHash": "b0971f5dd05f6ed157015520b3e97fa3a6e01005133d238649a770282573b666",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -64,7 +64,7 @@
       ]
     },
     "button": {
-      "sourceHash": "033e41c46cec059961dd15ed648f24215b533dcf3137f8fbcea768c1921382ca",
+      "sourceHash": "459bc2471b95f6f1d0c7171bb67415da33b5a8c40dc2a0b8b27ad7ce588b15c2",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -255,7 +255,7 @@
       ]
     },
     "input": {
-      "sourceHash": "48bfc189c21869ce801aa3453a8c9cbc9627efdd6ab0cb4d0797316e3c37071d",
+      "sourceHash": "938e7f637c3ec6eb981fdf0e76595caa5f5c4ceb0bb9df293aaea4fc1829f397",
       "direct": [
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
@@ -408,7 +408,7 @@
       ]
     },
     "card": {
-      "sourceHash": "856d6fdf1940c707d1f9fad4c77e0183c1dce7f7a264741dd2d07ee4faa28080",
+      "sourceHash": "2a2be0a2b9a0206c5140b52675a0c5536d9d9a0adbeb48f658d8eeb3f4b06bc9",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -727,7 +727,7 @@
       ]
     },
     "setting": {
-      "sourceHash": "6339acb3b2fbbb6cc728ef12add5acb257c851659ff0afde739dcd03a02d0c59",
+      "sourceHash": "63ba6f4a4b34e89a449fa2892a560a0e4fae932c5e55d96667ba9eed64172bc2",
       "direct": [
         "src/app/mcp-connect/consent.tsx",
         "src/components/help/HelpVideos.tsx",
@@ -776,7 +776,7 @@
       ]
     },
     "detail-layout": {
-      "sourceHash": "4bc619e1ae5a70caf6edce18dc53f1a78883210ab4bbd6b8475e9b533aafae95",
+      "sourceHash": "bc244fce14e60051085361a42db7a037abd2414abb85df8dd17c0d0aac0f6cea",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -806,7 +806,7 @@
       ]
     },
     "settings-layout": {
-      "sourceHash": "c18651d8c586b2b1c6e167887703d0252bdfc9bebaadf90295be0332ecdbae11",
+      "sourceHash": "732889d9aa269b6429ff5d80103c2d1c8690bceff0cb0e40b155ae9c9c52da16",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/help/page.tsx",
@@ -893,7 +893,7 @@
       "routes": []
     },
     "search": {
-      "sourceHash": "31443a6d90e5e522119b688324b20c699206d5c934b6fa922eed0d5adbccfd05",
+      "sourceHash": "bdc465bfa6668b784fade6acfe503d98624148a086f0600aa47af31ff6491eaf",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1078,7 +1078,7 @@
       ]
     },
     "notifications": {
-      "sourceHash": "c9e3e460e10d15990ad5e77fec22d00f55a362589ea7b6093b3bad836bf16a4c",
+      "sourceHash": "6deecc7f17eaf72925d3aa85d069dc5ddb4958099d144b187ed1125a7eba9102",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1261,7 +1261,7 @@
       ]
     },
     "calendar": {
-      "sourceHash": "c9e3e460e10d15990ad5e77fec22d00f55a362589ea7b6093b3bad836bf16a4c",
+      "sourceHash": "6deecc7f17eaf72925d3aa85d069dc5ddb4958099d144b187ed1125a7eba9102",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1444,7 +1444,7 @@
       ]
     },
     "gantt": {
-      "sourceHash": "c9e3e460e10d15990ad5e77fec22d00f55a362589ea7b6093b3bad836bf16a4c",
+      "sourceHash": "6deecc7f17eaf72925d3aa85d069dc5ddb4958099d144b187ed1125a7eba9102",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1627,7 +1627,7 @@
       ]
     },
     "progress": {
-      "sourceHash": "338d8a5a59894600d2843abbbe7f7ea2e0a910af0440d5aed6c5ccb1d0493f98",
+      "sourceHash": "bdeaabe4e608bb91c82ab63422cef1b5cc0a08aa5dda1d1b0fbc3ad16e06f5ae",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1954,7 +1954,7 @@
       ]
     },
     "frame-trial": {
-      "sourceHash": "c9e3e460e10d15990ad5e77fec22d00f55a362589ea7b6093b3bad836bf16a4c",
+      "sourceHash": "6deecc7f17eaf72925d3aa85d069dc5ddb4958099d144b187ed1125a7eba9102",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2137,7 +2137,7 @@
       ]
     },
     "table-trial": {
-      "sourceHash": "ea50eec5110414db1bdba10641e1c4994a71da5e619e663220040e1bb0d60581",
+      "sourceHash": "2624f6d175e506e4248bb55b00a2fce5f8ae9240b6f16049797fae6639076b6d",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2331,7 +2331,7 @@
       ]
     },
     "history-trial": {
-      "sourceHash": "ea50eec5110414db1bdba10641e1c4994a71da5e619e663220040e1bb0d60581",
+      "sourceHash": "2624f6d175e506e4248bb55b00a2fce5f8ae9240b6f16049797fae6639076b6d",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2565,7 +2565,7 @@
       ]
     },
     "neo-brief-assignee-filter-trial": {
-      "sourceHash": "ba0c3dfff7e10acdacaf437f367606eb9a70a94f1b395f8de1b3dd7b4f2f263d",
+      "sourceHash": "62fda96e3c93d39ab09549805d5e83ddda9d4c806c9811d00108d0d5d8dabf1a",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2830,7 +2830,7 @@
       ]
     },
     "neo-home-layout-trial": {
-      "sourceHash": "40c14a2aeddea72490970f7cefce48c911bca33d5418a9916c0783208eaf5fd3",
+      "sourceHash": "0fe2939b11049bebc2c88737d534d6fcf5f60a2f03725760a7b3630599b52e4f",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2901,7 +2901,7 @@
       ]
     },
     "detail-header-spacing-trial": {
-      "sourceHash": "c48df84067ceacebc41a316137ff2790b8c6e2cacb83626a5b422466923e9918",
+      "sourceHash": "891a7c9a21f7ef8a277dd82e3838f7d06552d9e59a7fb0ce469c7d4741218bb9",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",

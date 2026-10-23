@@ -68,9 +68,9 @@ export async function POST(request) {
   catch {
     let config;
     try { config = oidcConfig(); } catch { return reply({ error: 'Not configured' }, 503); }
-    // New Claude connections request task read/write so the consent screen can offer per-project
-    // write choices (all unchecked). Existing grants are never widened here.
-    const scope = config.productionEnabled ? (config.claudeEnabled && config.taskAccessEnabled ? 'events:read tasks:read tasks:write openid offline_access' : 'events:read') : 'events:test';
+    // Hosted clients request read/write so writes can be selected per project; all start unchecked.
+    // Existing grants are never widened here.
+    const scope = config.productionEnabled ? ((config.claudeEnabled || config.museEnabled) && config.taskAccessEnabled ? 'events:read tasks:read tasks:write openid offline_access' : 'events:read') : 'events:test';
     return Response.json({ error: 'Unauthorized' }, { status: 401, headers: {
       'Cache-Control': 'no-store',
       'WWW-Authenticate': `Bearer resource_metadata="${config.origin}/.well-known/oauth-protected-resource/api/mcp", scope="${scope}"`,
@@ -107,7 +107,7 @@ export async function POST(request) {
     const production = auth.mode === 'production' && process.env.SLOWTH_MCP_EVENTS_PRODUCTION === 'true';
   try {
     const protocol = requestProtocol(message, request.headers);
-    const claude = auth.client === 'claude' || auth.client === 'claude-code';
+    const taskClient = ['claude', 'claude-code', 'muse'].includes(auth.client);
     if (notification) {
       if (!protocol.modern && message.method === 'notifications/initialized') {
         return new Response(null, { status: 202, headers: { 'Cache-Control': 'no-store' } });
@@ -120,7 +120,7 @@ export async function POST(request) {
     if (message.method === 'server/discover') return result(discoverResult({ events: {}, tools: {} }));
     if (message.method === 'tools/list') {
       if (Object.hasOwn(message.params ?? {}, 'cursor')) throw new ProtocolError(-32602, 'Invalid params');
-      return result({ tools: production ? [...(claude ? [] : PRODUCTION_TOOLS), ...(process.env.SLOWTH_MCP_TASK_ACCESS === 'true' ? TASK_TOOLS : [])] : syntheticEnabled ? [READER_TOOL, TEST_TOOL] : [], ...(protocol.modern ? { ttlMs: 0, cacheScope: 'private' } : {}) });
+      return result({ tools: production ? [...(taskClient ? [] : PRODUCTION_TOOLS), ...(process.env.SLOWTH_MCP_TASK_ACCESS === 'true' ? TASK_TOOLS : [])] : syntheticEnabled ? [READER_TOOL, TEST_TOOL] : [], ...(protocol.modern ? { ttlMs: 0, cacheScope: 'private' } : {}) });
     }
     if (!['events/list', 'events/subscribe', 'events/unsubscribe', 'tools/call'].includes(message.method)) {
       return reply({ jsonrpc: '2.0', id: message.id, error: { code: -32601, message: 'Method not found' } }, protocol.modern ? 404 : 200);
@@ -140,7 +140,7 @@ export async function POST(request) {
         return result({ content: [{ type: 'text', text: JSON.stringify(output) }], structuredContent: output, isError });
       } catch (error) {
         const output = { code: error instanceof TaskDataError ? error.code : 'READ_UNAVAILABLE', message: error instanceof TaskDataError ? error.message : '情報を取得できません。同じ操作で再試行してください。' };
-        if (claude && ['INSUFFICIENT_SCOPE', 'AUTHORIZATION_EXPIRED'].includes(output.code)) {
+        if (taskClient && ['INSUFFICIENT_SCOPE', 'AUTHORIZATION_EXPIRED'].includes(output.code)) {
           return Response.json({ error: output.code }, { status: output.code === 'AUTHORIZATION_EXPIRED' ? 401 : 403,
             headers: { 'Cache-Control': 'no-store', 'WWW-Authenticate': output.code === 'AUTHORIZATION_EXPIRED' ? challenge.replace('insufficient_scope', 'invalid_token') : challenge } });
         }
@@ -150,7 +150,7 @@ export async function POST(request) {
     }
     const owner = createHash('sha256').update(JSON.stringify([auth.userId, auth.grantId])).digest('hex');
     const principal = getAdminDb().collection('mcpEventPrincipals').doc(owner);
-    const eventProjectIds = claude ? [] : principalProjectIds(auth, 'event');
+    const eventProjectIds = taskClient ? [] : principalProjectIds(auth, 'event');
     async function liveEventAuthority(projectId) {
       try {
         const live = await authenticateMcp(request.headers.get('Authorization'));

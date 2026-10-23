@@ -544,13 +544,13 @@ it('accepts whole registered-source intake without per-task file enumeration and
   expect((await readPlan()).item.works[0].execution).toMatchObject({ sourceId: 'worker-fixture', files: [], checks: [{ type: 'node_syntax', path: 'example.mjs' }] });
 });
 
-it.each(['chatgpt', 'claude-code', 'claude'])('preserves v2 source, client, feature and Firebase revocation checks for %s delegation', async client => {
+it.each(['chatgpt', 'claude-code', 'claude', 'muse'])('preserves v2 source, client, feature and Firebase revocation checks for %s delegation', async client => {
   const { saveCoordinationDelegation, loadCoordinationDelegation } = await import('./coordinatorTransport');
-  vi.stubEnv('SLOWTH_MCP_MULTI_PROJECT_READ', 'true'); vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE_CODE', 'true'); vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE', 'true');
+  vi.stubEnv('SLOWTH_MCP_MULTI_PROJECT_READ', 'true'); vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE_CODE', 'true'); vi.stubEnv('SLOWTH_MCP_OAUTH_CLAUDE', 'true'); vi.stubEnv('SLOWTH_MCP_OAUTH_MUSE', 'true');
   const binding = fixture.records.get(`mcpOAuthGrants/${createHash('sha256').update('grant').digest('hex')}`)!;
   delete binding.projectId;
   Object.assign(binding, { consentVersion: 2, includeFutureProjects: false, projectIds: [project], writeProjectIds: [project], aiProjectIds: [project], eventProjectIds: [],
-    clientId: client === 'claude-code' ? 'https://claude.ai/oauth/claude-code-client-metadata' : client === 'claude' ? 'https://claude.ai/oauth/mcp-oauth-client-metadata' : 'https://chatgpt.com/oauth/client.json' });
+    clientId: client === 'claude-code' ? 'https://claude.ai/oauth/claude-code-client-metadata' : client === 'claude' ? 'https://claude.ai/oauth/mcp-oauth-client-metadata' : client === 'muse' ? 'slowth-muse' : 'https://chatgpt.com/oauth/client.json' });
   const principal = { ...auth(), consentVersion: 2, includeFutureProjects: false as const, writeProjectIds: [project], aiProjectIds: [project], eventProjectIds: [] };
   await fixture.db.runTransaction(tx => saveCoordinationDelegation(tx as Parameters<typeof saveCoordinationDelegation>[0], principal, project, 'fixture-plan'));
   expect(await loadCoordinationDelegation(project, 'fixture-plan')).toMatchObject({ consentVersion: 2, projectIds: [project], aiProjectIds: [project], eventProjectIds: [] });
@@ -558,7 +558,7 @@ it.each(['chatgpt', 'claude-code', 'claude'])('preserves v2 source, client, feat
   await expect(loadCoordinationDelegation(project, 'fixture-plan')).rejects.toMatchObject({ code: 'DELEGATION_REVOKED' });
   vi.stubEnv('SLOWTH_MCP_MULTI_PROJECT_READ', 'true');
   if (client !== 'chatgpt') {
-    const flag = client === 'claude-code' ? 'SLOWTH_MCP_OAUTH_CLAUDE_CODE' : 'SLOWTH_MCP_OAUTH_CLAUDE';
+    const flag = client === 'muse' ? 'SLOWTH_MCP_OAUTH_MUSE' : client === 'claude-code' ? 'SLOWTH_MCP_OAUTH_CLAUDE_CODE' : 'SLOWTH_MCP_OAUTH_CLAUDE';
     vi.stubEnv(flag, 'false');
     await expect(loadCoordinationDelegation(project, 'fixture-plan')).rejects.toMatchObject({ code: 'DELEGATION_REVOKED' });
     vi.stubEnv(flag, 'true');

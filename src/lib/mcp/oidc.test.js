@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { authenticateMcp, activeUser, firebaseConsentUser, allowedClient, oidcConfig } from './oidc';
-import { CLAUDE_CODE_CLIENT, CLAUDE_CLIENT } from '../../../scripts/mcp-events/oidc-provider.mjs';
+import { CLAUDE_CODE_CLIENT, CLAUDE_CLIENT, MUSE_CLIENT } from '../../../scripts/mcp-events/oidc-provider.mjs';
 import { PILOT_PROJECT } from '../../../scripts/mcp-events/policy.mjs';
 const fake = vi.hoisted(() => ({ find: vi.fn(), grant: vi.fn(), user: vi.fn(), verify: vi.fn(), access: vi.fn(), binding: null, providerConfig: null }));
 vi.mock('@/lib/firebase/admin', () => ({
@@ -254,4 +254,39 @@ it.each(['disabled-client', 'disabled-read', 'expired', 'no-membership', 'fireba
   if (reason === 'wrong-client') fake.binding.clientId = oidcConfig().clientId;
   if (reason === 'wrong-resource') fake.binding.resource = 'https://other.example/mcp';
   await expect(refreshAccount(CLAUDE_CLIENT.client_id)).rejects.toThrow();
+});
+
+async function museBinding() {
+  await multipleBinding(); vi.stubEnv('SLOWTH_MCP_OAUTH_MUSE', 'true');
+  fake.find.mockResolvedValue({ ...(await fake.find()), clientId: MUSE_CLIENT.client_id });
+  fake.binding.clientId = MUSE_CLIENT.client_id;
+}
+it('allows Muse only after opt-in, with its exact callback and production mode', () => {
+  expect(allowedClient(oidcConfig(), MUSE_CLIENT.client_id, MUSE_CLIENT.redirect_uris[0])).toBeNull();
+  vi.stubEnv('SLOWTH_MCP_OAUTH_MUSE', 'true');
+  expect(oidcConfig().museEnabled).toBe(false);
+  vi.stubEnv('SLOWTH_MCP_EVENTS_PRODUCTION', 'true'); vi.stubEnv('SLOWTH_MCP_EVENTS_PROJECT_ID', PILOT_PROJECT);
+  expect(allowedClient(oidcConfig(), MUSE_CLIENT.client_id, MUSE_CLIENT.redirect_uris[0])).toBe('muse');
+  for (const uri of [MUSE_CLIENT.redirect_uris[0] + '/', MUSE_CLIENT.redirect_uris[0] + '?x=1', CLAUDE_CLIENT.redirect_uris[0]]) {
+    expect(allowedClient(oidcConfig(), MUSE_CLIENT.client_id, uri)).toBeNull();
+  }
+  expect(allowedClient(oidcConfig(), oidcConfig().clientId, MUSE_CLIENT.redirect_uris[0])).toBeNull();
+});
+it('authenticates and refreshes Muse with its original client and project snapshot', async () => {
+  await museBinding();
+  expect(await authenticateMcp('Bearer fixture-only')).toMatchObject({ client: 'muse', projectIds: [PILOT_PROJECT, 'viewer'], eventProjectIds: [] });
+  expect((await refreshAccount()).accountId).toBe('fixture-user');
+  await expect(refreshAccount(CLAUDE_CLIENT.client_id)).rejects.toThrow('Forbidden');
+});
+it.each(['disabled-client', 'disabled-read', 'expired', 'no-membership', 'firebase-revoked', 'wrong-client', 'wrong-resource'])('rejects Muse tokens and refresh after %s', async reason => {
+  await museBinding();
+  if (reason === 'disabled-client') vi.stubEnv('SLOWTH_MCP_OAUTH_MUSE', 'false');
+  if (reason === 'disabled-read') vi.stubEnv('SLOWTH_MCP_MULTI_PROJECT_READ', 'false');
+  if (reason === 'expired') fake.binding.expiresAt = { toMillis: () => 0 };
+  if (reason === 'no-membership') fake.access.mockRejectedValue(new Error('FORBIDDEN'));
+  if (reason === 'firebase-revoked') fake.binding.authTime = 1;
+  if (reason === 'wrong-client') fake.binding.clientId = oidcConfig().clientId;
+  if (reason === 'wrong-resource') fake.binding.resource = 'https://other.example/mcp';
+  if (reason !== 'no-membership') await expect(authenticateMcp('Bearer fixture-only')).rejects.toThrow();
+  await expect(refreshAccount(MUSE_CLIENT.client_id)).rejects.toThrow();
 });

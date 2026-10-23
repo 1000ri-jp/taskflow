@@ -100,7 +100,7 @@ it('invalidates old selection immediately when the interaction changes', async (
   expect(screen.getByRole('button', { name: '架空通知のテストを許可' })).toBeDisabled();
 });
 
-it.each([{ client: 'claude-code', name: 'Claude Code', host: 'localhost' }, { client: 'claude', name: 'Claude', host: 'claude.ai' }])('shows $name for v2 consent while preserving separate choices', async ({ client, name, host }) => {
+it.each([{ client: 'claude-code', name: 'Claude Code', host: 'localhost' }, { client: 'claude', name: 'Claude', host: 'claude.ai' }, { client: 'muse', name: 'Muse', host: 'agent.meta.ai' }])('shows $name for v2 consent while preserving separate choices', async ({ client, name, host }) => {
   const fetch = vi.fn().mockImplementation(async (_url, options) => options.method === 'POST' ? new Response('{}', { status: 403 }) : new Response(JSON.stringify({
     consentVersion: 2, mode: 'production', client, redirectHost: host, maxProjects: 500, taskScopes: ['tasks:read', 'tasks:write'],
     projects: [{ id: 'editor', name: '架空編集', canWrite: true, canWork: true, canNotify: true }, { id: 'viewer', name: '架空閲覧', canWrite: false }],
@@ -130,4 +130,17 @@ it('explains why write cannot be chosen instead of silently hiding it', async ()
   render(<Consent interaction="fixture-read-only" />);
   expect(await screen.findByText(/tasks:write）を要求していない/)).toBeInTheDocument();
   expect(screen.queryByRole('checkbox', { name: '架空編集の書き込み' })).not.toBeInTheDocument();
+});
+
+it('labels a Muse connection without task consent accurately and keeps approval disabled until a project is selected', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ mode: 'production', client: 'muse',
+    redirectHost: 'agent.meta.ai', taskScopes: [], projects: [{ id: 'fixture-project', name: '架空プロジェクト' }] }))));
+  render(<Consent interaction="fixture-muse" />);
+  await screen.findByRole('heading', { name: 'Museとの接続確認' });
+  expect(screen.getByText(/タスク操作には追加の読み取り同意が必要/)).toBeInTheDocument();
+  const approve = screen.getByRole('button', { name: '30日間の接続を許可' });
+  expect(approve).toBeDisabled();
+  expect(screen.queryByRole('button', { name: '30日間のタスク通知を許可' })).not.toBeInTheDocument();
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'fixture-project' } });
+  expect(approve).toBeEnabled();
 });
