@@ -114,7 +114,8 @@ jobs:
 
   e2e-smoke:
     name: taskflow-ci / e2e-smoke
-    runs-on: ubuntu-latest
+    # Playwright 1.58.2 does not support the Ubuntu 26.04 latest image.
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout

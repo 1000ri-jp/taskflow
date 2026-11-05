@@ -1,5 +1,6 @@
 import Provider, { errors } from 'oidc-provider';
 import { authorizationMode, CONSENT_MS, READ_SCOPE, TEST_SCOPE, TASK_READ_SCOPE, TASK_WRITE_SCOPE } from './policy.mjs';
+import { coalesceMuseRefresh } from './refresh-exchange.mjs';
 
 export { TEST_SCOPE };
 
@@ -95,6 +96,10 @@ export function makeProvider({ issuer, resource, clientId, redirectUri, jwks, co
     renderError: async (ctx) => { ctx.type = 'text/plain'; ctx.body = 'OAuth request could not be completed. Return to the connecting app and retry.'; },
   });
   provider.proxy = true;
+  if (muse && typeof adapter?.coalesceRefresh === 'function') {
+    provider.use(coalesceMuseRefresh({ clientId: MUSE_CLIENT.client_id, resource,
+      coalesce: adapter.coalesceRefresh.bind(adapter), findRefresh: value => provider.RefreshToken.find(value) }));
+  }
   provider.use(async (ctx, next) => {
     // Reject before any redirect. Pinned clients and their exact (or loopback) callbacks only.
     if (ctx.path === '/auth') {
