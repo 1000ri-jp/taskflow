@@ -1,4 +1,6 @@
-import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
+import { createHash, randomBytes, createCipheriv, createDecipheriv, randomUUID } from 'node:crypto';
+import { setTimeout as pause } from 'node:timers/promises';
+import { errors } from 'oidc-provider';
 const hash = text => createHash('sha256').update(text).digest('hex');
 
 // All OAuth payloads encrypted; indexes contain only hashes. Client SDK has no access.
@@ -18,6 +20,38 @@ export function firestoreAdapter(db, key) {
     return record.consumed ? { ...payload, consumed: record.consumed } : payload;
   }
   return class Adapter {
+    // Share only requests received while the original exchange was still running.
+    // A later replay still reaches oidc-provider's normal grant revocation policy.
+    static async coalesceRefresh(requestHash, receivedAt, exchange) {
+      const ref = collection.doc(hash(`RefreshExchange:${requestHash}`));
+      const owner = randomUUID();
+      const claim = await db.runTransaction(async tx => {
+        const before = open((await tx.get(ref)).data());
+        if (before) return before;
+        tx.set(ref, { ...seal({ owner, pending: true }), expiresAt: new Date(Date.now() + 30000) });
+        return { owner, pending: true };
+      });
+      if (claim.owner === owner) {
+        // On failure keep the claim until expiry: an uncertain exchange must
+        // not cause a second use of a possibly consumed token.
+        const result = await exchange();
+        await db.runTransaction(async tx => {
+          const before = open((await tx.get(ref)).data());
+          if (before?.owner !== owner) throw new Error('OAuth refresh exchange unavailable');
+          tx.set(ref, { ...seal({ owner, pending: false, completedAt: Date.now(), result }),
+            expiresAt: new Date(Date.now() + 30000) });
+        });
+        return result;
+      }
+      let state = claim;
+      const deadline = Date.now() + 30000;
+      while (state?.pending && Date.now() < deadline) {
+        await pause(100);
+        state = open((await ref.get()).data());
+      }
+      if (!state || state.pending) throw new Error('OAuth refresh exchange unavailable');
+      return receivedAt < state.completedAt ? state.result : exchange();
+    }
     constructor(name) { this.name = name; }
     ref(id) { return collection.doc(hash(`${this.name}:${id}`)); }
     async upsert(id, payload, expiresIn) {
@@ -44,13 +78,13 @@ export function firestoreAdapter(db, key) {
       const reference = this.ref(id);
       await db.runTransaction(async tx => {
         const record = (await tx.get(reference)).data();
-        if (!record || record.consumed || !open(record)) throw new Error('OAuth artifact already consumed or expired');
+        if (!record || record.consumed || !open(record)) throw new errors.InvalidGrant('OAuth artifact already consumed or expired');
         tx.update(reference, { consumed: Math.floor(Date.now() / 1000) });
       });
     }
     async destroy(id) { await this.ref(id).delete(); }
     async revokeByGrantId(grantId) {
-      // Small bounded grants in this synthetic-only pilot; paginate for complete deletion.
+      // Paginate to revoke all artifacts, including production grants.
       for (;;) {
         const records = await collection.where('grantHash', '==', hash(grantId)).limit(200).get();
         if (records.empty) return;
