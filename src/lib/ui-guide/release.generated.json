@@ -15,7 +15,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "fbd80039f60d5b6485949c2f43dff1b2e6724385d8d03d086ff6bf7291ff51eb"
+      "sha256": "22cc545bf3cd59bc081856d0e0178b2fa7dec436c04f258e649122e0384cbc1c"
     },
     {
       "path": "scripts/ui-guide.mjs",
