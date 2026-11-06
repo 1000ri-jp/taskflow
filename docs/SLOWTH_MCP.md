@@ -14,6 +14,8 @@ Taskflow のタスク・コメント・確認・サブタスク・チェック�
 
 共通ツールは `get_task_contract`、`read_task_data`、`write_task_data` です。既存の `list_task_updates` と `acknowledge_task_updates` で通知を取得・処理済みにします。項目ごとの専用ツールを増やさず、TypeScript のモデルから生成した契約と関連リソースの操作を使用します。
 
+サイトの「設定 → APIキー管理 → MCP接続」には、リモート接続のサーバーURL、MuseのClient ID、Claude Codeの登録コマンドをコピーできる形で表示します。MuseのClient IDは`slowth-muse`であり、`slowth-mcp`では認可要求が`invalid_request`になります。Client Secretは空欄と明示し、APIキーやClient IDを入力しないよう案内します。OAuth接続ではローカルファイルのパスやAPIキーを指定しません。APIキーを使うローカルMCPは、同じ画面から導入手順を開けます。ローカルサーバーの設定例にあるパスは、利用者がリポジトリを取得した場所へ置き換える開発者向けの例です。
+
 `read_task_data` の続きは返されたカーソルで取得します。通知フィードにはカーソルがありません。最大50件を処理し、保存と報告が成功した実イベントだけを ACK してから次の通知を取得します。Webhook の HTTP 200 は受信結果であり、AI の作業完了の証拠ではありません。
 
 ## 認可と保存

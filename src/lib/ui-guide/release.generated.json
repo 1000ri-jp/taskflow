@@ -71,7 +71,7 @@
     },
     {
       "path": "src/app/(dashboard)/settings/api-keys/page.tsx",
-      "sha256": "3eb2e73e23bbf4d95954a4c402e716364ddd346b23f3d08af63d11460776600b"
+      "sha256": "5282538e44ed0a2dc6dfce5899526b7cdcd6c8b49871ba1259daaeb2f407e00e"
     },
     {
       "path": "src/app/(dashboard)/settings/browser-backup/page.tsx",
@@ -576,6 +576,10 @@
     {
       "path": "src/components/help/HelpVideos.tsx",
       "sha256": "92c6e14e3bd514dc330e5e9c441614f404dd220b4c2a591009e61851e92cb0ef"
+    },
+    {
+      "path": "src/components/mcp/McpConnectionGuide.tsx",
+      "sha256": "62d7552fb3c2f7d7e371315ff48773f61ff603b4674fedf65fa6ff83674d826f"
     },
     {
       "path": "src/components/project/ActivityLogPanel.tsx",
@@ -1811,7 +1815,7 @@
     },
     {
       "path": "src/lib/ui-guide/usage.generated.json",
-      "sha256": "afcc0e85ee8cf14ccd9e819c3ad894d8f187b86123052d8be7eaf84e7cc4b506"
+      "sha256": "61755a813d49b70d3c754ab27114034d864ee17321868c0d88e913db0ac51f0c"
     },
     {
       "path": "src/lib/ui-guide/verification.json",

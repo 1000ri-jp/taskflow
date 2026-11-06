@@ -1,9 +1,9 @@
 {
   "revision": "ui-guide-2026-09-18.17",
-  "graphHash": "fff731a0a379f2578a6bd23932968cb395c118d0eb5728c5247b8ec5466bef60",
+  "graphHash": "e509dda828203864d7ad1ded287049f7f08e428220bf29441b9f585460505e13",
   "entries": {
     "text": {
-      "sourceHash": "b0971f5dd05f6ed157015520b3e97fa3a6e01005133d238649a770282573b666",
+      "sourceHash": "61ffd2db2ff48348519ea856bdc9f5ae19f6b9aa4a096151dd9448120c9538d5",
       "direct": [
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -13,6 +13,7 @@
         "src/app/mcp-connect/consent.tsx",
         "src/components/board/ReferenceComments.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/task/PdfAttachmentPreview.tsx",
         "src/components/task/TaskDetailModal.tsx",
@@ -25,6 +26,7 @@
         "src/app/(dashboard)/projects/[projectId]/board/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/gantt/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
+        "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/mcp-connect/page.tsx",
         "src/components/ai/CompanionAI.tsx",
         "src/components/ai/CompanionComments.tsx",
@@ -64,7 +66,7 @@
       ]
     },
     "button": {
-      "sourceHash": "459bc2471b95f6f1d0c7171bb67415da33b5a8c40dc2a0b8b27ad7ce588b15c2",
+      "sourceHash": "6e13ab2d04bf443a55bf95f10d6dcec866d46141e9b83d27454da8e934c5ba36",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -155,6 +157,7 @@
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -255,7 +258,7 @@
       ]
     },
     "input": {
-      "sourceHash": "938e7f637c3ec6eb981fdf0e76595caa5f5c4ceb0bb9df293aaea4fc1829f397",
+      "sourceHash": "97dcbb1b9211b5226d506a2658d0e3260b99d09e703a4384602a12302e55c37a",
       "direct": [
         "src/app/(dashboard)/profile/page.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
@@ -296,6 +299,7 @@
         "src/components/dashboard/TargetProjectSettings.tsx",
         "src/components/dashboard/TargetTasks.tsx",
         "src/components/gantt/GanttChart.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectEmojiPicker.tsx",
         "src/components/project/ProjectFormModal.tsx",
         "src/components/task/ChecklistItemAssignees.tsx",
@@ -408,7 +412,7 @@
       ]
     },
     "card": {
-      "sourceHash": "2a2be0a2b9a0206c5140b52675a0c5536d9d9a0adbeb48f658d8eeb3f4b06bc9",
+      "sourceHash": "30514dec88cdda9c5c0921d2e812a0a5b8caaf7fef0856974e4d5ec79b7d5399",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -429,6 +433,7 @@
         "src/components/desktop/DesktopMiniLogin.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectCard.tsx"
       ],
       "indirect": [
@@ -727,10 +732,11 @@
       ]
     },
     "setting": {
-      "sourceHash": "63ba6f4a4b34e89a449fa2892a560a0e4fae932c5e55d96667ba9eed64172bc2",
+      "sourceHash": "d801ba4d1d89ffda6a3f1b2a69d8f25992cdb10526b089fe44e7e70298e4a322",
       "direct": [
         "src/app/mcp-connect/consent.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
         "src/components/project/ProjectEmojiPicker.tsx"
       ],
@@ -738,6 +744,7 @@
         "src/app/(dashboard)/help/page.tsx",
         "src/app/(dashboard)/layout.tsx",
         "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
+        "src/app/(dashboard)/settings/api-keys/page.tsx",
         "src/app/mcp-connect/page.tsx",
         "src/components/project/ProjectFormModal.tsx"
       ],
@@ -806,7 +813,7 @@
       ]
     },
     "settings-layout": {
-      "sourceHash": "732889d9aa269b6429ff5d80103c2d1c8690bceff0cb0e40b155ae9c9c52da16",
+      "sourceHash": "9100db0304848bd569b3051337fd174986972510c1d17cba9b1afcc50734d7c3",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/help/page.tsx",
@@ -830,6 +837,7 @@
         "src/components/desktop/DesktopMiniLogin.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
         "src/components/project/ProjectEmojiPicker.tsx",
@@ -893,7 +901,7 @@
       "routes": []
     },
     "search": {
-      "sourceHash": "bdc465bfa6668b784fade6acfe503d98624148a086f0600aa47af31ff6491eaf",
+      "sourceHash": "89b64b3786def09a5ff90cbf9a3f93c173533c0cab77def9742550aeb218e042",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -985,6 +993,7 @@
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
@@ -1078,7 +1087,7 @@
       ]
     },
     "notifications": {
-      "sourceHash": "6deecc7f17eaf72925d3aa85d069dc5ddb4958099d144b187ed1125a7eba9102",
+      "sourceHash": "155e2243520dee6aa657579fc8308621ae9251276c845a16385ae5d183e7b3a9",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1169,6 +1178,7 @@
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
@@ -1261,7 +1271,7 @@
       ]
     },
     "calendar": {
-      "sourceHash": "6deecc7f17eaf72925d3aa85d069dc5ddb4958099d144b187ed1125a7eba9102",
+      "sourceHash": "155e2243520dee6aa657579fc8308621ae9251276c845a16385ae5d183e7b3a9",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1350,6 +1360,7 @@
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -1444,7 +1455,7 @@
       ]
     },
     "gantt": {
-      "sourceHash": "6deecc7f17eaf72925d3aa85d069dc5ddb4958099d144b187ed1125a7eba9102",
+      "sourceHash": "155e2243520dee6aa657579fc8308621ae9251276c845a16385ae5d183e7b3a9",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1534,6 +1545,7 @@
         "src/components/gantt/index.ts",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -1627,7 +1639,7 @@
       ]
     },
     "progress": {
-      "sourceHash": "bdeaabe4e608bb91c82ab63422cef1b5cc0a08aa5dda1d1b0fbc3ad16e06f5ae",
+      "sourceHash": "144fe98842bf09c8bb43b5ba0d52665cc617b6fe36c5a76d4e328db9864770bc",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -1724,6 +1736,7 @@
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -1954,7 +1967,7 @@
       ]
     },
     "frame-trial": {
-      "sourceHash": "6deecc7f17eaf72925d3aa85d069dc5ddb4958099d144b187ed1125a7eba9102",
+      "sourceHash": "155e2243520dee6aa657579fc8308621ae9251276c845a16385ae5d183e7b3a9",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2044,6 +2057,7 @@
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -2137,7 +2151,7 @@
       ]
     },
     "table-trial": {
-      "sourceHash": "2624f6d175e506e4248bb55b00a2fce5f8ae9240b6f16049797fae6639076b6d",
+      "sourceHash": "f65db056f0c2f161f30e28d7b9a8f3c82c3018f49a23cc9e430f93d518abeb57",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2238,6 +2252,7 @@
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
@@ -2331,7 +2346,7 @@
       ]
     },
     "history-trial": {
-      "sourceHash": "2624f6d175e506e4248bb55b00a2fce5f8ae9240b6f16049797fae6639076b6d",
+      "sourceHash": "f65db056f0c2f161f30e28d7b9a8f3c82c3018f49a23cc9e430f93d518abeb57",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2432,6 +2447,7 @@
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ActivityLogPanel.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
@@ -2565,7 +2581,7 @@
       ]
     },
     "neo-brief-assignee-filter-trial": {
-      "sourceHash": "62fda96e3c93d39ab09549805d5e83ddda9d4c806c9811d00108d0d5d8dabf1a",
+      "sourceHash": "c853c3b1724d0955beccbb56d00e9f7684b692d96538449335e6394336c5c2c7",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2659,6 +2675,7 @@
         "src/components/gantt/GanttChart.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectAssigneeBackfill.tsx",
         "src/components/project/ProjectCard.tsx",
         "src/components/project/ProjectDefaultAssignee.tsx",
@@ -2830,7 +2847,7 @@
       ]
     },
     "neo-home-layout-trial": {
-      "sourceHash": "0fe2939b11049bebc2c88737d534d6fcf5f60a2f03725760a7b3630599b52e4f",
+      "sourceHash": "0bb76f797c7356cec23db781f0448b12c5345464bf4af3ec670e5039ee172c9b",
       "direct": [
         "src/app/(auth)/login/page.tsx",
         "src/app/(dashboard)/profile/page.tsx",
@@ -2854,6 +2871,7 @@
         "src/components/desktop/DesktopMiniLogin.tsx",
         "src/components/google/GoogleWorkspacePanel.tsx",
         "src/components/help/HelpVideos.tsx",
+        "src/components/mcp/McpConnectionGuide.tsx",
         "src/components/project/ProjectCard.tsx"
       ],
       "indirect": [
@@ -3072,11 +3090,11 @@
       "count": 87
     },
     {
-      "file": "src/app/(dashboard)/settings/api-keys/page.tsx",
-      "count": 85
+      "file": "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
+      "count": 82
     },
     {
-      "file": "src/app/(dashboard)/projects/[projectId]/settings/page.tsx",
+      "file": "src/app/(dashboard)/settings/api-keys/page.tsx",
       "count": 82
     },
     {
