@@ -39,6 +39,7 @@ import { getApiKeyProjectScopeLabels } from '@/lib/auth/apiKeyProjectScope';
 import { normalizeAllowedProjectIdsForSave } from '@/lib/ai/projectAccess';
 import type { ApiKey, ApiKeyPermission, ApiKeyCreateData } from '@/types/apiKey';
 import { PERMISSION_GROUPS } from '@/types/apiKey';
+import { McpConnectionGuide } from '@/components/mcp/McpConnectionGuide';
 
 const ACTOR_ICON_PRESETS = ['🤖', '🧠', '🛠️', '💬', '⚙️'];
 
@@ -350,7 +351,7 @@ export default function ApiKeysPage() {
                 APIキー
               </CardTitle>
               <CardDescription>
-                MCPサーバーやその他の外部ツールで使用するAPIキーです
+                REST APIやローカルMCPで使用します。リモートMCP（OAuth）の接続方法は下にあります。
               </CardDescription>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={handleCreateDialogOpenChange}>
@@ -671,34 +672,7 @@ export default function ApiKeysPage() {
         </CardContent>
       </Card>
 
-      <Card density="compact">
-        <CardHeader>
-          <CardTitle>MCP サーバー設定</CardTitle>
-          <CardDescription>
-            Claude DesktopやClaude Codeなどのローカル MCP クライアントで使用する設定です
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg bg-muted p-4">
-            <p className="text-sm text-muted-foreground mb-2">
-              taskflow リポジトリの tools/slowth-mcp/server.mjs を手元に置き、MCPクライアントの設定ファイルに以下を追加してください:
-            </p>
-            <pre className="text-xs bg-background p-3 rounded overflow-x-auto">
-{`{
-  "mcpServers": {
-    "slowth": {
-      "command": "node",
-      "args": ["/path/to/taskflow/tools/slowth-mcp/server.mjs"],
-      "env": {
-        "SLOWTH_API_TOKEN": "tf_your-api-key-here"
-      }
-    }
-  }
-}`}
-            </pre>
-          </div>
-        </CardContent>
-      </Card>
+      <McpConnectionGuide />
 
       <AlertDialog
         open={!!keyToDelete}
