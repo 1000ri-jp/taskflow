@@ -2,7 +2,7 @@
 
 2026-09-09のユーザー指示により、今回の配信先をVercelからFirebase App Hostingに変更した。Next.jsのAPIルート・Admin SDK・AI処理を維持するため、静的HostingではなくApp Hostingを使う。バックエンド作成・初回公開は完了。通常ブラウザでのGoogleログイン成功をユーザーが確認済み。
 
-公開URL：<https://taskflow--projectmanager-e3308.asia-east1.hosted.app>
+公開URL：<https://slowth.1000ri.jp>。App Hostingの既定URL：<https://taskflow--projectmanager-e3308.asia-east1.hosted.app>。
 
 本書は従来の本番反映手順書のVercel配備工程を置き換える。バックアップ、権限検証、既存データ互換性、DB復旧の注意点は継続する。ユーザーは稼働中バックアップの取得結果を了承して続行を指示済み。隔離復元は未検証であり、検証済みと記録しない。
 
