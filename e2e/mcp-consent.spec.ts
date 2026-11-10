@@ -48,7 +48,11 @@ for (const width of [1200, 390]) test(`explicit current-project consent at ${wid
   await expect(page.getByText(/今後追加されるプロジェクトの自動許可/)).toContainText('無効');
   await page.screenshot({ path: info.outputPath('read-all.png'), fullPage: true });
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', width);
-  await page.getByRole('checkbox', { name: '架空の編集プロジェクトの書き込み' }).check();
+  await page.getByRole('button', { name: '書き込みを全部ON' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('checkbox', { name: '架空の編集プロジェクトの書き込み' })).toBeChecked();
+  for (const name of ['架空の編集プロジェクトのAI作業', '架空の編集プロジェクトの更新通知']) await expect(page.getByRole('checkbox', { name })).not.toBeChecked();
+  await page.screenshot({ path: info.outputPath('write-all.png'), fullPage: true });
   await page.getByRole('checkbox', { name: '架空の編集プロジェクトのAI作業' }).check();
   await page.getByRole('checkbox', { name: '架空の編集プロジェクトの更新通知' }).check();
   await allow.click(); await expect(page.getByRole('alert')).toContainText('接続を完了できません');
@@ -70,7 +74,9 @@ for (const client of ['claude-code', 'claude', 'muse']) for (const width of [120
   await expect(page.getByRole('heading', { name: (client === 'muse' ? 'Muse' : client === 'claude-code' ? 'Claude Code' : 'Claude') + 'との接続確認' })).toBeVisible();
   await page.getByRole('button', { name: '現在閲覧できる全件を読み取り対象にする' }).click();
   await expect(page.getByRole('checkbox', { name: '架空の編集プロジェクトの更新通知' })).toHaveCount(0);
-  await page.getByRole('checkbox', { name: '架空の編集プロジェクトの書き込み' }).check();
+  await page.getByRole('button', { name: '書き込みを全部ON' }).click();
+  await expect(page.getByRole('checkbox', { name: '架空の編集プロジェクトの書き込み' })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: '架空の編集プロジェクトのAI作業' })).not.toBeChecked();
   await page.getByRole('checkbox', { name: '架空の編集プロジェクトのAI作業' }).check();
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', width);
   await page.screenshot({ path: info.outputPath(client + '-consent.png'), fullPage: true });

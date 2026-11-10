@@ -59,9 +59,9 @@ it('shows production data destination, thirty-day consent, and the selected proj
   expect(approve).toBeEnabled(); expect(screen.queryByRole('button', { name: '架空通知のテストを許可' })).not.toBeInTheDocument();
 });
 
-function multipleResponse() {
+function multipleResponse(overrides: Record<string, unknown> = {}) {
   return new Response(JSON.stringify({ consentVersion: 2, mode: 'production', maxProjects: 500, taskScopes: ['tasks:read', 'tasks:write'],
-    projects: [{ id: 'editor', name: '架空編集', canWrite: true, canWork: true, canNotify: true }, { id: 'viewer', name: '架空閲覧', canWrite: false, canWork: false, canNotify: false }] }));
+    projects: [{ id: 'editor', name: '架空編集', canWrite: true, canWork: true, canNotify: true }, { id: 'viewer', name: '架空閲覧', canWrite: false, canWork: false, canNotify: false }], ...overrides }));
 }
 it('selects all currently visible read targets without also granting writes, AI work or events', async () => {
   vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => multipleResponse()));
@@ -74,6 +74,62 @@ it('selects all currently visible read targets without also granting writes, AI 
   expect(screen.queryByRole('checkbox', { name: '架空閲覧の書き込み' })).not.toBeInTheDocument();
   expect(screen.getByText(/今後追加されるプロジェクトの自動許可/)).toHaveTextContent('無効');
   expect(screen.getByText(/今回同意する対象/)).toHaveTextContent('書き込み：なし');
+});
+it('bulk selects writable projects with prerequisite reads, preserves other choices and submits exact IDs', async () => {
+  const fetch = vi.fn().mockImplementation(async (_url, options) => options.method === 'POST' ? new Response('{}', { status: 403 }) : multipleResponse({ projects: [
+    { id: 'editor', name: '架空編集', canWrite: true, canWork: true, canNotify: true },
+    { id: 'editor-two', name: '架空編集2', canWrite: true, canWork: false },
+    { id: 'viewer', name: '架空閲覧', canWrite: false },
+  ] }));
+  vi.stubGlobal('fetch', fetch); render(<Consent interaction="fixture-interaction" />);
+  const allWrites = await screen.findByRole('button', { name: '書き込みを全部ON' });
+  fireEvent.click(allWrites);
+  for (const name of ['架空編集', '架空編集2']) for (const permission of ['読み取り', '書き込み']) {
+    expect(screen.getByRole('checkbox', { name: name + 'の' + permission })).toBeChecked();
+  }
+  expect(screen.getByRole('checkbox', { name: '架空閲覧の読み取り' })).not.toBeChecked();
+  expect(screen.queryByRole('checkbox', { name: '架空閲覧の書き込み' })).not.toBeInTheDocument();
+  for (const permission of ['AI作業', '更新通知']) expect(screen.getByRole('checkbox', { name: '架空編集の' + permission })).not.toBeChecked();
+  fireEvent.click(screen.getByRole('checkbox', { name: '架空閲覧の読み取り' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '架空編集のAI作業' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '架空編集の更新通知' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '架空編集2の書き込み' }));
+  fireEvent.click(allWrites); fireEvent.click(allWrites);
+  expect(screen.getByText(/今回同意する対象/)).toHaveTextContent('書き込み：架空編集、架空編集2');
+  fireEvent.click(screen.getByRole('button', { name: '選択した範囲で30日間の接続を許可' }));
+  expect(allWrites).toBeDisabled();
+  await screen.findByRole('alert');
+  expect(JSON.parse(fetch.mock.calls.find(call => call[1].method === 'POST')![1].body)).toEqual({
+    interaction: 'fixture-interaction', approve: true, consentVersion: 2, includeFutureProjects: false,
+    projectIds: ['editor', 'editor-two', 'viewer'], writeProjectIds: ['editor', 'editor-two'], aiProjectIds: ['editor'], eventProjectIds: ['editor'],
+  });
+});
+it('limits bulk writes by the combined read targets without silently dropping projects', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => multipleResponse({ maxProjects: 1 })));
+  render(<Consent interaction="fixture-interaction" />);
+  const allWrites = await screen.findByRole('button', { name: '書き込みを全部ON' });
+  expect(allWrites).toBeEnabled();
+  fireEvent.click(screen.getByRole('checkbox', { name: '架空閲覧の読み取り' }));
+  expect(allWrites).toBeDisabled();
+  fireEvent.click(allWrites);
+  expect(screen.getByRole('checkbox', { name: '架空編集の読み取り' })).not.toBeChecked();
+  fireEvent.click(screen.getByRole('button', { name: '選択を解除' }));
+  fireEvent.click(allWrites);
+  expect(screen.getByRole('checkbox', { name: '架空編集の書き込み' })).toBeChecked();
+  expect(screen.getByRole('button', { name: '選択した範囲で30日間の接続を許可' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: '選択を解除' }));
+  expect(screen.getByRole('checkbox', { name: '架空編集の書き込み' })).not.toBeChecked();
+});
+it('disables bulk writes when there are no writable projects', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => multipleResponse({ projects: [{ id: 'viewer', name: '架空閲覧', canWrite: false }] })));
+  render(<Consent interaction="fixture-interaction" />);
+  expect(await screen.findByRole('button', { name: '書き込みを全部ON' })).toBeDisabled();
+});
+it('does not offer bulk writes for a read-only OAuth request', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => multipleResponse({ taskScopes: ['tasks:read'] })));
+  render(<Consent interaction="fixture-interaction" />);
+  await screen.findByRole('button', { name: '現在閲覧できる全件を読み取り対象にする' });
+  expect(screen.queryByRole('button', { name: '書き込みを全部ON' })).not.toBeInTheDocument();
 });
 it('removes dependent permissions when read/write consent is unchecked and submits exact explicit choices', async () => {
   const fetch = vi.fn().mockImplementation(async (_url, options) => options.method === 'POST' ? new Response('{}', { status: 403 }) : multipleResponse());

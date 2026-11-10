@@ -31,6 +31,8 @@ export default function Consent({ interaction }: { interaction: string }) {
   const claudeCode = ready && data?.client === 'claude-code';
   const externalClient = ready && data?.client !== 'chatgpt';
   const clientName = data?.client === 'muse' ? 'Muse' : claudeCode ? 'Claude Code' : data?.client === 'claude' ? 'Claude' : 'ChatGPT';
+  const writableIds = taskWrite ? data!.projects.filter(p => p.canWrite).map(p => p.id) : [];
+  const readIdsWithAllWrites = [...new Set([...readIds, ...writableIds])];
   const selectedNames = (ids: string[]) => data?.projects.filter(p => ids.includes(p.id)).map(p => p.name).join('、') || 'なし';
   function toggleRead(id: string, checked: boolean) {
     setReadIds(ids => checked ? [...ids, id] : ids.filter(value => value !== id));
@@ -81,7 +83,7 @@ export default function Consent({ interaction }: { interaction: string }) {
     <Card density="compact"><CardContent><SettingsLayout align="start">
     <PageHeading>{ready ? `${clientName}との接続確認` : '接続確認'}</PageHeading>
     <Prose>{!ready ? '接続許可の内容を確認中…' : multiple
-      ? `選択したプロジェクトのタスク全項目・コメント・確認依頼と回答・サブタスク・チェックリスト・添付・共有履歴を${clientName}が読み取り、進捗を確認できます。認証は自動更新され、有効期間は最大30日間です。書き込み・AI作業${externalClient ? '' : '・更新通知'}は、下で個別に選んだプロジェクトだけに許可します。` + (taskWrite ? '書き込みには作成・編集・削除、確認への回答、完了・アーカイブ・復元を含みます。' : '') + `個人のメール本文は対象外です。${externalClient ? '' : 'ChatGPTで接続を解除できます。'}`
+      ? `選択したプロジェクトのタスク全項目・コメント・確認依頼と回答・サブタスク・チェックリスト・添付・共有履歴を${clientName}が読み取り、進捗を確認できます。認証は自動更新され、有効期間は最大30日間です。書き込み・AI作業${externalClient ? '' : '・更新通知'}は、下で選んだプロジェクトだけに許可します。` + (taskWrite ? '書き込みには作成・編集・削除、確認への回答、完了・アーカイブ・復元を含みます。' : '') + `個人のメール本文は対象外です。${externalClient ? '' : 'ChatGPTで接続を解除できます。'}`
       : taskRead
       ? `「タスク管理ツール」のタスク全項目・コメント・確認依頼と回答・サブタスク・チェックリスト・添付・共有履歴を${clientName}が読み取ります。${taskWrite ? '作成、編集、確認への回答、完了、アーカイブと復元、繰り返し設定も許可します。操作はこのGoogleアカウントの権限で記録します。' : ''}${externalClient ? '' : '更新通知も継続します。'}有効期間は最大30日間です。個人のメール本文や他のプロジェクトにはアクセスしません。${externalClient ? '' : 'ChatGPTで接続を解除すると停止できます。'}`
       : production
@@ -94,9 +96,10 @@ export default function Consent({ interaction }: { interaction: string }) {
         <Prose>接続するアカウント：{firebaseUser.email}</Prose>
         {error && !ready && <Button className="w-full" disabled={busy} onClick={reconnect}>SlowthのGoogleアカウントで再ログイン</Button>}
         {multiple ? <SettingsLayout align="start">
-          <Prose>読み取り対象を選択してください。全件選択は、現在表示されているプロジェクトだけが対象です。</Prose>
+          <Prose>読み取り対象を選択してください。全件選択は、現在表示されているプロジェクトだけが対象です。{taskWrite ? '「書き込みを全部ON」は、書き込み可能な全件の読み取りも選択します。' : ''}</Prose>
           {!taskWrite && <Prose role="note">接続元が書き込み権限（tasks:write）を要求していないため、この接続では書き込みを選べません。書き込みが必要な場合は、接続元で接続を解除してから接続し直してください。</Prose>}
           <Button variant="outline" disabled={busy || !data?.projects.length || data.projects.length > data.maxProjects} onClick={() => setReadIds(data!.projects.map(p => p.id))}>現在閲覧できる全件を読み取り対象にする</Button>
+          {taskWrite && <Button variant="outline" disabled={busy || !writableIds.length || readIdsWithAllWrites.length > data!.maxProjects} onClick={() => { setReadIds(readIdsWithAllWrites); setWriteIds(writableIds); }}>書き込みを全部ON</Button>}
           <Button variant="outline" disabled={busy || !readIds.length} onClick={() => { setReadIds([]); setWriteIds([]); setAiIds([]); setEventIds([]); }}>選択を解除</Button>
           {data!.projects.map(p => <Card key={p.id} density="compact"><CardContent><SettingsLayout align="start">
             <label className={settingSelectionRow}><Checkbox checked={readIds.includes(p.id)} disabled={busy} onCheckedChange={value => toggleRead(p.id, value === true)} aria-label={p.name + 'の読み取り'} />{p.name}：読み取り</label>
@@ -110,7 +113,7 @@ export default function Consent({ interaction }: { interaction: string }) {
             {!externalClient && p.canNotify && <label className={settingSelectionRow}><Checkbox checked={eventIds.includes(p.id)} disabled={busy || !readIds.includes(p.id)} aria-label={p.name + 'の更新通知'} onCheckedChange={value => setEventIds(ids => value === true ? [...ids, p.id] : ids.filter(id => id !== p.id))} />タスク更新通知を許可</label>}
           </SettingsLayout></CardContent></Card>)}
           {!data?.projects.length && <Prose>現在選択できるプロジェクトはありません。</Prose>}
-          {data!.projects.length > data!.maxProjects && <Prose role="alert">一度に許可できる対象は{data!.maxProjects}件です。省略せず、対象を個別に選択してください。</Prose>}
+          {data!.projects.length > data!.maxProjects && <Prose role="alert">一度に許可できる対象は{data!.maxProjects}件です。対象が上限に収まるように選択してください。</Prose>}
           <Prose>今後追加されるプロジェクトの自動許可：無効。対象追加には新しい接続での再同意が必要です。既存接続の許可は変更しません。AI作業は、この同意に加えて各プロジェクトのAI設定・実行環境の許可も必要です。{externalClient ? '' : '更新通知は現在の承認済みpilotだけで利用できます。'}</Prose>
           <Prose aria-live="polite">今回同意する対象：{readIds.length}件{'\n'}読み取り：{selectedNames(readIds)}{'\n'}書き込み：{selectedNames(writeIds)}{'\n'}AI作業：{selectedNames(aiIds)}{externalClient ? '' : `\n更新通知：${selectedNames(eventIds)}`}</Prose>
         </SettingsLayout> : <label className="block">{taskRead ? 'タスク操作のプロジェクト' : production ? externalClient ? '接続するプロジェクト' : '継続通知のプロジェクト' : '通知テストのプロジェクト'}
