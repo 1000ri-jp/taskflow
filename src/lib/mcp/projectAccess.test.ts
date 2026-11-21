@@ -51,7 +51,7 @@ it('allows progress and viewer reads independently of AI work settings', async (
   expect(await readTaskData(auth(), { project_id: 'p', resource: 'project_status' })).toMatchObject({ project: { id: 'p' }, summary: { totalTasks: 1, completedTasks: 0 } });
   expect(await readTaskData(auth(), { project_id: 'p', resource: 'task', task_id: 'a' })).toMatchObject({ task: { title: 'pの仕事' }, comments: { items: [{ content: 'pのコメント' }] } });
 });
-it.each(['tasks', 'task', 'comments', 'checklists', 'attachments', 'subtasks', 'history', 'reactions', 'attachment_content', 'coordination_context', 'project_status'])('denies unconsented projects for %s before returning any resource', async resource => {
+it.each(['tasks', 'task', 'comments', 'checklists', 'attachments', 'subtasks', 'history', 'activity', 'reactions', 'attachment_content', 'coordination_context', 'project_status'])('denies unconsented projects for %s before returning any resource', async resource => {
   await expect(readTaskData(auth(), { project_id: 'r', resource, task_id: 'a', comment_id: 'c', resource_id: 'file' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
   expect(fake.storage).not.toHaveBeenCalled();
 });

@@ -18,12 +18,28 @@ export function taskFirestore() {
       collection: (name: string) => query(`${path}/${name}`),
       get: async () => ({ id: path.split('/').at(-1)!, ref: doc(path), exists: records.has(path), data: () => records.has(path) ? clone(records.get(path)!) : undefined }) };
   }
-  function query(path: string, filters: [string, string, unknown][] = [], maximum = Infinity, after = '') {
+  type Order = string | { segments?: string[] };
+  const fieldOf = (order: Order) => typeof order === 'string' ? order : '__name__';
+  const comparable = (v: unknown) => v instanceof Date ? v.getTime() : v as number | string;
+  const matches = (data: Record<string, unknown> | undefined, [field, op, value]: [string, string, unknown]) => {
+    const actual = data?.[field];
+    if (op === 'array-contains') return Array.isArray(actual) && actual.includes(value);
+    if (op === '>=' || op === '<') return actual != null && (op === '>=' ? comparable(actual) >= comparable(value) : comparable(actual) < comparable(value));
+    return actual === value;
+  };
+  // Orders other than document ID sort by that field, then by document ID, like Firestore.
+  function query(path: string, filters: [string, string, unknown][] = [], maximum = Infinity, after: unknown[] = [], orders: Order[] = []) {
+    const fields = orders.map(fieldOf).filter(field => field !== '__name__');
+    const key = (docPath: string) => [...fields.map(field => comparable(records.get(docPath)?.[field])), docPath.split('/').at(-1)!];
+    const compare = (a: unknown[], b: unknown[]) => { for (let i = 0; i < a.length; i++) { if ((a[i] as number) < (b[i] as number)) return -1; if ((a[i] as number) > (b[i] as number)) return 1; } return 0; };
     return { path, get parent() { return doc(path.split('/').slice(0, -1).join('/')); }, doc: (id: string) => doc(`${path}/${id}`),
-      where: (field: string, op: string, value: unknown) => query(path, [...filters, [field, op, value]], maximum, after),
-      limit: (n: number) => query(path, filters, n, after), orderBy: () => query(path, filters, maximum, after), startAfter: (id: string) => query(path, filters, maximum, id),
+      where: (field: string, op: string, value: unknown) => query(path, [...filters, [field, op, value]], maximum, after, orders),
+      limit: (n: number) => query(path, filters, n, after, orders), orderBy: (order: Order) => query(path, filters, maximum, after, [...orders, order]),
+      startAfter: (...values: unknown[]) => query(path, filters, maximum, values, orders),
       get: async (): Promise<{ docs: { id: string; ref: unknown; exists: boolean; data: () => Record<string, unknown> | undefined }[]; size: number; empty: boolean }> => {
-        const paths = [...records.keys()].filter(key => key.startsWith(path + '/') && !key.slice(path.length + 1).includes('/') && key.split('/').at(-1)! > after && filters.every(([field, op, value]) => op === 'array-contains' ? Array.isArray(records.get(key)?.[field]) && (records.get(key)![field] as unknown[]).includes(value) : records.get(key)?.[field] === value)).sort().slice(0, maximum);
+        const position = after.length ? [...after.slice(0, -1).map(comparable), after.at(-1)] : null;
+        const paths = [...records.keys()].filter(item => item.startsWith(path + '/') && !item.slice(path.length + 1).includes('/') && filters.every(filter => matches(records.get(item), filter)) && fields.every(field => records.get(item)?.[field] !== undefined))
+          .sort((a, b) => compare(key(a), key(b))).filter(item => !position || compare(key(item), position) > 0).slice(0, maximum);
         const docs = await Promise.all(paths.map(p => doc(p).get())); return { docs, size: docs.length, empty: !docs.length };
       } };
   }

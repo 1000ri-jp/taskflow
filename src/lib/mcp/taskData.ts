@@ -175,15 +175,43 @@ async function page(query: Query, scope: unknown, cursor: unknown, limit: number
   let ordered = query.orderBy(FieldPath.documentId());
   if (after) ordered = ordered.startAfter(after);
   const rows = (await ordered.limit(limit + 1).get()).docs;
-  const items = []; let bytes = 0;
+  const items = pageItems(rows, limit, isTask);
+  const more = rows.length > items.length;
+  return { items, next_cursor: more ? cursorFor(scope, items.at(-1)!.id) : null };
+}
+function pageItems(rows: { id: string; data: () => DocumentData }[], limit: number, isTask = false) {
+  const items: ReturnType<typeof outputItem>[] = []; let bytes = 0;
   for (const row of rows.slice(0, limit)) {
     const item = outputItem(row.id, row.data(), isTask), size = Buffer.byteLength(JSON.stringify(item));
     if (size > 800000) fail('RESOURCE_TOO_LARGE', '1件の情報が取得上限を超えています。データを省略せず停止しました。', 413);
     if (bytes + size > 800000) break;
     items.push(item); bytes += size;
   }
-  const more = rows.length > items.length;
-  return { items, next_cursor: more ? cursorFor(scope, items.at(-1)!.id) : null };
+  return items;
+}
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Project activity log for one Japan civil date, oldest first. Japan has no daylight saving time. */
+async function readActivity(projectRef: DocumentReference, args: Record<string, unknown>, scope: unknown, limit: number) {
+  if (Object.keys(args).some(k => !['project_id', 'resource', 'date', 'cursor', 'limit'].includes(k))) fail('INVALID_INPUT', 'activityの引数を確認してください。');
+  if (!validCivilDate(args.date)) fail('INVALID_INPUT', 'dateは日本時間の日付（YYYY-MM-DD）で指定してください。');
+  const start = new Date(`${args.date}T00:00:00+09:00`), end = new Date(start.getTime() + DAY_MS);
+  let query = projectRef.collection('activityLogs').where('createdAt', '>=', start).where('createdAt', '<', end).orderBy('createdAt').orderBy(FieldPath.documentId());
+  if (args.cursor !== undefined) {
+    let at: Date, id: string;
+    try {
+      if (typeof args.cursor !== 'string' || args.cursor.length > 2000) throw new Error();
+      const decoded = JSON.parse(Buffer.from(args.cursor, 'base64url').toString());
+      if (decoded.scope !== fingerprint(scope) || typeof decoded.at !== 'string') throw new Error();
+      assertId(decoded.id); at = new Date(decoded.at); id = decoded.id;
+      if (!Number.isFinite(at.getTime()) || at < start || at >= end) throw new Error();
+    } catch { fail('INVALID_CURSOR', '別の対象のページ指定は使用できません。'); }
+    query = query.startAfter(at!, id!);
+  }
+  const rows = (await query.limit(limit + 1).get()).docs;
+  const items = pageItems(rows, limit);
+  const last = items.at(-1);
+  const next = rows.length > items.length && last ? Buffer.from(JSON.stringify({ scope: fingerprint(scope), at: (last as Record<string, unknown>).createdAt, id: last.id })).toString('base64url') : null;
+  return { date: args.date, time_zone: 'Asia/Tokyo', items, next_cursor: next };
 }
 export async function readTaskData(auth: TaskPrincipal, args: Record<string, unknown>) {
   const result = await readTaskDataInternal(auth, args);
@@ -197,7 +225,7 @@ export async function readTaskData(auth: TaskPrincipal, args: Record<string, unk
 }
 async function readTaskDataInternal(auth: TaskPrincipal, args: Record<string, unknown>) {
   requireTaskScope(auth, false);
-  if (Object.keys(args).some(k => !['project_id', 'resource', 'task_id', 'resource_id', 'comment_id', 'cursor', 'limit', 'offset', 'length'].includes(k)) || !READ_RESOURCES.includes(String(args.resource))) fail('INVALID_INPUT', '読み取り対象を確認してください。');
+  if (Object.keys(args).some(k => !['project_id', 'resource', 'task_id', 'resource_id', 'comment_id', 'date', 'cursor', 'limit', 'offset', 'length'].includes(k)) || !READ_RESOURCES.includes(String(args.resource)) || args.date !== undefined && args.resource !== 'activity') fail('INVALID_INPUT', '読み取り対象を確認してください。');
   const limit = args.limit ?? 20;
   if (!Number.isInteger(limit) || Number(limit) < 1 || Number(limit) > 50) fail('INVALID_INPUT', '取得件数は1〜50件です。');
   if (args.resource === 'projects') {
@@ -256,6 +284,7 @@ async function readTaskDataInternal(auth: TaskPrincipal, args: Record<string, un
   }
   if (['tasks', 'lists', 'labels', 'tags', 'milestones'].includes(String(args.resource))) return scopedPage(projectRef.collection(String(args.resource)), String(args.resource), args.resource === 'tasks');
   if (String(args.resource).startsWith('coordination_')) return readCoordination(projectRef, args);
+  if (args.resource === 'activity') return readActivity(projectRef, args, [auth.grantId, projectId, 'activity', args.date], Number(limit));
   assertId(args.task_id);
   const taskRef = projectRef.collection('tasks').doc(args.task_id), task = (await taskRef.get()).data();
   if (!task) fail('NOT_FOUND', 'タスクが見つかりません。', 404);
