@@ -158,3 +158,30 @@ it('reports partial batch success and unattempted operations honestly', async ()
   expect(output).toMatchObject({ atomic: false, stopped_at: 1, unattempted_ids: ['last'], results: [{ ok: true }, { ok: false, error: { code: 'VERSION_CONFLICT' } }] });
   expect(task().title).toBe('反映済み'); expect(task('b').title).toBe('次の仕事');
 });
+it('reads project activity for one Japan date in time order with pages bound to that date', async () => {
+  const log = (id: string, at: string, extra: Record<string, unknown> = {}) => fixture.records.set(`projects/p/activityLogs/${id}`, { projectId: 'p', targetType: 'task', targetId: 'a', targetName: '仕事', action: 'update', userId: 'u', userName: '本人', createdAt: new Date(at), ...extra });
+  log('before', '2026-11-20T14:59:59.999Z');
+  log('z-first', '2026-11-20T15:00:00.000Z', { targetId: 'b', action: 'create' });
+  log('a-second', '2026-11-21T03:00:00.000Z', { targetType: 'comment' });
+  log('m-third', '2026-11-21T14:59:59.999Z', { action: 'complete' });
+  log('after', '2026-11-21T15:00:00.000Z');
+  const all = await readTaskData(auth(), { resource: 'activity', date: '2026-11-21' });
+  expect(all).toMatchObject({ date: '2026-11-21', time_zone: 'Asia/Tokyo', next_cursor: null });
+  expect((all as { items: { id: string }[] }).items.map(item => item.id)).toEqual(['z-first', 'a-second', 'm-third']);
+  const first = await readTaskData(auth(), { resource: 'activity', date: '2026-11-21', limit: 2 }) as { items: { id: string; createdAt: string }[]; next_cursor: string };
+  expect(first.items.map(item => item.id)).toEqual(['z-first', 'a-second']);
+  expect(first.items[0].createdAt).toBe('2026-11-20T15:00:00.000Z');
+  const second = await readTaskData(auth(), { resource: 'activity', date: '2026-11-21', limit: 2, cursor: first.next_cursor });
+  expect(second).toMatchObject({ items: [{ id: 'm-third', action: 'complete' }], next_cursor: null });
+  await expect(readTaskData(auth(), { resource: 'activity', date: '2026-11-22', cursor: first.next_cursor })).rejects.toMatchObject({ code: 'INVALID_CURSOR' });
+  expect(await readTaskData(auth(), { resource: 'activity', date: '2026-11-19' })).toMatchObject({ items: [], next_cursor: null });
+});
+it.each([
+  { name: 'missing date', args: { resource: 'activity' } },
+  { name: 'invalid date', args: { resource: 'activity', date: '2026-02-30' } },
+  { name: 'non-date text', args: { resource: 'activity', date: '昨日' } },
+  { name: 'task selector', args: { resource: 'activity', date: '2026-11-21', task_id: 'a' } },
+  { name: 'date on another resource', args: { resource: 'history', task_id: 'a', date: '2026-11-21' } },
+])('rejects activity input with $name', async ({ args }) => {
+  await expect(readTaskData(auth(), args)).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+});
